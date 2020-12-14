@@ -689,7 +689,7 @@ restore
 	gen xabsence_social=	q203_008==1 | q203_009==1 | q203_010==1 
 			
 	gen xhr=q204==1
-	gen xhr_shift=		q205_001
+	gen xhr_shift=		q205_001==1
 	gen xhr_increase=	q205_002==1 | q205_003==1 | q205_004==1 | q205_005==1 | q205_006==1 
 	gen xhr_increase_exp=	q205_002==1 | q205_003==1 
 	gen xhr_increase_new=	q205_004==1 | q205_005==1 | q205_006==1 
@@ -699,7 +699,7 @@ restore
 	gen xtraining=q206==1
 	global itemlist "001 002 003 004 005 006 007 008"
 	foreach item in $itemlist{	
-		gen xtraining__`item' = q207_`item'
+		gen byte xtraining__`item' = q207_`item' ==1
 		}		
 		
 		gen max=4
@@ -749,7 +749,7 @@ restore
 		
 	gen xaddfund = q305==1 | q305==2
 	gen xaddfund_gov = q306==1 
-	gen xaddfund_other = q306>=2 
+	gen xaddfund_other = q306>=2 & q306!=. 
 
 		/*
 		foreach var of varlist xaddfund_*{
@@ -907,11 +907,13 @@ restore
 	global itemlist "001 002 003 004 005 006"
 	foreach item in $itemlist{	
 		gen xopt_increase_reason__`item' = q410_`item'
+		recode xopt_increase_reason__`item'  .= 0
 		}
 		
 	global itemlist "001 002 003 004 005 006 007 008 009 010 011 012" 
 	foreach item in $itemlist{			
 		gen xopt_decrease_reason__`item' = q411_`item'
+		recode xopt_decrease_reason__`item'  .= 0
 		}
 
 	global varlist "xopt_increase "
@@ -927,7 +929,7 @@ restore
 		gen `var'_reason_intention	= `var'_reason__006==1 | `var'_reason__007==1 | `var'_reason__008==1 | `var'_reason__009==1
 		gen `var'_reason_disruption = `var'_reason__010==1 | `var'_reason__011==1 
 		}
-			
+		
 	***** ER
 	
 	gen xer = q118_001==1
@@ -1041,7 +1043,7 @@ restore
 	gen xsafe= q502==1
 	global itemlist "001 002 003 004 005 006 007 008 009" 
 	foreach item in $itemlist{	
-		gen xsafe__`item' = q503_`item'
+		gen xsafe__`item' = q503_`item' ==1
 		}		
 	
 		gen max=9
@@ -1054,7 +1056,7 @@ restore
 	gen xguideline= q504
 	global itemlist "001 002 003 004 005" 
 	foreach item in $itemlist{	
-		gen xguideline__`item' = q505_`item'
+		gen xguideline__`item' = q505_`item' ==1
 		}		
 		
 		gen max=5
@@ -1483,7 +1485,7 @@ use CEHS_`country'_R`round'.dta, clear
 	
 			* But, convert back variables that were incorrectly converted (e.g., occupancy rates, score)
 			foreach var of varlist xbedrate	*_score *_num {
-				replace `var'=round(`var'/100, .1)
+				replace `var'=round(`var'/100, 1)
 				}
 	
 	* drop unweighted average of COVID infection rate among staff

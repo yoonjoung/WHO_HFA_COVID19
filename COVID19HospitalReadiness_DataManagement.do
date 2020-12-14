@@ -655,7 +655,7 @@ restore
 	gen xtesttime_48	=q605<=2
 	gen xtesttime_72	=q605<=3
 		
-	foreach var of varlist xtesttime*	{
+	foreach var of varlist xtesttransport xtesttime*	{ /*YC edit 12/14/2020*/
 		replace `var'=. if xtest!=1
 		}
 	

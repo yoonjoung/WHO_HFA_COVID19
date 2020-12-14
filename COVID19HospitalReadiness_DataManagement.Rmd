@@ -791,7 +791,7 @@ dta<-dta%>%
     mutate_at(vars(starts_with("xpcr_")), 
               funs(ifelse(xpcr!=1, NA, .)))
 
-varlist<-dta%>%select(starts_with("xipcitem__"))%>%colnames()	
+varlist<-dta%>%select(starts_with("xspcmitem__"))%>%colnames()	
 dta<-dta%>%
 	mutate(
     		max=3,

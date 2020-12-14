@@ -322,7 +322,7 @@ month&lt;-12               #month of the mid point in data collection
 
 obsraw&lt;-nrow(dtaraw)
 cols&lt;-ncol(dtaraw)</code></pre>
-<p>As of 2020-12-13 22:26:58, the downloaded raw data has 8 observations and 142 variables.</p>
+<p>As of 2020-12-14 14:47:52, the downloaded raw data has 8 observations and 142 variables.</p>
 <p>Then, export the raw data into the chartbook (green tab: “Facility-level raw data”) - as is.</p>
 <hr />
 </div>
@@ -966,7 +966,7 @@ dta&lt;-dta%&gt;%
     mutate_at(vars(starts_with(&quot;xpcr_&quot;)), 
               funs(ifelse(xpcr!=1, NA, .)))
 
-varlist&lt;-dta%&gt;%select(starts_with(&quot;xipcitem__&quot;))%&gt;%colnames()   
+varlist&lt;-dta%&gt;%select(starts_with(&quot;xspcmitem__&quot;))%&gt;%colnames()  
 dta&lt;-dta%&gt;%
     mutate(
             max=3,
@@ -1287,7 +1287,7 @@ colnames(dtasummary[ , 1:10])</code></pre>
 <h5>F.2. Export indicator estimate data to chart book</h5>
 <pre class="r"><code>write.csv(dtasummary, paste0(&quot;summary_COVID19HospitalReadiness_&quot;, country, &quot;_R&quot;, round, &quot;.csv&quot;))</code></pre>
 <hr />
-<p>(Last updated: 2020-12-13 22:26:58)<br />
+<p>(Last updated: 2020-12-14 14:47:52)<br />
 END OF MARKDOWN FILE</p>
 </div>
 </div>
