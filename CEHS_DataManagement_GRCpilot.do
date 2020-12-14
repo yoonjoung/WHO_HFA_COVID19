@@ -51,10 +51,10 @@ cd "C:\Users\YoonJoung Choi\Dropbox\0 iSquared\iSquared_WHO\ACTA\3.AnalysisPlan\
 global chartbookdir "C:\Users\YoonJoung Choi\World Health Organization\BANICA, Sorin - HSA unit\2 Global goods & tools\2 HFAs\1 HFAs for COVID-19\4. Implementation support materials\4. Analysis and dashboards\"
 
 *** Define local macro for the survey 
-local country	 		 COUNTRYNAME /*country name*/	
+local country	 		 GreecePilot /*country name*/	
 local round 			 1 /*round*/		
 local year 			 	 2020 /*year of the mid point in data collection*/	
-local month 			 12 /*month of the mid point in data collection*/				
+local month 			 9 /*month of the mid point in data collection*/				
 
 *** local macro for analysis: no change needed  
 local today=c(current_date)
@@ -105,6 +105,17 @@ import delimited ExportedCSV_FromLimeSurvey\LimeSurvey_CEHS_GreecePilot_R1.csv, 
 	duplicates report q101,
 
 	drop duplicate submitdatelatest
+	
+*****B.3. Expand Greek data and expand /ONLY FOR GREECE DUMMY DATA/
+
+	sort q101
+	gen n=12
+	expand n
+	
+	replace id = _n
+	sum id
+	
+	drop n
 	
 **************************************************************
 * C. Destring and recoding 
@@ -436,8 +447,12 @@ preserve
 		cells(freq col) h2("Date of interviews (submission date, final)") f(0 1) clab(n %)
 			
 			gen xresult=q1101
-				replace xresult=1 /*DELETE this line with real data*/
-				
+			replace xresult=1/*for greece pilot*/
+			replace xresult = 0 in 1/*for greece pilot*/
+			replace xresult = 0 in 38/*for greece pilot*/
+			replace xresult = 0 in 57/*for greece pilot*/
+			replace xresult = 0 in 99/*for greece pilot*/
+
 			gen byte responserate= xresult==1
 			label define responselist 0 "Not complete" 1 "Complete"
 			label val responserate responselist
@@ -1361,10 +1376,52 @@ import excel "$chartbookdir\WHO_CEHS_Chartbook.xlsx", sheet("Weight") firstrow c
 	save CEHS_`country'_R`round'.dta, replace 		
 
 	export excel using "$chartbookdir\WHO_CEHS_Chartbook.xlsx", sheet("Facility-level cleaned data") sheetreplace firstrow(variables) nolabel
-	
+
+			************************************************************************************
+			**************************************************************************************	
+			*Just for Greece Pilot data 
+			*create round 2 and 3 datasets 
+
+			use CEHS_GreecePilot_R1.dta, clear
+				replace round=2
+				replace year=2020
+				replace month=12
+				
+				drop if id==26 | id==33
+				
+				duplicates tag q101 q102 q104 q105, gen(duplicate) 	
+				sort q101 id
+				drop if q101==q101[_n-1]
+						
+				gen n=13
+				expand n
+				replace id = _n
+				sum id
+			save CEHS_GreecePilot_R2.dta, replace 
+
+			use CEHS_GreecePilot_R1.dta, clear
+				replace round=3
+				replace year=2021
+				replace month=3
+				
+				drop if id==22 | id==30
+					
+				duplicates tag q101 q102 q104 q105, gen(duplicate) 	
+				sort q101 id
+				drop if q101==q101[_n-1]
+						
+				gen n=13
+				expand n
+				replace id = _n
+				sum id
+			save CEHS_GreecePilot_R3.dta, replace 
+			**************************************************************************************	
+			**************************************************************************************		
+			
 **************************************************************
 * F. Create indicator estimate data 
 **************************************************************
+foreach round in 1 2 3 {
 use CEHS_`country'_R`round'.dta, clear
 	
 	gen obs=1 	
@@ -1458,11 +1515,12 @@ save summary_CEHS_`country'_R`round'.dta, replace
 
 export delimited using summary_CEHS_`country'_R`round'.csv, replace 
 export delimited using "C:\Users\YoonJoung Choi\Dropbox\0 iSquared\iSquared_WHO\ACTA\4.ShinyAppCEHS\summary_CEHS_`country'_R`round'.csv", replace 
-
+}
 
 *****F.2. Export indicator estimate data to chartbook AND dashboard
 
-use summary_CEHS_`country'_R`round'.dta, clear
+*use summary_CEHS_`country'_R`round'.dta, clear
+use summary_CEHS_Greecepilot_R1.dta, clear
 
 	gen updatedate = "$date"
 
