@@ -68,10 +68,9 @@ global date=subinstr("`c_today'", " ", "",.)
 
 *****B.1. Import raw data from LimeSurvey 
 
-import delimited 10122020_results-survey769747_codes.csv, case(preserve) clear 
-	
-	gen test1="$date" /*KEYC: delete this line after confirming program running correctly*/
-	
+*import delimited 10122020_results-survey769747_codes.csv, case(preserve) clear 
+import delimited 15122020_results-survey769747_codes.csv, case(preserve) clear 
+		
 	export excel using "$chartbookdir\KEN_CEHS_Chartbook.xlsx", sheet("Facility-level raw data") sheetreplace firstrow(variables) nolabel
 
 ***** Change var names to lowercase
@@ -174,9 +173,9 @@ import delimited 10122020_results-survey769747_codes.csv, case(preserve) clear
 	* Section 3
 	*****************************
 	sum q3*
-	codebook q302 q3041* q309 q311
+	codebook q302 q309 q311
 		
-	foreach var of varlist q302 q3041 q309  {	
+	foreach var of varlist q302 q309  {	
 		replace `var' = usubinstr(`var', "A", "", 1) 
 		destring `var', replace 
 		}		
@@ -195,16 +194,16 @@ import delimited 10122020_results-survey769747_codes.csv, case(preserve) clear
 		}	
 		
 	//*KEYC edit begins*//
-	gen RAWq410_007 = q410_other 
-	gen q410_007=""
-		replace q410_007 = "1" if q410_other!=. /*""*/
-		replace q410_007 = "0" if q410_other==. /*""*/
+	rename q410_other q410other  
+	gen q410_007=.
+		replace q410_007 = 1 if q410other!=""
+		replace q410_007 = 0 if q410other==""
 		destring q410_007, replace
 		
-	gen RAWq411_012 = q411_other 
-	gen q411_012=""
-		replace q411_012 = "1" if q411_other!=""
-		replace q411_012 = "0" if q411_other==""
+	rename q411_other q411other 
+	gen q411_012=.
+		replace q411_012 = 1 if q411other!=""
+		replace q411_012 = 0 if q411other==""
 		destring q411_012, replace		
 	//*KEYC edit ends*//
 	
@@ -252,9 +251,9 @@ import delimited 10122020_results-survey769747_codes.csv, case(preserve) clear
 	* Section 8
 	*****************************
 	sum q8*
-	codebook q802_* q803_* q804_* q805_* q807_* q808_*		
+	codebook q802_* q803_* q804* q805*
 	
-	foreach var of varlist q802_* q803_* q804_* q805_* q807_* q808_*	{		
+	foreach var of varlist q802_* q803_* q805_* 	{		
 		replace `var' = usubinstr(`var', "A", "", 1) 
 		destring `var', replace 
 		}			
@@ -292,12 +291,12 @@ import delimited 10122020_results-survey769747_codes.csv, case(preserve) clear
 	#delimit;
 	sum
 		q202  q205_* q206  q207* 
-		q301  q304  q305_* q306_* q307  q308  q310
-		q402 - q405  q406_* q407  q408  q410_* q411_0* q416 q418 q419 
+		q301  q304 q3041_*  q305_* q306_* q307  q308  q310
+		q402 - q405  q406_* q407  q408  q410_* q411_* q416 q418 q419 
 		q501  q502  q503_* q504  q505_* q506
 		q601  q602  q603  q605  q606  q607_* q608_001 - q608_006 q609 q6091 q610 q614-q615
 		q701_* q702_* q703_* q704
-		q801 q802_* q804_* q807_* 
+		q801 q804
 		q901 q902  q905 q908 q912 ; 
 		#delimit cr
 	
@@ -305,20 +304,20 @@ import delimited 10122020_results-survey769747_codes.csv, case(preserve) clear
 	foreach var of varlist 
 		q202  q205_* q206  q207* 
 		q301  q304  q305_* q306_* q307  q308  q310
-		q402 - q405  q406_* q407  q408  q410_* q411_0* q416 q418 q419 
+		q402 - q405  q406_* q407  q408  q410_* q411_* q416 q418 q419 
 		q501  q502  q503_* q504  q505_* q506
 		q601  q602  q603  q605  q606  q607_* q608_001 - q608_006 q609 q6091 q610 q614-q615
 		q701_* q702_* q703_* q704
-		q801 q802_* q804_* q807_* 
+		q801 q804
 		q901 q902  q905 q908 q912 
 		{; 
 		#delimit cr		
 		recode `var' 2=0 /*no*/
 		}
 
-	sum q204 q309 q803* q805* q808*
+	sum q204 q309 
 		
-	foreach var of varlist  q204 q309 q803* q805* q808* {
+	foreach var of varlist  q204 q309  {
 		recode `var' 2=0 /*no*/
 		recode `var' 3=. /*not applicable*/
 		}	
@@ -354,15 +353,8 @@ import delimited 10122020_results-survey769747_codes.csv, case(preserve) clear
 		3"3. Yes – user fees exempted for both COVID-19 and other health services"
 		4"4. No"; 
 	lab values q302 q302; 
-
-	lab define q3041
-		1"1. Increased use of PPEs"
-		2"2. Increased maintenance expenses/cost"
-		3"3. Reduced use of services"
-		4"4. Other"; 
-	lab values q3041 q3041; 
 	
-	/* KEYC edit - but change this in the core too
+	/* KEYC edit - but change this in the standard too
 	lab define q305
 		1"1. Yes – for COVID-19 case management services"
 		2"2. Yes – for other essential health services"
@@ -427,7 +419,7 @@ import delimited 10122020_results-survey769747_codes.csv, case(preserve) clear
 	lab values `var' ppe;	
 	};		
 
-	/* KEYC edit - but change this in the core too
+	/* KEYC edit - but change this in the standard too
 	lab define q604
 		1"1.Yes, PCR"
 		2"2.Yes, RDT"
@@ -439,7 +431,7 @@ import delimited 10122020_results-survey769747_codes.csv, case(preserve) clear
 		1"1.Yes, functional"
 		2"2.Yes, but not functional"
 		3"3.No";
-	foreach var of varlist q903 q904  {;
+	foreach var of varlist q802_* q803_* q805_* q903 q904  {;
 	lab values `var' availfunc ;	
 	};			
 
@@ -463,19 +455,19 @@ import delimited 10122020_results-survey769747_codes.csv, case(preserve) clear
 	foreach var of varlist 
 		q115 q118* 
 		q202  q205_* q206  q207* 
-		q301  q304  q305_* q306_* q307  q308  q310
-		q402 - q405  q406_* q407  q408  q410_* q411_0* q416 q418 q419 
+		q301  q304 q3041_* q305_* q306_* q307  q308  q310
+		q402 - q405  q406_* q407  q408  q410_* q411_* q416 q418 q419  
 		q501  q502  q503_* q504  q505_* q506
 		q601  q602  q603  q605  q606  q607_* q608_001 - q608_006 q609 q6091 q610 q614-q615
 		q701_* q702_* q703_* q704
-		q801 q802_* q804_* q807_* 
+		q801 q804
 		q901 q902  q905 q908 q912 
 		{;		
 	labe values `var' yesno; 
 	};	
 
 	lab define yesnona 1"1. yes" 0"0. no"; 
-	foreach var of varlist q204 q309 q803* q805* q808* {;		
+	foreach var of varlist q204 q309 {;		
 	labe values `var' yesnona; 
 	};
 	
@@ -501,10 +493,8 @@ preserve
 	tabout submitdate_string1 using "$chartbookdir\FieldCheckTable_CEHS_`country'_R`round'_$date.xls", append ///
 		cells(freq col) h2("Date of interviews (submission date, final)") f(0 1) clab(n %)
 			
-			gen xresult=q1101
-			//*KEYC edit: TEMPORARY, since xresult==0 in pilot. DELETE the next line when possible, ASAP *//
-				replace xresult=1
-
+			gen xresult=q1101==1
+			
 			gen byte responserate= xresult==1
 			label define responselist 0 "Not complete" 1 "Complete"
 			label val responserate responselist
@@ -532,15 +522,27 @@ preserve
 				replace time_complete = round(time_complete, .1)
 				replace time_incomplete = round(time_incomplete, .1)
 
-	tabout time xresult using "$chartbookdir\FieldCheckTable_CEHS_`country'_R`round'_$date.xls", append ///
-		cells(freq col) h2("Interview length (minutes): incomplete, complete, and total interviews") f(0 1) clab(n %)	
+	*tabout time xresult using "$chartbookdir\FieldCheckTable_CEHS_`country'_R`round'_$date.xls", append ///
+	*	cells(freq col) h2("Interview length (minutes): incomplete, complete, and total interviews") f(0 1) clab(n %)	
 	tabout time_complete using "$chartbookdir\FieldCheckTable_CEHS_`country'_R`round'_$date.xls", append ///
 		cells(freq col) h2("Average interview length (minutes), among completed interviews") f(0 1) clab(n %)		
 	tabout time_incomplete using "$chartbookdir\FieldCheckTable_CEHS_`country'_R`round'_$date.xls", append ///
 		cells(freq col) h2("Average interview length (minutes), among incomplete interviews") f(0 1) clab(n %)	
 
+* Missing responses 
+
+			capture drop missing
+			gen missing=0
+			foreach var of varlist q1101 {	
+				replace missing=1 if `var'==.				
+				}		
+			lab values missing yesno		
+
+	tabout missing using "$chartbookdir\FieldCheckTable_CEHS_`country'_R`round'_$date.xls", append ///
+		cells(freq col) h2("0. Missing survery results (among all interviews)") f(0 1) clab(n %)									
+
 keep if xresult==1 /*the following calcualtes % missing in select questions among completed interviews*/		
-		
+			
 			capture drop missing
 			gen missing=0
 			foreach var of varlist q116 q117 {	
@@ -612,17 +614,16 @@ keep if xresult==1 /*the following calcualtes % missing in select questions amon
 	tabout missing using "$chartbookdir\FieldCheckTable_CEHS_`country'_R`round'_$date.xls", append ///
 		cells(freq col) h2("7. Missing PPE availability (among completed interviews)") f(0 1) clab(n %)							
 			
-			*REVISE CODE FOR SECTION 6 VARIABLES
 			capture drop missing
 			gen missing=0
 			foreach var of varlist q605 {	
 				replace missing=1 if `var'==. & q604==4
-				*replace missing=. if q604!=4 
+				replace missing=. if q604!=4 				
 				}		
 			lab values missing yesno		
 
 	tabout missing using "$chartbookdir\FieldCheckTable_CEHS_`country'_R`round'_$date.xls", append ///
-		cells(freq col) h2("8. Missing specimen transportation systems (among completed interviews)") f(0 1) clab(n %)							
+		cells(freq col) h2("8. Missing specimen transportation time (among completed interviews)") f(0 1) clab(n %)							
 	
 restore
 **************************************************************
@@ -709,7 +710,7 @@ restore
 	egen staff_num_total_nr=rowtotal(q201_002_001)
 	egen staff_num_covid_nr=rowtotal(q201_002_002)
 
-	///* KEYC edit begins: no midwife category 
+	///* KEYC edit begins: no midwife category *///
 	egen staff_num_total_co=rowtotal(q201_003_001)
 	egen staff_num_covid_co=rowtotal(q201_003_002)
 
@@ -721,7 +722,7 @@ restore
 	
 	egen staff_num_total_nonclinical=rowtotal(q201_009_001 q201_010_001 )
 	egen staff_num_covid_nonclinical=rowtotal(q201_009_002 q201_010_002 )
-	* KEYC Edit ends///
+	///* KEYC Edit ends *///
 	
 	egen staff_num_total_all=rowtotal(staff_num_total_clinical staff_num_total_nonclinical) 
 	egen staff_num_covid_all=rowtotal(staff_num_covid_clinical staff_num_covid_nonclinical) 
@@ -789,15 +790,19 @@ restore
 		foreach var of varlist xexempt* xfee{
 			replace `var'=. if xuserfee!=1
 			}
-	/*KEYC edit begins - may become part of standard - check q305 and q306
-	gen xaddfund = q305==1 | q305==2
-	gen xaddfund_gov = q306==1 
-	gen xaddfund_other = q306>=2 & q306!=. 
-	*/	
+			
+	///*KEYC edit begins*///
+	*gen xaddfund = q305==1 | q305==2 /* KEYC edit - error in lime survey programming. should have been a radio button question - i.e., select one */
+	gen xaddfund 		= q305_001==1 | q305_002==1 
+	gen xaddfund_gov 			= q306_001==1 | q306_002==2 
+	gen xaddfund_govnational 	= q306_001==1 
+	gen xaddfund_govcounty 		= q306_002==1
+ 	gen xaddfund_other 			= q306_003==1 | q306_004==1 | q306_005==1 | q306_006==1 
+	///*KEYC edit ends *///
 		
 	gen xfinance_salaryontime 	= q307==1
 	gen xfinance_ot 			= q308==1 
-	gen xfinance_otontime 	= q309==1 | q309==3
+	gen xfinance_otontime 		= q309==1 | q309==3
 		replace xfinance_otontime = . if xfinance_ot==0
 		
 	gen xfinance_ontime = xfinance_salaryontime ==1 & (xfinance_otontime==1 | xfinance_otontime==.)
@@ -967,7 +972,7 @@ restore
 	
 	***** missed appointment 
 	
-	//* KEYC edit for HIV and TB line items*/
+	///* KEYC edit begins for HIV and TB line items*///
 	gen xresto = q418==1 & q419==1	
 	gen xresto_imp_preg 	= q420_001==1 
 	gen xresto_imp_immunization 	= q420_002==1 
@@ -1001,6 +1006,7 @@ restore
 			replace xresto_imp_`item' =. if q420_005>=4
 			replace xresto_imppln_`item' =. if q420_005>=4
 			}						
+	///* KEYC edit ends *///
 	
 	global itemlist "001 002 003 004"
 	foreach item in $itemlist{	
@@ -1033,7 +1039,7 @@ restore
 		gen xsafe__`item' = q503_`item' ==1
 		}		
 	
-		gen max=9
+		gen max=10 /*KEYC edit*/
 		egen temp = rowtotal(xsafe__*)
 	gen xsafe_score	=100*(temp/max)
 	gen xsafe_100 	=xsafe_score>=100
@@ -1046,7 +1052,7 @@ restore
 		gen xguideline__`item' = q505_`item' ==1
 		}		
 		
-		gen max=5
+		gen max=6 /*KEYC edit*/
 		egen temp=	rowtotal(xguideline__*)
 	gen xguideline_score	=100*(temp/max)
 	gen xguideline_100 		=xguideline_score>=100
@@ -1059,7 +1065,7 @@ restore
 		gen xppe_allsome__`item' = q507_`item'==1 | q507_`item'==2
 		}	
 
-		gen max=6
+		gen max=6 
 		egen temp=	rowtotal(xppe_allsome__*)
 	gen xppe_allsome_score	=100*(temp/max)
 	gen xppe_allsome_100 		=xppe_allsome_score>=100
@@ -1125,7 +1131,7 @@ restore
 			replace `var'=. if xcvd_pthbsi==0
 			}		
 	
-	gen ycvd_pthbsi = q6087
+	gen ycvd_pthbsi = q6081
 	
 	gen xcvd_guide_casemanage	= q609==1				
 	gen xcvd_guide_homebased 	= q6091==1				
@@ -1169,19 +1175,32 @@ restore
 
 	global itemlist "001 002 003 004 005 006 007 008 009 010 011 012 013 014 015 016 017" 
 	foreach item in $itemlist{	
-		gen xdrug__`item' = q701_`item'
+		gen xdrug__`item' = q701_`item' ==1 
 		}		
 		
 	global itemlist "001 002 003" 
 	foreach item in $itemlist{	
-		gen xsupply__`item' = q702_`item'
+		gen xsupply__`item' = q702_`item' ==1 
 		}	
-		
+
+	///* KE edit begins */// 
+	* NOTE: Lime survey programming error. Q numbers do not align with paper Q, but okay for analysis 
+	gen xo2= q702_004
+	
+	global itemlist "005 006 007" 
+	foreach item in $itemlist{	
+		gen xo2__`item'= q702_`item' ==1 
+		}				
+		rename xo2__005 xo2__cannula
+		rename xo2__006 xo2__mask
+		rename xo2__007 xo2__humidifier		
+	///* KE edit ends *///
+	
 	gen xvaccine_child=q409_005>=1 & q409_005<=3	
 		
 	global itemlist "001 002 003 004 005"
 	foreach item in $itemlist{	
-		gen xvaccine__`item' = q703_`item'
+		gen xvaccine__`item' = q703_`item' ==1
 		}	
 
 	foreach var of varlist xvac_* xvaccine__*{	
@@ -1193,32 +1212,33 @@ restore
 	*****************************
 	* Section 8: 
 	*****************************
-	/* KEYC: lot of edit expected. Need to see data first
 	
-	gen xdiag=q804==1
+	////* KEYC edit begins *////
+
+	gen xdiag=q801==1
 	
-	global itemlist "001 002 003 004 005"
+	global itemlist "001 002 003 004" /*In Kenya, 4 items asked */  
 	foreach item in $itemlist{	
-		gen xdiag_av_a`item' 	= q805_`item'==1
+		gen xdiag_av_a`item' 	= q802_`item'<=2 
 		}	
 		
-	global itemlist "001 002 003 004 005"
+	global itemlist "001 002 003 004" /*In Kenya, 4 items asked */ 
 	foreach item in $itemlist{	
-		gen xdiag_avfun_a`item' = q805_`item'==1 & q806_`item'==1 
+		gen xdiag_avfun_a`item' = q802_`item'<=1
 		}			
 		
-	gen xhospital = zlevel_hospital==1    	
+	*gen xhospital = zlevel_hospital==1  /*not needed in Kenya, because of different skip pattern*/  	
 		
 	global itemlist "001 002 003 004 005"
 	foreach item in $itemlist{	
-		gen xdiag_av_h`item' 	= q807_`item'==1
-		replace xdiag_av_h`item' 	= . if xhospital!=1 
+		gen xdiag_av_h`item' 	= q803_`item'<=2
+		*replace xdiag_av_h`item' 	= . if xhospital!=1  /*In Kenya, asked in all facilities*/ 
 		}		
 		
 	global itemlist "001 002 003 004 005"
 	foreach item in $itemlist{	
-		gen xdiag_avfun_h`item' = q807_`item'==1 & q808_`item'==1 
-		replace xdiag_avfun_h`item' = . if xhospital!=1 
+		gen xdiag_avfun_h`item' = q803_`item'<=1
+		*replace xdiag_avfun_h`item' = . if xhospital!=1  /*In Kenya, asked in all facilities*/ 
 		}		
 						
 		gen max=5
@@ -1229,25 +1249,26 @@ restore
 		drop max temp	
 		
 		gen max=.
-			replace max=5 if zlevel_hospital!=1 
-			replace max=10 if zlevel_hospital==1 
+			replace max=10 /*In Kenya, asked in all facilities*/ 
+			*replace max=5 if zlevel_hospital!=1 
+			*replace max=10 if zlevel_hospital==1 
 		egen temp=rowtotal(xdiag_avfun_a* xdiag_avfun_h*)
 	gen xdiag_score	=100*(temp/max)
 	gen xdiag_100 	=xdiag_score>=100
 	gen xdiag_50 	=xdiag_score>=50
 		drop max temp				
 		
-	global itemlist "001 002 003"
+	global itemlist "001 002 003 004" /*In Kenya, four items asked */
 	foreach item in $itemlist{	
-		gen ximage_av_`item' 	= q810_`item'==1
-		replace ximage_av_`item'	=. if xhospital!=1 
+		gen ximage_av_`item' 	= q805_`item'<=2
+		replace ximage_av_`item'	=. if zlevel==1 /*In Kenya, asked in all facilities, except the level 2*/ 
 		}
 		
 
-	global itemlist "001 002 003"
+	global itemlist "001 002 003 004" /*In Kenya,  four items asked */
 	foreach item in $itemlist{	
-		gen ximage_avfun_`item' = q810_`item'==1 & q811_`item'==1 
-		replace ximage_avfun_`item' =. if xhospital!=1 
+		gen ximage_avfun_`item' = q805_`item'<=1  
+		replace ximage_avfun_`item' =. if zlevel==1 /*In Kenya, asked in all facilities, except the level 2*/ 
 		}		
 	
 		gen max=3
@@ -1256,11 +1277,9 @@ restore
 	gen ximage_100 	=ximage_score>=100
 	gen ximage_50 	=ximage_score>=50
 		drop max temp	
+
+	////*KEYC edit ends *////
 	
-	foreach var of varlist ximage*{	
-		replace `var'	=. if xhospital!=1 
-		}	
-	*/	
 	*****************************
 	* Section 9: vaccine
 	*****************************
@@ -1372,10 +1391,9 @@ import excel "$chartbookdir\KEN_CEHS_Chartbook.xlsx", sheet("Weight") firstrow c
 
 	
 *****E.4. Export clean facility-level data to chart book 
-
-	gen test2="$date" /*KEYC: delete this line after confirming program running correctly*/
 	
 	save CEHS_`country'_R`round'.dta, replace 		
+	export delimited using CEHS_`country'_R`round'.csv, replace 
 
 	export excel using "$chartbookdir\KEN_CEHS_Chartbook.xlsx", sheet("Facility-level cleaned data") sheetreplace firstrow(variables) nolabel
 			
@@ -1397,6 +1415,9 @@ use CEHS_`country'_R`round'.dta, clear
 		egen temp	= rowtotal(vol_`item'_*)
 		gen obshmis_`item' =1 if (temp>0 & temp!=.)
 		}			
+	
+	gen xresult=q1101==1
+	*keep if xresult==1 ///* THIS SHOULD BE updated once we have enough n *//
 	
 	save temp.dta, replace 
 	
