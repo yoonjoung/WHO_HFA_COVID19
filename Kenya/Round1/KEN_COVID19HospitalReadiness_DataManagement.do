@@ -45,14 +45,16 @@ numlabel, add
 **************************************************************
 
 *** Directory for this do file and a subfolder for "daily exported CSV file from LimeSurvey"  
+*cd "C:\Users\ctaylor\World Health Organization\BANICA, Sorin - HSA unit\1 Admin\Countires\Country Surveys\Pilot Kenya\Case-Mgmt\"
 cd "C:\Users\YoonJoung Choi\World Health Organization\BANICA, Sorin - HSA unit\1 Admin\Countires\Country Surveys\Pilot Kenya\Case-Mgmt\"
 dir
 
 *** Define a directory for the chartbook, if different from the main directory 
+*global chartbookdir "C:\Users\ctaylor\World Health Organization\BANICA, Sorin - HSA unit\1 Admin\Countires\Country Surveys\Pilot Kenya\Case-Mgmt\"
 global chartbookdir "C:\Users\YoonJoung Choi\World Health Organization\BANICA, Sorin - HSA unit\1 Admin\Countires\Country Surveys\Pilot Kenya\Case-Mgmt\"
 
 *** Define local macro for the survey 
-local country	 		 "Kenya" /*country name*/	
+local country	 		 Kenya /*country name*/	
 local round 			 1 /*round*/		
 local year 			 	 2020 /*year of the mid point in data collection*/	
 local month 			 12 /*month of the mid point in data collection*/		
@@ -68,7 +70,7 @@ global date=subinstr("`c_today'", " ", "",.)
 
 *****B.1. Import raw data from LimeSurvey 
 
-import delimited "14102020_results-survey447349)_QAcodes.csv", case(preserve) clear 
+import delimited "15122020_results-survey447349_codes.csv", case(preserve) clear 
 
 	export excel using "$chartbookdir\WHO_COVID19HospitalReadiness_ChartbookCT.xlsx", sheet("Facility-level raw data") sheetreplace firstrow(variables) nolabel
 	
@@ -79,6 +81,9 @@ import delimited "14102020_results-survey447349)_QAcodes.csv", case(preserve) cl
 ***** CT - Sorin added variables for the time it takes to complete questions.  We don't need here so delete
 	drop *time
 	
+***** KECT - ID variable comes in weird, so changing name
+	rename ïid id
+	
 *****B.2. Drop duplicate cases 
 	
 	drop if id==.
@@ -87,7 +92,7 @@ import delimited "14102020_results-survey447349)_QAcodes.csv", case(preserve) cl
 	duplicates tag q101, gen(duplicate) 
 				
 		rename submitdate submitdate_string			
-	gen double submitdate = clock(submitdate_string, "MDY hm")
+	gen double submitdate = clock(submitdate_string, "YMD hms") /* KECT - changed to YMD hms from MDY hm*/
 		format submitdate %tc
 				
 		list q101 q102 q104 q105 submitdate* startdate datestamp if duplicate==1 
@@ -128,8 +133,8 @@ import delimited "14102020_results-survey447349)_QAcodes.csv", case(preserve) cl
 	rename (*sqsq*) (*_*) /*replace double sq with _*/
 	rename (*sq*) (*_*) /*replace sq with _*/
 	
-	rename (q701_*_a1) (q201_*_001)
-	rename (q701_*_a2) (q201_*_002)
+	rename (q701_*_a1) (q701_*_001)
+	rename (q701_*_a2) (q701_*_002)
 	//*KE YC edit ends*//
 	
 *****C.3. Find non-numeric variables and desting 
@@ -374,7 +379,7 @@ preserve
 		cells(freq col) h2("Date of field check table update") f(0 1) clab(n %)
 
 			split submitdate_string, p(" ")
-			gen date=date(submitdate_string1, "MDY") 
+			gen date=date(submitdate_string1, "YMD") /* KECT - changed to YMD from MDY*/
 			format date %td
 						
 	tabout submitdate_string1 using "$chartbookdir\FieldCheckTable_COVID19Hospital_`country'_R`round'_$date.xls", append ///
@@ -395,8 +400,8 @@ preserve
 	tabout q105 using "$chartbookdir\FieldCheckTable_COVID19Hospital_`country'_R`round'_$date.xls", append ///
 		cells(freq col) h2("Number of completed interviews by hospital type") f(0 1) clab(n %)		
 
-			gen double starttime = clock(startdate, "MDY hm")
-			gen double endtime = clock(datestamp, "MDY hm")
+			gen double starttime = clock(startdate, "YMD hms") /* KECT - changed to YMD hms from MDY hm*/
+			gen double endtime = clock(datestamp, "YMD hms") /* KECT - changed to YMD hms from MDY hm*/
 			format %tc starttime
 			format %tc endtime
 			gen double time = (endtime- starttime)/(1000*60) /*interview length in minute*/
@@ -408,13 +413,25 @@ preserve
 				replace time_complete = round(time_complete, .1)
 				replace time_incomplete = round(time_incomplete, .1)			
 				
-	tabout time xresult using "$chartbookdir\FieldCheckTable_COVID19Hospital_`country'_R`round'_$date.xls", append ///
-		cells(freq col) h2("Interview length (minutes): incomplete, complete, and total interviews") f(0 1) clab(n %)	
+	*tabout time xresult using "$chartbookdir\FieldCheckTable_COVID19Hospital_`country'_R`round'_$date.xls", append ///
+	*	cells(freq col) h2("Interview length (minutes): incomplete, complete, and total interviews") f(0 1) clab(n %)	
 	tabout time_complete using "$chartbookdir\FieldCheckTable_COVID19Hospital_`country'_R`round'_$date.xls", append ///
 		cells(freq col) h2("Average interview length (minutes), among completed interviews") f(0 1) clab(n %)		
 	tabout time_incomplete using "$chartbookdir\FieldCheckTable_COVID19Hospital_`country'_R`round'_$date.xls", append ///
 		cells(freq col) h2("Average interview length (minutes), among incomplete interviews") f(0 1) clab(n %)	
-			
+
+* Missing responses 
+
+			capture drop missing
+			gen missing=0
+			foreach var of varlist q904 {	
+				replace missing=1 if `var'==.				
+				}		
+			lab values missing yesno		
+
+	tabout missing using "$chartbookdir\FieldCheckTable_COVID19Hospital_`country'_R`round'_$date.xls", append ///
+		cells(freq col) h2("0. Missing survery results (among all interviews)") f(0 1) clab(n %)				
+		
 keep if xresult==1 /*the following calcualtes % missing in select questions among completed interviews*/		
 	
 			capture drop missing
@@ -425,7 +442,7 @@ keep if xresult==1 /*the following calcualtes % missing in select questions amon
 				}		
 			lab values missing yesno
 			
-	tabout missing using "$chartbookdir\FieldCheckTable_CEHS_`country'_ `round'_$date.xls", append ///
+	tabout missing using "$chartbookdir\FieldCheckTable_COVID19Hospital_`country'_R`round'_$date.xls", append ///
 		cells(freq col) h2("1. Missing number of beds when facility provides inpatient services (among completed interviews)") f(0 1) clab(n %)					
 
 			capture drop missing
@@ -554,7 +571,7 @@ restore
 	gen ximst_fun	= q202==1
 	
 	*****************************
-	* Section 3: bed caoacity
+	* Section 3: bed capacity
 	*****************************
 
 	gen byte xipt= q115==1
@@ -571,6 +588,9 @@ restore
 	gen ybed_cap_covid_critical = q303
 	
 	gen ybed_covid_night   = (q304 + q305)/2
+	gen ybed_covid_month = q305b /* KECT - added monthly average COVID occupancy */
+	
+	gen xcovid_occ = ybed_covid_night/q301 /* KECT calculate % of COVID ready beds occupied */
 
 	gen ybed_cap_respiso = q306	
 	gen ybed_convert_respiso = q307
@@ -578,11 +598,13 @@ restore
 	
 	gen xocc_lastnight = 100* (q309 / ybed) /*KEYC review data and confirm*/
 	
+	gen ypt_homecare = q310 /* KECT added number of patients sent home for homebased care */
+	
 	*****************************
 	* Section 4: Therapeutics
 	*****************************
 	/*QUESTION: confirm the number of meds: 10 or 12? currently 12 items incldued, though 10 were asked under "meds" */
-
+/*
 		gen max=12
 		egen temp=rowtotal(q401_*  q402_004 q402_005) /*KEYC edit*/
 	gen xdrug_score	=100*(temp/max)
@@ -608,6 +630,34 @@ restore
 	foreach item in $itemlist{	
 		gen xsupply__`item' = q402_`item'
 		}	
+*/
+	/* KECT - Changed to Kenya specifics with the disinfectants moved to supplies.  Kept the original in case we change our minds */
+		
+		gen max=10
+		egen temp=rowtotal(q401_*) /*KECT use only drugs included in Kenya's q4.1*/
+	gen xdrug_score	=100*(temp/max)
+	gen xdrug_100 	=xdrug_score>=100
+	gen xdrug_50 	=xdrug_score>=50
+		drop max temp
+				
+		gen max=5
+		egen temp=rowtotal(q402_*)  /*KECT use all five supplies in Kenya's q4.2*/
+	gen xsupp_score	=100*(temp/max)
+	gen xsupp_100 	=xsupp_score>=100
+	gen xsupp_50 	=xsupp_score>=50
+		drop max temp
+
+	global itemlist "001 002 003 004 005 006 007 008 009 010" 
+	foreach item in $itemlist{	
+		gen xdrug__`item' = q401_`item' ==1
+		}		
+		*gen xdrug__011 = q402_004  /*KECT edit*/
+		*gen xdrug__012 = q402_005  /*KECT edit*/
+		
+	global itemlist "001 002 003 004 005"	/*KECT edit*/
+	foreach item in $itemlist{	
+		gen xsupply__`item' = q402_`item' ==1
+		}
 
 	*****************************
 	* Section 5: IPC 
@@ -677,9 +727,13 @@ restore
 	gen xtesttransport	=q604==1	
 	
 	/* KEYC revised per numeric var*/
-	gen xtesttime_48	=q605<2 /*less than 2 days*/ 
-	gen xtesttime_72	=q605<3 /*less than 3 days*/ 
-		
+	/* KECT changed categories*/
+	if q605--.{ /*QUESTION - what do we think 0 means? - Currently being treated as less than a day should it be set as missing?*/
+	gen xtesttime_1	=q605<1 	/*Less than a day*/ /*KECT - Chelsea added*/
+	gen xtesttime_2	=q605<2 	/*less than 2 days*/ 
+	gen xtesttime_3 =q605<3 /*less than 3 days*/ 
+	}
+	
 	foreach var of varlist xtesttime*	{
 		replace `var'=. if xtest!=1
 		}
@@ -693,7 +747,7 @@ restore
 		}	
 		
 		gen max=2
-		egen temp =  rowtotal(xspcmitem_100 xtesttime_48 xpcr_equip)
+		egen temp =  rowtotal(xspcmitem_100 xtesttime_3 xpcr_equip)
 	gen xdiagcovid_score = 100*(temp/max)
 	gen xdiagcovid_100	= xdiagcovid_score >=100
 	gen xdiagcovid_50	= xdiagcovid_score >=50
@@ -950,8 +1004,6 @@ use COVID19HospitalReadiness_`country'_R`round'.dta, clear
 save summary_COVID19HospitalReadiness_`country'_R`round'.dta, replace 
 
 export delimited using summary_COVID19HospitalReadiness_`country'_R`round'.csv, replace 
-export delimited using "C:\Users\YoonJoung Choi\Dropbox\0 iSquared\iSquared_WHO\ACTA\4.ShinyAppCEHS\summary_COVID19HospitalReadiness_`country'_R`round'.csv", replace 
-
 
 *****F.2. Export indicator estimate data to chartbook AND dashboard
 
@@ -964,7 +1016,6 @@ use summary_COVID19HospitalReadiness_`country'_R`round'.dta, clear
 	replace updatetime="`time'"
 
 export excel using "$chartbookdir\KEN_Hospital_Chartbook.xlsx", sheet("Indicator estimate data") sheetreplace firstrow(variables) nolabel keepcellfmt
-
 
 erase temp.dta
 

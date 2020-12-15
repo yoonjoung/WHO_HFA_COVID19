@@ -493,7 +493,7 @@ preserve
 	tabout submitdate_string1 using "$chartbookdir\FieldCheckTable_CEHS_`country'_R`round'_$date.xls", append ///
 		cells(freq col) h2("Date of interviews (submission date, final)") f(0 1) clab(n %)
 			
-			gen xresult=q1101==1
+			gen xresult=q1104==1
 			
 			gen byte responserate= xresult==1
 			label define responselist 0 "Not complete" 1 "Complete"
@@ -533,7 +533,7 @@ preserve
 
 			capture drop missing
 			gen missing=0
-			foreach var of varlist q1101 {	
+			foreach var of varlist q1104 {	
 				replace missing=1 if `var'==.				
 				}		
 			lab values missing yesno		
@@ -1416,7 +1416,7 @@ use CEHS_`country'_R`round'.dta, clear
 		gen obshmis_`item' =1 if (temp>0 & temp!=.)
 		}			
 	
-	gen xresult=q1101==1
+	gen xresult=q1104==1
 	*keep if xresult==1 ///* THIS SHOULD BE updated once we have enough n *//
 	
 	save temp.dta, replace 
@@ -1504,7 +1504,6 @@ use summary_CEHS_`country'_R`round'.dta, clear
 	replace updatetime="`time'"
 	
 export excel using "$chartbookdir\KEN_CEHS_Chartbook.xlsx", sheet("Indicator estimate data") sheetreplace firstrow(variables) nolabel keepcellfmt
-*export excel using "$chartbookdir\CEHS_Chartbook_slides.xlsx", sheet("Indicator estimate data") sheetreplace firstrow(variables) nolabel keepcellfmt
 
 erase temp.dta
 
