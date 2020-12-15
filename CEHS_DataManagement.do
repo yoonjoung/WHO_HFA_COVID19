@@ -1098,19 +1098,19 @@ restore
 
 	global itemlist "001 002 003 004 005 006 007 008 009 010 011 012 013 014 015 016 017" 
 	foreach item in $itemlist{	
-		gen xdrug__`item' = q701_`item'
+		gen xdrug__`item' = q701_`item' ==1
 		}		
 		
 	global itemlist "001 002 003" 
 	foreach item in $itemlist{	
-		gen xsupply__`item' = q702_`item'
+		gen xsupply__`item' = q702_`item' ==1
 		}	
 		
 	gen xvaccine_child=q409_005>=1 & q409_005<=3	
 		
 	global itemlist "001 002 003 004 005"
 	foreach item in $itemlist{	
-		gen xvaccine__`item' = q703_`item'
+		gen xvaccine__`item' = q703_`item' ==1
 		}	
 
 	foreach var of varlist xvac_* xvaccine__*{	
@@ -1369,6 +1369,10 @@ use CEHS_`country'_R`round'.dta, clear
 		egen temp	= rowtotal(vol_`item'_*)
 		gen obshmis_`item' =1 if (temp>0 & temp!=.)
 		}			
+	
+	gen xresult=q1101==1
+		replace xresult=1 /*DELETE this line with real data*/
+	keep if xresult==1 
 	
 	save temp.dta, replace 
 	

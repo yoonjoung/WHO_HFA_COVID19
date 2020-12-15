@@ -322,7 +322,7 @@ month&lt;-12               #month of the mid point in data collection
 
 obsraw&lt;-nrow(dtaraw)
 cols&lt;-ncol(dtaraw)</code></pre>
-<p>As of 2020-12-14 14:47:52, the downloaded raw data has 8 observations and 142 variables.</p>
+<p>As of 2020-12-15 11:29:00, the downloaded raw data has 8 observations and 142 variables.</p>
 <p>Then, export the raw data into the chartbook (green tab: “Facility-level raw data”) - as is.</p>
 <hr />
 </div>
@@ -612,7 +612,7 @@ str(dta$q602_001)</code></pre>
 </div>
 <div id="d.-create-field-check-tables" class="section level4">
 <h4>D. Create field check tables</h4>
-<p>As of 2020-12-14, the following are “field check tables.” In Stata program, xls file is created. In R, the results are directly presented in this markdown file.</p>
+<p>As of 2020-12-15, the following are “field check tables.” In Stata program, xls file is created. In R, the results are directly presented in this markdown file.</p>
 <pre class="r"><code>dtacheck&lt;-dta%&gt;%
     mutate(
         updatedate= as.character(as.Date(Sys.time(  ), format='%d%b%Y')), 
@@ -637,7 +637,7 @@ str(dta$q602_001)</code></pre>
 <p><strong>Assess interview characteristics among all interviews.</strong></p>
 <pre class="r"><code># Date of field check table update and the total number of interviews
 print(date)</code></pre>
-<p>[1] “2020-12-14”</p>
+<p>[1] “2020-12-15”</p>
 <pre class="r"><code># Date of interviews (submission date, final)
 table(dtacheck$date)</code></pre>
 <p>2020-09-21 2020-09-25 2020-09-28 2020-10-01 2020-10-12 2020-10-14 12 12 12 12 24 12</p>
@@ -880,7 +880,9 @@ dta&lt;-dta%&gt;%
 
 dta&lt;-dta%&gt;%
     rename_all(.funs = funs(sub(&quot;q401_&quot;, &quot;xdrug__&quot;, .)))%&gt;%     
-    rename_all(.funs = funs(sub(&quot;q402_&quot;, &quot;xsupply__&quot;, .)))</code></pre>
+    rename_all(.funs = funs(sub(&quot;q402_&quot;, &quot;xsupply__&quot;, .)))%&gt;%
+    mutate_at(vars(starts_with(&quot;xdrug__&quot;), starts_with(&quot;xsupply__&quot;)), 
+              ~replace(., is.na(.)==TRUE, 0))</code></pre>
 <pre class="r"><code>#####* Section 5: IPC 
 dta&lt;-dta%&gt;%
     mutate( 
@@ -1287,7 +1289,7 @@ colnames(dtasummary[ , 1:10])</code></pre>
 <h5>F.2. Export indicator estimate data to chart book</h5>
 <pre class="r"><code>write.csv(dtasummary, paste0(&quot;summary_COVID19HospitalReadiness_&quot;, country, &quot;_R&quot;, round, &quot;.csv&quot;))</code></pre>
 <hr />
-<p>(Last updated: 2020-12-14 14:47:52)<br />
+<p>(Last updated: 2020-12-15 11:29:00)<br />
 END OF MARKDOWN FILE</p>
 </div>
 </div>

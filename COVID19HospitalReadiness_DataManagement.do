@@ -575,12 +575,12 @@ restore
 	global itemlist "001 002 003 004 005 006 007 008 009 010 011 012" 
 	*global itemlist "a b c d e f g h i j k l" 
 	foreach item in $itemlist{	
-		gen xdrug__`item' = q401_`item'
+		gen xdrug__`item' = q401_`item' ==1
 		}		
 	global itemlist "001 002 003"	
 	*global itemlist "a b c" 
 	foreach item in $itemlist{	
-		gen xsupply__`item' = q402_`item'
+		gen xsupply__`item' = q402_`item' ==1
 		}	
 
 	*****************************
@@ -856,7 +856,6 @@ import excel "$chartbookdir\WHO_COVID19HospitalReadiness_Chartbook.xlsx", sheet(
 **************************************************************
 * F. Create indicator estimate data 
 **************************************************************
-foreach round in 1 2 3 {
 use COVID19HospitalReadiness_`country'_R`round'.dta, clear
 	
 	gen obs=1 	
@@ -866,6 +865,10 @@ use COVID19HospitalReadiness_`country'_R`round'.dta, clear
 	gen obs_spcm=1 	if xspcm==1
 	gen obs_test=1 	if xtest==1
 	gen obs_pcr=1 	if xpcr==1
+	
+	gen xresult=q901==1
+		replace xresult=1 /*DELETE this line with real data*/
+	keep if xresult==1 
 	
 	save temp.dta, replace 
 	
@@ -929,11 +932,10 @@ save summary_COVID19HospitalReadiness_`country'_R`round'.dta, replace
 
 export delimited using summary_COVID19HospitalReadiness_`country'_R`round'.csv, replace 
 export delimited using "C:\Users\YoonJoung Choi\Dropbox\0 iSquared\iSquared_WHO\ACTA\4.ShinyAppCEHS\summary_COVID19HospitalReadiness_`country'_R`round'.csv", replace 
-}
 
 *****F.2. Export indicator estimate data to chartbook AND dashboard
 
-use summary_COVID19HospitalReadiness_GreecePilot_R1.dta, replace 
+use summary_COVID19HospitalReadiness_`country'_R`round'.dta, clear
 
 	gen updatedate = "$date"
 

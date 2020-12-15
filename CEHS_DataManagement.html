@@ -291,9 +291,10 @@ div.tocify {
 1. Imports and cleans Continuity of Essential Health Services (aka “EHS”) dataset from Lime Survey (i.e., green and blue tabs in the chartbook),<br />
 2. Creates field check tables for data quality monitoring, and<br />
 3. Creates indicator estimate data for dashboards and chartbook (purple tab in the chartbook).</p>
-<p><span style="color: blue;"> <strong>TWO parts must be updated per country-specific adaptation.</strong><br />
+<p><span style="color: blue;"> <strong>THREE parts must be updated per country-specific adaptation.</strong><br />
 1. Directories and local macro in <strong>A. SETTING</strong> per survey implementation information<br />
-2. Local macro in <strong>E.1. Country speciic code local</strong> per section 1</span></p>
+2. Local macro in <strong>E.1. Country speciic code local</strong> per section 1<br />
+3. Staff variables in <strong>E.2. Construct analysis variables</strong> per section 2</span></p>
 <hr />
 <div id="a.-setting" class="section level4">
 <h4>A. SETTING</h4>
@@ -323,7 +324,7 @@ month&lt;-12               #month of the mid point in data collection
 
 obsraw&lt;-nrow(dtaraw)
 cols&lt;-ncol(dtaraw)</code></pre>
-<p>As of 2020-12-14 14:48:19, the downloaded raw data has 10 observations and 360 variables.</p>
+<p>As of 2020-12-15 11:31:00, the downloaded raw data has 10 observations and 360 variables.</p>
 <p>Then, export the raw data into the chartbook (green tab: “Facility-level raw data”) - as is.</p>
 <hr />
 </div>
@@ -695,7 +696,7 @@ dta[varlist][dta[varlist] == 3 ] &lt;- NA #not applicable</code></pre>
 </div>
 <div id="d.-create-field-check-tables" class="section level4">
 <h4>D. Create field check tables</h4>
-<p>As of 2020-12-14, the following are “field check tables.” In Stata program, xls file is created. In R, the results are directly presented in this markdown file.</p>
+<p>As of 2020-12-15, the following are “field check tables.” In Stata program, xls file is created. In R, the results are directly presented in this markdown file.</p>
 <pre class="r"><code>dtacheck&lt;-dta%&gt;%
     mutate(
         updatedate= as.character(as.Date(Sys.time(  ), format='%d%b%Y')), 
@@ -720,7 +721,7 @@ dta[varlist][dta[varlist] == 3 ] &lt;- NA #not applicable</code></pre>
 <p><strong>Assess interview characteristics among all interviews.</strong></p>
 <pre class="r"><code># Date of field check table update and the total number of interviews
 print(date)</code></pre>
-<p>[1] “2020-12-14”</p>
+<p>[1] “2020-12-15”</p>
 <pre class="r"><code># Date of interviews (submission date, final)
 table(dtacheck$date)</code></pre>
 <p>2020-09-09 2020-09-21 2020-09-23 2020-09-25 2020-09-28 2020-10-01 12 12 12 12 12 12 2020-10-09 2020-10-12 2020-10-14 12 12 12</p>
@@ -1405,7 +1406,9 @@ dta&lt;-dta%&gt;%
         )%&gt;%
     rename_all(.funs = funs(sub(&quot;q701_&quot;, &quot;xdrug__&quot;, .)))%&gt;%     
     rename_all(.funs = funs(sub(&quot;q702_&quot;, &quot;xsupply__&quot;, .)))%&gt;%   
-    rename_all(.funs = funs(sub(&quot;q702_&quot;, &quot;xvaccine__&quot;, .)))%&gt;%   
+    rename_all(.funs = funs(sub(&quot;q703_&quot;, &quot;xvaccine__&quot;, .)))%&gt;%   
+    mutate_at(vars(starts_with(&quot;xdrug__&quot;), starts_with(&quot;xsupply__&quot;), starts_with(&quot;xvaccine__&quot;)), 
+              ~replace(., is.na(.)==TRUE, 0))%&gt;%
     mutate(
         xvaccine_child=q409_005&gt;=1 &amp; q409_005&lt;=3
     )%&gt;%
@@ -1761,7 +1764,7 @@ colnames(dtasummary[ , 1:10])</code></pre>
 <h5>F.2. Export indicator estimate data to chart book</h5>
 <pre class="r"><code>write.csv(dtasummary, paste0(&quot;summary_CEHS_&quot;, country, &quot;_R&quot;, round, &quot;.csv&quot;))</code></pre>
 <hr />
-<p>(Last updated: 2020-12-14 14:48:19)<br />
+<p>(Last updated: 2020-12-15 11:31:00)<br />
 END OF MARKDOWN FILE</p>
 </div>
 </div>

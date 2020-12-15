@@ -699,7 +699,9 @@ dta<-dta%>%
 
 dta<-dta%>%
     rename_all(.funs = funs(sub("q401_", "xdrug__", .)))%>%     
-    rename_all(.funs = funs(sub("q402_", "xsupply__", .)))
+    rename_all(.funs = funs(sub("q402_", "xsupply__", .)))%>%
+    mutate_at(vars(starts_with("xdrug__"), starts_with("xsupply__")), 
+              ~replace(., is.na(.)==TRUE, 0))
 ```
 
 ```{r section5}
