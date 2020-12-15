@@ -47,6 +47,7 @@ numlabel, add
 *** Directory for this do file and a subfolder for "daily exported CSV file from LimeSurvey"  
 cd "C:\Users\YoonJoung Choi\World Health Organization\BANICA, Sorin - HSA unit\1 Admin\Countires\Country Surveys\Pilot Kenya\CEHS\"
 dir
+ok
 
 *** Define a directory for the chartbook, if different from the main directory 
 global chartbookdir "C:\Users\YoonJoung Choi\World Health Organization\BANICA, Sorin - HSA unit\1 Admin\Countires\Country Surveys\Pilot Kenya\CEHS\"
