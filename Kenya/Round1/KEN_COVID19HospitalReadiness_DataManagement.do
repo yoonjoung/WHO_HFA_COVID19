@@ -927,6 +927,8 @@ import excel "$chartbookdir\KEN_Hospital_Chartbook.xlsx", sheet("Weight") firstr
 	
 	save COVID19HospitalReadiness_`country'_R`round'.dta, replace 		
 
+	export delimited using COVID19HospitalReadiness_`country'_R`round'.csv, replace 
+
 	export excel using "$chartbookdir\KEN_Hospital_Chartbook.xlsx", sheet("Facility-level cleaned data") sheetreplace firstrow(variables) nolabel
 			
 **************************************************************
