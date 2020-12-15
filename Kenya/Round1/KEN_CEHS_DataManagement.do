@@ -70,7 +70,7 @@ global date=subinstr("`c_today'", " ", "",.)
 
 import delimited 10122020_results-survey769747_codes.csv, case(preserve) clear 
 	
-	gen test1="$date" /*KE YC: delete this line after confirming program running correctly*/
+	gen test1="$date" /*KEYC: delete this line after confirming program running correctly*/
 	
 	export excel using "$chartbookdir\KEN_CEHS_Chartbook.xlsx", sheet("Facility-level raw data") sheetreplace firstrow(variables) nolabel
 
@@ -82,7 +82,7 @@ import delimited 10122020_results-survey769747_codes.csv, case(preserve) clear
 	
 	*drop if id==. 
 	codebook ïid
-	drop if ïid==. /*KE YC edit: from "id" to "iid" */
+	drop if ïid==. /*KEYC edit: from "id" to "iid" */
 
 	/*check duplicate cases, based on facility code*/
 	duplicates tag q101, gen(duplicate) 
@@ -102,8 +102,6 @@ import delimited 10122020_results-survey769747_codes.csv, case(preserve) clear
 	
 	drop if duplicate==1 & submitdate!=submitdatelatest 
 	
-	/*confirm there's no duplicate cases, based on facility code, facility name, location and type*/
-	*duplicates report q101 q102 q104 q105,
 	/*confirm there's no duplicate cases, based on facility code*/
 	duplicates report q101,
 
@@ -119,7 +117,7 @@ import delimited 10122020_results-survey769747_codes.csv, case(preserve) clear
 	
 *****C.2. Change var names to drop odd elements "y" "sq" - because of Lime survey's naming convention 
 
-	//*KE YC edit begins*//
+	//*KEYC edit begins*//
 	drop q*time /*timestamp var*/
 	drop grouptime* 
 	
@@ -143,7 +141,7 @@ import delimited 10122020_results-survey769747_codes.csv, case(preserve) clear
 	rename (q201_*_a1) (q201_*_001)
 	rename (q201_*_a2) (q201_*_002)
 	
-	//*KE YC edit ends*//
+	//*KEYC edit ends*//
 	
 *****C.3. Find non-numeric variables and desting 
 
@@ -196,7 +194,7 @@ import delimited 10122020_results-survey769747_codes.csv, case(preserve) clear
 		destring `var', replace 
 		}	
 		
-	//*KE YC edit begins*//
+	//*KEYC edit begins*//
 	gen RAWq410_007 = q410_other 
 	gen q410_007=""
 		replace q410_007 = "1" if q410_other!=. /*""*/
@@ -208,7 +206,7 @@ import delimited 10122020_results-survey769747_codes.csv, case(preserve) clear
 		replace q411_012 = "1" if q411_other!=""
 		replace q411_012 = "0" if q411_other==""
 		destring q411_012, replace		
-	//*KE YC edit ends*//
+	//*KEYC edit ends*//
 	
 	sum q4*
 	
@@ -364,7 +362,7 @@ import delimited 10122020_results-survey769747_codes.csv, case(preserve) clear
 		4"4. Other"; 
 	lab values q3041 q3041; 
 	
-	/* KE YC edit - but change this in the core too
+	/* KEYC edit - but change this in the core too
 	lab define q305
 		1"1. Yes – for COVID-19 case management services"
 		2"2. Yes – for other essential health services"
@@ -429,7 +427,7 @@ import delimited 10122020_results-survey769747_codes.csv, case(preserve) clear
 	lab values `var' ppe;	
 	};		
 
-	/* KE YC edit - but change this in the core too
+	/* KEYC edit - but change this in the core too
 	lab define q604
 		1"1.Yes, PCR"
 		2"2.Yes, RDT"
@@ -493,35 +491,35 @@ preserve
 
 			gen updatedate = "$date"
 	
-	tabout updatedate using "$chartbookdir\FieldCheckTable_CEHS_`country'_ `round'_$date.xls", replace ///
+	tabout updatedate using "$chartbookdir\FieldCheckTable_CEHS_`country'_R`round'_$date.xls", replace ///
 		cells(freq col) h2("Date of field check table update") f(0 1) clab(n %)
 
 			split submitdate_string, p(" ")
 			gen date=date(submitdate_string1, "MDY") 
 			format date %td
 						
-	tabout submitdate_string1 using "$chartbookdir\FieldCheckTable_CEHS_`country'_ `round'_$date.xls", append ///
+	tabout submitdate_string1 using "$chartbookdir\FieldCheckTable_CEHS_`country'_R`round'_$date.xls", append ///
 		cells(freq col) h2("Date of interviews (submission date, final)") f(0 1) clab(n %)
 			
 			gen xresult=q1101
-			//*KE YC edit: TEMPORARY, since xresult==0 in pilot. DELETE the next line when possible, ASAP *//
+			//*KEYC edit: TEMPORARY, since xresult==0 in pilot. DELETE the next line when possible, ASAP *//
 				replace xresult=1
 
 			gen byte responserate= xresult==1
 			label define responselist 0 "Not complete" 1 "Complete"
 			label val responserate responselist
 
-	tabout responserate using "$chartbookdir\FieldCheckTable_CEHS_`country'_ `round'_$date.xls", append ///
+	tabout responserate using "$chartbookdir\FieldCheckTable_CEHS_`country'_R`round'_$date.xls", append ///
 		cells(freq col) h2("Interview response rate") f(0 1) clab(n %)
 	
-	tabout q104 using "$chartbookdir\FieldCheckTable_CEHS_`country'_ `round'_$date.xls", append ///
+	tabout q104 using "$chartbookdir\FieldCheckTable_CEHS_`country'_R`round'_$date.xls", append ///
 		cells(freq col) h2("Number of completed interviews by area") f(0 1) clab(n %)
 		
-	tabout q105 using "$chartbookdir\FieldCheckTable_CEHS_`country'_ `round'_$date.xls", append ///
+	tabout q105 using "$chartbookdir\FieldCheckTable_CEHS_`country'_R`round'_$date.xls", append ///
 		cells(freq col) h2("Number of completed interviews by hospital type") f(0 1) clab(n %)		
 
-			gen double starttime = clock(startdate, "YMD hms") //*KE YC edit: format*//
-			gen double endtime = clock(datestamp, "YMD hms") //*KE YC edit: format*//
+			gen double starttime = clock(startdate, "YMD hms") //*KEYC edit: format*//
+			gen double endtime = clock(datestamp, "YMD hms") //*KEYC edit: format*//
 			format %tc starttime
 			format %tc endtime
 			gen double time = (endtime- starttime)/(1000*60) /*interview length in minute*/
@@ -534,11 +532,11 @@ preserve
 				replace time_complete = round(time_complete, .1)
 				replace time_incomplete = round(time_incomplete, .1)
 
-	tabout time xresult using "$chartbookdir\FieldCheckTable_CEHS_`country'_ `round'_$date.xls", append ///
+	tabout time xresult using "$chartbookdir\FieldCheckTable_CEHS_`country'_R`round'_$date.xls", append ///
 		cells(freq col) h2("Interview length (minutes): incomplete, complete, and total interviews") f(0 1) clab(n %)	
-	tabout time_complete using "$chartbookdir\FieldCheckTable_CEHS_`country'_ `round'_$date.xls", append ///
+	tabout time_complete using "$chartbookdir\FieldCheckTable_CEHS_`country'_R`round'_$date.xls", append ///
 		cells(freq col) h2("Average interview length (minutes), among completed interviews") f(0 1) clab(n %)		
-	tabout time_incomplete using "$chartbookdir\FieldCheckTable_CEHS_`country'_ `round'_$date.xls", append ///
+	tabout time_incomplete using "$chartbookdir\FieldCheckTable_CEHS_`country'_R`round'_$date.xls", append ///
 		cells(freq col) h2("Average interview length (minutes), among incomplete interviews") f(0 1) clab(n %)	
 
 keep if xresult==1 /*the following calcualtes % missing in select questions among completed interviews*/		
@@ -551,7 +549,7 @@ keep if xresult==1 /*the following calcualtes % missing in select questions amon
 				}		
 			lab values missing yesno
 			
-	tabout missing using "$chartbookdir\FieldCheckTable_CEHS_`country'_ `round'_$date.xls", append ///
+	tabout missing using "$chartbookdir\FieldCheckTable_CEHS_`country'_R`round'_$date.xls", append ///
 		cells(freq col) h2("1. Missing number of beds when facility provides inpatient services (among completed interviews)") f(0 1) clab(n %)					
 
 			capture drop missing
@@ -561,7 +559,7 @@ keep if xresult==1 /*the following calcualtes % missing in select questions amon
 				}		
 			lab values missing yesno		
 
-	tabout missing using "$chartbookdir\FieldCheckTable_CEHS_`country'_ `round'_$date.xls", append ///
+	tabout missing using "$chartbookdir\FieldCheckTable_CEHS_`country'_R`round'_$date.xls", append ///
 		cells(freq col) h2("2. Missing number of nurses (either the total number or the number who have been infected) (among completed interviews)") f(0 1) clab(n %)					
 
 			capture drop missing
@@ -571,7 +569,7 @@ keep if xresult==1 /*the following calcualtes % missing in select questions amon
 				}		
 			lab values missing yesno		
 
-	tabout missing using "$chartbookdir\FieldCheckTable_CEHS_`country'_ `round'_$date.xls", append ///
+	tabout missing using "$chartbookdir\FieldCheckTable_CEHS_`country'_R`round'_$date.xls", append ///
 		cells(freq col) h2("3. Missing salary payment ontime (among completed interviews)") f(0 1) clab(n %)					
 		
 			capture drop missing
@@ -581,7 +579,7 @@ keep if xresult==1 /*the following calcualtes % missing in select questions amon
 				}		
 			lab values missing yesno		
 
-	tabout missing using "$chartbookdir\FieldCheckTable_CEHS_`country'_ `round'_$date.xls", append ///
+	tabout missing using "$chartbookdir\FieldCheckTable_CEHS_`country'_R`round'_$date.xls", append ///
 		cells(freq col) h2("4. Missing service strategy change (among completed interviews)") f(0 1) clab(n %)							
 		
 			capture drop missing
@@ -591,7 +589,7 @@ keep if xresult==1 /*the following calcualtes % missing in select questions amon
 				}		
 			lab values missing yesno		
 
-	tabout missing using "$chartbookdir\FieldCheckTable_CEHS_`country'_ `round'_$date.xls", append ///
+	tabout missing using "$chartbookdir\FieldCheckTable_CEHS_`country'_R`round'_$date.xls", append ///
 		cells(freq col) h2("5. Missing OPT service volume change (among completed interviews)") f(0 1) clab(n %)							
 		
 			capture drop missing
@@ -601,7 +599,7 @@ keep if xresult==1 /*the following calcualtes % missing in select questions amon
 				}		
 			lab values missing yesno		
 
-	tabout missing using "$chartbookdir\FieldCheckTable_CEHS_`country'_ `round'_$date.xls", append ///
+	tabout missing using "$chartbookdir\FieldCheckTable_CEHS_`country'_R`round'_$date.xls", append ///
 		cells(freq col) h2("6. Missing catch-up/restroation (among completed interviews)") f(0 1) clab(n %)							
 			
 			capture drop missing
@@ -611,7 +609,7 @@ keep if xresult==1 /*the following calcualtes % missing in select questions amon
 				}		
 			lab values missing yesno		
 
-	tabout missing using "$chartbookdir\FieldCheckTable_CEHS_`country'_ `round'_$date.xls", append ///
+	tabout missing using "$chartbookdir\FieldCheckTable_CEHS_`country'_R`round'_$date.xls", append ///
 		cells(freq col) h2("7. Missing PPE availability (among completed interviews)") f(0 1) clab(n %)							
 			
 			*REVISE CODE FOR SECTION 6 VARIABLES
@@ -623,7 +621,7 @@ keep if xresult==1 /*the following calcualtes % missing in select questions amon
 				}		
 			lab values missing yesno		
 
-	tabout missing using "$chartbookdir\FieldCheckTable_CEHS_`country'_ `round'_$date.xls", append ///
+	tabout missing using "$chartbookdir\FieldCheckTable_CEHS_`country'_R`round'_$date.xls", append ///
 		cells(freq col) h2("8. Missing specimen transportation systems (among completed interviews)") f(0 1) clab(n %)							
 	
 restore
@@ -711,7 +709,7 @@ restore
 	egen staff_num_total_nr=rowtotal(q201_002_001)
 	egen staff_num_covid_nr=rowtotal(q201_002_002)
 
-	///* KE YC edit begins: no midwife category 
+	///* KEYC edit begins: no midwife category 
 	egen staff_num_total_co=rowtotal(q201_003_001)
 	egen staff_num_covid_co=rowtotal(q201_003_002)
 
@@ -723,7 +721,7 @@ restore
 	
 	egen staff_num_total_nonclinical=rowtotal(q201_009_001 q201_010_001 )
 	egen staff_num_covid_nonclinical=rowtotal(q201_009_002 q201_010_002 )
-	* KE YC Edit ends///
+	* KEYC Edit ends///
 	
 	egen staff_num_total_all=rowtotal(staff_num_total_clinical staff_num_total_nonclinical) 
 	egen staff_num_covid_all=rowtotal(staff_num_covid_clinical staff_num_covid_nonclinical) 
@@ -782,16 +780,16 @@ restore
 	*****************************
 	
 	gen xuserfee=		q301==1
-	gen xexempt= 		q302==1 | q302==2 | q302==3 /*| q303==1 : KE YC edit: no q303 in Kenya */
+	gen xexempt= 		q302==1 | q302==2 | q302==3 /*| q303==1 : KEYC edit: no q303 in Kenya */
 	gen xexempt_covid= 	q302==1 | q302==3
 	gen xexempt_other= 	q302==2 | q302==3	
-	*gen xexempt_vulnp= 	q303==1 : KE YC edit : no q303 in Kenya*/
+	*gen xexempt_vulnp= 	q303==1 : KEYC edit : no q303 in Kenya*/
 	gen xfeeincrease= 	q304==1 
 		
 		foreach var of varlist xexempt* xfee{
 			replace `var'=. if xuserfee!=1
 			}
-	/*KE YC edit begins - may become part of standard - check q305 and q306
+	/*KEYC edit begins - may become part of standard - check q305 and q306
 	gen xaddfund = q305==1 | q305==2
 	gen xaddfund_gov = q306==1 
 	gen xaddfund_other = q306>=2 & q306!=. 
@@ -884,12 +882,12 @@ restore
 	foreach var in $varlist {
 		gen `var'_reason_covidnow 	= `var'_reason__001==1 | `var'_reason__002==1  
 		gen `var'_reason_covidafter = `var'_reason__003==1 | `var'_reason__004==1 | `var'_reason__005==1 
-		gen `var'_reason_gbv	    = `var'_reason__006==1 //* KE YC edit*//
+		gen `var'_reason_gbv	    = `var'_reason__006==1 //* KEYC edit*//
 		}		
 		
 	global varlist "xopt_decrease"
 	foreach var in $varlist {
-		gen `var'_reason_comdemand  = `var'_reason__001==1 | `var'_reason__002==1  | `var'_reason__005==1  //* KE YC edit*//
+		gen `var'_reason_comdemand  = `var'_reason__001==1 | `var'_reason__002==1  | `var'_reason__005==1  //* KEYC edit*//
 		gen `var'_reason_enviro 	= `var'_reason__003==1 | `var'_reason__004==1 
 		gen `var'_reason_intention	= `var'_reason__007==1 | `var'_reason__008==1 | `var'_reason__009==1 | `var'_reason__010==1  
 		gen `var'_reason_disruption = `var'_reason__011==1 | `var'_reason__012==1 
@@ -969,7 +967,7 @@ restore
 	
 	***** missed appointment 
 	
-	//* KE YC edit for HIV and TB line items*/
+	//* KEYC edit for HIV and TB line items*/
 	gen xresto = q418==1 & q419==1	
 	gen xresto_imp_preg 	= q420_001==1 
 	gen xresto_imp_immunization 	= q420_002==1 
@@ -1030,7 +1028,7 @@ restore
 	gen xipcpp= q501==1
 	
 	gen xsafe= q502==1
-	global itemlist "001 002 003 004 005 006 007 008 009 010" /*KE YC edit*/
+	global itemlist "001 002 003 004 005 006 007 008 009 010" /*KEYC edit*/
 	foreach item in $itemlist{	
 		gen xsafe__`item' = q503_`item' ==1
 		}		
@@ -1043,7 +1041,7 @@ restore
 		drop max temp
 			
 	gen xguideline= q504
-	global itemlist "001 002 003 004 005 006" /*KE YC edit*/
+	global itemlist "001 002 003 004 005 006" /*KEYC edit*/
 	foreach item in $itemlist{	
 		gen xguideline__`item' = q505_`item' ==1
 		}		
@@ -1080,7 +1078,7 @@ restore
 	gen xppe_all_50 		=xppe_all_score>=50
 		drop max temp
 
-	gen xppedispose = q508==1 /*KE YC edit*/
+	gen xppedispose = q508==1 /*KEYC edit*/
 	
 	sum xipc* xsafe* xguideline* xppe*
 	
@@ -1135,7 +1133,7 @@ restore
 	gen xcvd_info = q610==1	
 
 	gen xcvd_info_moh 	= q610==1	& q611_001==1
-	*gen xcvd_info_subcounty	= q610==1	& (q611_002==1 | q611_003==1) /*KE YC edit*/
+	*gen xcvd_info_subcounty	= q610==1	& (q611_002==1 | q611_003==1) /*KEYC edit*/
 	gen xcvd_info_county	= q610==1	& q611_002==1
 	gen xcvd_info_subcounty	= q610==1	& q611_003==1
 	gen xcvd_info_who 	= q610==1	& q611_004==1
@@ -1195,7 +1193,7 @@ restore
 	*****************************
 	* Section 8: 
 	*****************************
-	/* KE YC: lot of edit expected. Need to see data first
+	/* KEYC: lot of edit expected. Need to see data first
 	
 	gen xdiag=q804==1
 	
@@ -1357,7 +1355,7 @@ restore
 	save CEHS_`country'_R`round'.dta, replace 		
 
 *****E.3. Merge with sampling weight 
-/*KE YC edit : no sampling weight in Kenya. This section not relevant for Kenya 	
+/*KEYC edit : no sampling weight in Kenya. This section not relevant for Kenya 	
 import excel "$chartbookdir\KEN_CEHS_Chartbook.xlsx", sheet("Weight") firstrow clear
 	rename *, lower
 	sort facilitycode
@@ -1370,12 +1368,12 @@ import excel "$chartbookdir\KEN_CEHS_Chartbook.xlsx", sheet("Weight") firstrow c
 	save CEHS_`country'_R`round'.dta, replace 			
 */	
 
-	gen weight=1 /*KE YC edit : create weight=1 to make the program run*/
+	gen weight=1 /*KEYC edit : create weight=1 to make the program run*/
 
 	
 *****E.4. Export clean facility-level data to chart book 
 
-	gen test2="$date" /*KE YC: delete this line after confirming program running correctly*/
+	gen test2="$date" /*KEYC: delete this line after confirming program running correctly*/
 	
 	save CEHS_`country'_R`round'.dta, replace 		
 
@@ -1455,7 +1453,7 @@ use CEHS_`country'_R`round'.dta, clear
 				}
 	
 	* generate staff infection rates useing the pooled data	
-	global itemlist "md nr co othclinical clinical nonclinical all" /*KE YC edit*/
+	global itemlist "md nr co othclinical clinical nonclinical all" /*KEYC edit*/
 	foreach item in $itemlist{	
 		gen staff_pct_covid_`item' = round(100* (staff_num_covid_`item' / staff_num_total_`item' ), 0.1)
 		}	
