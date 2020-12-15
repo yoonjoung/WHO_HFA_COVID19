@@ -866,7 +866,7 @@ use COVID19HospitalReadiness_`country'_R`round'.dta, clear
 	gen obs_test=1 	if xtest==1
 	gen obs_pcr=1 	if xpcr==1
 	
-	gen xresult=q901==1
+	gen xresult=q904==1
 		replace xresult=1 /*DELETE this line with real data*/
 	keep if xresult==1 
 	

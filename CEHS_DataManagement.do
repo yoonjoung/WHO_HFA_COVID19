@@ -436,7 +436,7 @@ preserve
 	tabout submitdate_string1 using "$chartbookdir\FieldCheckTable_CEHS_`country'_ `round'_$date.xls", append ///
 		cells(freq col) h2("Date of interviews (submission date, final)") f(0 1) clab(n %)
 			
-			gen xresult=q1101
+			gen xresult=q1104
 				replace xresult=1 /*DELETE this line with real data*/
 				
 			gen byte responserate= xresult==1
@@ -1370,7 +1370,7 @@ use CEHS_`country'_R`round'.dta, clear
 		gen obshmis_`item' =1 if (temp>0 & temp!=.)
 		}			
 	
-	gen xresult=q1101==1
+	gen xresult=q1104==1
 		replace xresult=1 /*DELETE this line with real data*/
 	keep if xresult==1 
 	
