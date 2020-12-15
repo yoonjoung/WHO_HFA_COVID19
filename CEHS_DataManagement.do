@@ -16,7 +16,7 @@ numlabel, add
 *		2. cleaned data with additional analytical variables in Chartbook and, for further analyses, as a datafile 
 *		3. summary estimates of indicators in Chartbook and, for dashboards, as a datafile 	
 
-*TWO parts must be updated per country-specific adaptation. See "MUST BE ADAPTED" below 
+*THREE parts must be updated per country-specific adaptation. See "MUST BE ADAPTED" below 
 
 /* TABLE OF CONTENTS*/
 
@@ -33,12 +33,13 @@ numlabel, add
 * D. Create field check tables 
 * E. Create analytical variables 
 *****E.1. Country speciic code local <<<<<<<<<<========== MUST BE ADAPTED: 2. local per survey implementation and section 1 
-*****E.2. Construct analysis variables 
+*****E.2. Construct analysis variables <<<<<<<<<<========== MUST BE ADAPTED: 3. country specific staffing - section 2 
 *****E.3. Merge with sampling weight 
 *****E.4. Export clean Respondent-level data to chart book 
 * F. Create and export indicator estimate data 
 *****F.1. Calculate estimates 
 *****F.2. Export indicator estimate data to chart book 
+
 
 **************************************************************
 * A. SETTING 
@@ -475,8 +476,9 @@ keep if xresult==1 /*the following calcualtes % missing in select questions amon
 		
 			capture drop missing
 			gen missing=0
-			foreach var of varlist q114 q115 {	
+			foreach var of varlist q116 q117 {	
 				replace missing=1 if `var'==.
+				replace missing=. if q115!=1
 				}		
 			lab values missing yesno
 			
@@ -634,43 +636,30 @@ restore
 	*****************************
 	* Section 2: staffing 
 	*****************************
-	/*
-	egen staff_num_total=rowtotal(q201_*_01 )
-	egen staff_num_covid=rowtotal(q201_*_02 )
-	gen  xstaff_pct_covid= (staff_num_covid/staff_num_total)
-	*/
 	
 	egen staff_num_total_md=rowtotal(q201_001_001)
 	egen staff_num_covid_md=rowtotal(q201_001_002)
-	gen  xstaff_pct_covid_md= 100*(staff_num_covid_md/staff_num_total_md)	
 	
 	egen staff_num_total_nr=rowtotal(q201_002_001)
 	egen staff_num_covid_nr=rowtotal(q201_002_002)
-	gen  xstaff_pct_covid_nr= 100*(staff_num_covid_nr/staff_num_total_nr)		
 
 	egen staff_num_total_mw=rowtotal(q201_003_001)
 	egen staff_num_covid_mw=rowtotal(q201_003_002)
-	gen  xstaff_pct_covid_mw= 100*(staff_num_covid_mw/staff_num_total_mw)	
 
 	egen staff_num_total_co=rowtotal(q201_004_001)
 	egen staff_num_covid_co=rowtotal(q201_004_002)
-	gen  xstaff_pct_covid_co= 100*(staff_num_covid_co/staff_num_total_co)	
 
 	egen staff_num_total_othclinical=rowtotal(q201_003_001 q201_004_001 q201_005_001 q201_006_001 q201_007_001 )
 	egen staff_num_covid_othclinical=rowtotal(q201_003_002 q201_004_002 q201_005_002 q201_006_002 q201_007_002 )
-	gen  xstaff_pct_covid_othclinical= 100*(staff_num_covid_othclinical/staff_num_total_othclinical)			
 	
 	egen staff_num_total_clinical=rowtotal(staff_num_total_md staff_num_total_nr staff_num_total_othclinical)
 	egen staff_num_covid_clinical=rowtotal(staff_num_covid_md staff_num_covid_nr staff_num_covid_othclinical)
-	gen  xstaff_pct_covid_clinical= 100*(staff_num_covid_clinical/staff_num_total_clinical)			
 	
 	egen staff_num_total_nonclinical=rowtotal(q201_008_001 q201_009_001 q201_010_001 )
 	egen staff_num_covid_nonclinical=rowtotal(q201_008_002 q201_009_002 q201_010_002 )
-	gen  xstaff_pct_covid_nonclinical= 100*(staff_num_covid_nonclinical/staff_num_total_nonclinical)				
 	
 	egen staff_num_total_all=rowtotal(staff_num_total_clinical staff_num_total_nonclinical) 
-	egen staff_num_covid_all=rowtotal(staff_num_covid_clinical staff_num_covid_nonclinical) 
-	gen  xstaff_pct_covid_all= 100*(staff_num_covid_all/staff_num_total_all)				
+	egen staff_num_covid_all=rowtotal(staff_num_covid_clinical staff_num_covid_nonclinical) 	
 	
 	gen xabsence=q202==1
 	gen xabsence_medical=	q203_003==1 | q203_004==1 
@@ -1434,9 +1423,6 @@ use CEHS_`country'_R`round'.dta, clear
 			foreach var of varlist xbedrate	*_score *_num {
 				replace `var'=round(`var'/100, 1)
 				}
-	
-	* drop unweighted average of COVID infection rate among staff
-	drop xstaff_pct*
 	
 	* generate staff infection rates useing the pooled data	
 	global itemlist "md nr mw co othclinical clinical nonclinical all"
