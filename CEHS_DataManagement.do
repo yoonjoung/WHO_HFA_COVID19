@@ -1361,7 +1361,7 @@ use CEHS_`country'_R`round'.dta, clear
 	gen obs_ipt=1 	if xipt==1
 	gen obs_er=1 	if xer==1
 	gen obs_vac=1 	if xvac==1
-	gen obs_primary=1 	if zlevel_low==1
+	*gen obs_primary=1 	if zlevel_low==1 /*KEYC not relevant in Kenya*/
 		
 	global itemlist "opt ipt del dpt"
 	foreach item in $itemlist{	
