@@ -72,7 +72,9 @@ global date=subinstr("`c_today'", " ", "",.)
 
 import delimited "15122020_results-survey447349_codes.csv", case(preserve) clear 
 
-	export excel using "$chartbookdir\WHO_COVID19HospitalReadiness_ChartbookCT.xlsx", sheet("Facility-level raw data") sheetreplace firstrow(variables) nolabel
+	drop if Q101=="Test 1" | Q101=="Test 2" /* KE specific, drop test rows*/ 
+
+	export excel using "$chartbookdir\KEN_Hospital_Chartbook.xlsx", sheet("Facility-level raw data") sheetreplace firstrow(variables) nolabel
 	
 ***** Change var names to lowercase
  
@@ -162,7 +164,7 @@ import delimited "15122020_results-survey447349_codes.csv", case(preserve) clear
 	*****************************
 	sum q3* /*all numeric*/
 	d q3*				
-	
+
 	*****************************
 	* Section 4: Therapeutics
 	*****************************
@@ -202,10 +204,9 @@ import delimited "15122020_results-survey447349_codes.csv", case(preserve) clear
 	*****************************	
 	* Section 7
 	*****************************
-	**************************************************** likely many changes in var name here for Kenya
 	sum q7*	
 	codebook q703_* q704_* q706_* q708_* 
-	
+
 	foreach var of varlist q704_* q706_* q708_*  {		
 		replace `var' = usubinstr(`var', "A", "", 1) 
 		destring `var', replace 
@@ -244,12 +245,11 @@ import delimited "15122020_results-survey447349_codes.csv", case(preserve) clear
 		q311
 		q501
 		q601 q603 q604 q609_* 
-		q707 
+		q704* q705 q707 q708*
 		q801 q802 q805 q808 q812* 
 		; 
 		#delimit cr
-		/*KEYC - check section 7 var with data*/ 
-	
+		
 	#delimit;
 	foreach var of varlist 
 		q118_* 
@@ -257,7 +257,7 @@ import delimited "15122020_results-survey447349_codes.csv", case(preserve) clear
 		q311
 		q501
 		q601 q603 q604 q609_* 
-		q707 
+		q704* q705 q707 q708*
 		q801 q802 q805 q808 q812* 
 		{;	
 		#delimit cr 
@@ -349,7 +349,7 @@ import delimited "15122020_results-survey447349_codes.csv", case(preserve) clear
 		q311
 		q501
 		q601 q603 q604 q609_* 
-		q704* q705 q708* q707 
+		q704* q705 q707 q708*
 		q801 q802 q805 q808 q812* 
 		{;		
 	labe values `var' yesno; 
@@ -476,10 +476,7 @@ keep if xresult==1 /*the following calcualtes % missing in select questions amon
 
 	tabout missing using "$chartbookdir\FieldCheckTable_COVID19Hospital_`country'_R`round'_$date.xls", append ///
 		cells(freq col) h2("4. Missing PCR capacity (either the total number or the number of non-functional) (among completed interviews)") f(0 1) clab(n %)					
-			
-			/*
-			KEYC review section 7 variables and revise field check tables
-			
+						
 			capture drop missing
 			gen missing=0
 			foreach var of varlist q701_* {	
@@ -488,7 +485,7 @@ keep if xresult==1 /*the following calcualtes % missing in select questions amon
 			lab values missing yesno	
 
 	tabout missing using "$chartbookdir\FieldCheckTable_COVID19Hospital_`country'_R`round'_$date.xls", append ///
-		cells(freq col) h2("5. Missing number of pulse oxymeter (either the total number or the number of non-functional) (among completed interviews)") f(0 1) clab(n %)					
+		cells(freq col) h2("5. Missing entry in the number of equipment (either the total number or the number of functional) (among completed interviews)") f(0 1) clab(n %)					
 			*/
 			
 restore
@@ -571,7 +568,7 @@ restore
 	gen ximst_fun	= q202==1
 	
 	*****************************
-	* Section 3: bed capacity
+	* Section 3: bed capacity & staff
 	*****************************
 
 	gen byte xipt= q115==1
@@ -590,7 +587,10 @@ restore
 	gen ybed_covid_night   = (q304 + q305)/2
 	gen ybed_covid_month = q305b /* KECT - added monthly average COVID occupancy */
 	
-	gen xcovid_occ = ybed_covid_night/q301 /* KECT calculate % of COVID ready beds occupied */
+	*gen xcovid_occ_night = ybed_covid_night/q301 /* KECT calculate % of COVID ready beds occupied by COVID patients, last night */
+	*gen xcovid_occ_month = ybed_covid_month/q301 /* KEYC calculate % of COVID ready beds occupied by COVID patients, last month */
+	gen xcovid_occ_lastnight = ybed_covid_night/ybed /* KECT calculate % of beds occupied by COVID patients, last night  - this in case q301==0? */ 
+	gen xcovid_occ_lastmonth = ybed_covid_month/ybed /* KEYC calculate % of beds occupied by COVID patients, last month  - this in case q301==0? */
 
 	gen ybed_cap_respiso = q306	
 	gen ybed_convert_respiso = q307
@@ -599,6 +599,21 @@ restore
 	gen xocc_lastnight = 100* (q309 / ybed) /*KEYC review data and confirm*/
 	
 	gen ypt_homecare = q310 /* KECT added number of patients sent home for homebased care */
+	
+	///* KE edit begins*///
+	gen xstaffsupport = q311==1
+	gen ystaffsupport_num = q312
+		replace ystaffsupport_num =. if xstaffsupport!=1
+		
+	gen xnrshift__day = q313_001
+	gen xnrshift__night = q313_002
+	
+	gen xstaff_test_none = q314_001
+	gen xstaff_test_2wk = q314_002
+	gen xstaff_test_symp = q314_003
+	gen xstaff_test_exp = q314_004
+		
+	///* KE edit ends*///
 	
 	*****************************
 	* Section 4: Therapeutics
@@ -756,43 +771,47 @@ restore
 	*****************************
 	* Section 7: Equipment 
 	*****************************
-	/* Kenya specific - revised this sectin per latest Q and data
-	gen yequip_ventilator = q701_003_003
-	gen yequip_noninvventilator = q701_004_003
-	gen yequip_o2concentrator = q701_005_003
+	///* KEYC edit begins *//
+	gen yequip_ventilator 		= q701_003_002
+	gen yequip_noninvventilator = q701_004_002
 	
-	global itemlist "001 002 003 004 005"
+		lab var yequip_ventilator "number of functioning equipment: ventilator"
+		lab var yequip_noninvventilator "number of functioning equipment: non-invasive ventilator"
+		
+	global itemlist "001 002 003 004"
 	foreach item in $itemlist{	
 		gen xequip_anyfunction__`item' = q701_`item'_002>=1 
 		}			
 		
-		gen max=5
+		gen max=4
 		egen temp=rowtotal(xequip_anyfunction_*)
 	gen xequip_anyfunction_score	=100*(temp/max)
 	gen xequip_anyfunction_100		=xequip_anyfunction_score>=100
 	gen xequip_anyfunction_50		=xequip_anyfunction_score>=50
 		drop max temp				
 				
-	global itemlist "001 002 003 004 005"
+	global itemlist "001 002 003 004"
 	foreach item in $itemlist{	
-		gen xequip_allfunction__`item' = q701_`item'_002>=1 & q701_`item'_003==0
+		gen xequip_allfunction__`item' = q701_`item'_002>=1 & (q701_`item'_002 == q701_`item'_001)
 		}			
 		
-		gen max=5
+		gen max=4
 		egen temp=rowtotal(xequip_allfunction_*)
 	gen xequip_allfunction_score	=100*(temp/max)
 	gen xequip_allfunction_100		=xequip_allfunction_score>=100
 	gen xequip_allfunction_50		=xequip_allfunction_score>=50
 		drop max temp				
 	
-	global itemlist "001 002 003 004 005"
+	global itemlist "003 004"
 	foreach item in $itemlist{	
-		gen xequip_anymalfunction__`item' = q701_`item'_003>=1 & q701_`item'_003!=.
+		gen xequip_anymalfunction__`item' = q701_`item'_001>=1 & (q701_`item'_002 != q701_`item'_001)
 		}			
 
-		egen temp=rowtotal(xequip_anymalfunction_*)
+		egen temp=rowtotal(xequip_anymalfunction__003 xequip_anymalfunction__004)
 	gen xequip_anymalfunction=temp>=1
 		drop temp
+		
+		drop xequip_anymalfunction__*
 	
 	/*	
 	global itemlist "001 002 003 004 005"
@@ -805,60 +824,47 @@ restore
 		drop temp		
 	*/
 	
-	global itemlist "001 002 003 004"
+	global itemlist "001 002 003 004 005 "
 	foreach item in $itemlist{	
-		gen xequip_malfunction_reason__`item' = q704_`item'==1 | q706_`item'==1 | q708_`item'==1
+		gen xequip_malfunction_reason__`item' = q702_`item'==1 | q703_`item'==1 
 		}
 	
-	foreach var of varlist xequip_malfunction_reason_*{
-		replace `var'=. if xequip_anymalfunction!=1
-		}
-			
-	gen xoxygen_portable 	= q709==1 
-	gen xoxygen_plant 		= q710==1 
-	gen xoxygen_piped 		= q711==1   
+		foreach var of varlist xequip_malfunction_reason__*{
+			replace `var'=. if xequip_anymalfunction!=1
+			}
 	
-		egen temp=rowtotal(xoxygen_*)
-	gen xoxygen 		= temp==3
+	gen xoxygen_concentrator= q704_001==1 
+	gen xoxygen_bulk 		= q704_002==1 
+	gen xoxygen_cylinder	= q704_003==1 
+	gen xoxygen_plant 		= q704_004==1   
 	
-		drop temp
+	gen xoxygen_dist 		= q705==1
+	gen xoxygen_dist__er 		= q706_001==1
+	gen xoxygen_dist__icu 		= q706_002==1
+	gen xoxygen_dist__iso 		= q706_003==1
+	
+		egen temp=rowtotal(xoxygen_dist__*)
+	gen xoxygen_dist_all 		= temp==3  /*piped oxygen distribution in ER, ICU, AND isolation room*/
+	gen xoxygen_dist_any 		= temp==3  /*piped oxygen distribution in ER, ICU, OR isolation room*/
+	
+	gen xocygen_portcylinder	= q707==1
+	
+	global itemlist "001 002 003 004 "
+	foreach item in $itemlist{	
+		gen xo2__`item'= q708_`item' ==1 
+		}				
+		rename xo2__001 xo2__cannula
+		rename xo2__002 xo2__mask
+		rename xo2__003 xo2__humidifier		
+		rename xo2__004 xo2__flowmeter
 		
-		drop xequip_anymalfunction__*
-	*/
-	
+	///* KE edit ends *///
+
+		
 	*****************************
 	* Section 8: vaccine
 	*****************************
-	/*
-	gen xvac= q801==1 | q802==1
-	
-	gen xvac_av_fridge 		= q804==1 | q804==2
-	gen xvac_avfun_fridge 	= q804==1 
-	gen xvac_avfun_fridgetemp 	= q804==1 & q805==1
-	
-	gen xvac_av_coldbox	= q806==1
-	
-	gen xvac_avfun_coldbox_all		= q806==1 & (q807>=1 & q807!=.) & q808==1
-	gen xvac_avfun_coldbox_all_full	= q806==1 & (q807>=1 & q807!=.) & q808==1 & q812==1
-	
-	gen yvac_avfun_coldbox_all		= q807 if xvac_avfun_coldbox_all==1
-	gen yvac_avfun_coldbox_all_full	= q807 if xvac_avfun_coldbox_all==1 & q812==1
-	
-	gen xvac_av_carrier	= q809==1
-	
-	gen xvac_avfun_carrier_all		= q809==1 & (q810>=1 & q810!=.) & q811==1	
-	gen xvac_avfun_carrier_all_full	= q809==1 & (q810>=1 & q810!=.) & q811==1 & q812==1	
-	
-	gen yvac_avfun_carrier_all		= q810 if xvac_avfun_carrier_all==1
-	gen yvac_avfun_carrier_all_full	= q810 if xvac_avfun_carrier_all==1 & q812==1
-		
-	gen xvac_av_outreach = xvac_av_coldbox ==1 | xvac_av_carrier ==1  
-	gen xvac_avfun_outreach_all_full = xvac_avfun_coldbox_all_full ==1 | xvac_avfun_carrier_all_full==1  	
-	
-	foreach var of varlist xvac_av* yvac_av* {
-		replace `var'=. if xvac!=1
-		}	
-	*/
+
 	gen xvac= q801==1 | q802==1
 	
 	gen xvac_av_fridge 		= q803==1 | q803==2
@@ -886,7 +892,7 @@ restore
 	
 	gen xvac_sharp = q812==1
 	
-	foreach var of varlist xvac_av* {
+	foreach var of varlist xvac_av* yvac_av*{
 		replace `var'=. if xvac!=1
 		}
 		
@@ -950,40 +956,40 @@ use COVID19HospitalReadiness_`country'_R`round'.dta, clear
 *****F.1. Calculate estimates  /*KEYC - revise to include yequip once section 7 is cleared*/
 
 	use temp.dta, clear
-	collapse (count) obs* (mean) x* (sum) ybed*  yvac* [iweight=weight], by(country round month year  )
+	collapse (count) obs* (mean) x* (sum) ybed* ypt*  yequip* yvac*  [iweight=weight], by(country round month year  )
 		gen group="All"
-		keep obs* country round month year  group* x* y* yvac*
+		keep obs* country round month year  group* x* y*
 		save summary_COVID19HospitalReadiness_`country'_R`round'.dta, replace 
 		
 	use temp.dta, clear
-	collapse (count) obs* (mean) x* (sum) ybed*  yvac* [iweight=weight], by(country round month year   zurban)
+	collapse (count) obs* (mean) x* (sum) ybed* ypt*  yequip* yvac*  [iweight=weight], by(country round month year   zurban)
 		gen group="Location"
 		gen grouplabel=""
 			replace grouplabel="1.1 Rural" if zurban==0
 			replace grouplabel="1.2 Urban" if zurban==1
-		keep obs* country round month year  group* x* y* yvac*
+		keep obs* country round month year  group* x* y*
 		
 		append using summary_COVID19HospitalReadiness_`country'_R`round'.dta, force
 		save summary_COVID19HospitalReadiness_`country'_R`round'.dta, replace 
 
 	use temp.dta, clear
-	collapse (count) obs* (mean) x* (sum) ybed*  yvac* [iweight=weight], by(country round month year   zlevel_hospital)
+	collapse (count) obs* (mean) x* (sum) ybed* ypt*  yequip* yvac*  [iweight=weight], by(country round month year   zlevel_hospital)
 		gen group="Level"
 		gen grouplabel=""
 			replace grouplabel="2.1 Non-hospitals" if zlevel_hospital==0
 			replace grouplabel="2.2 Hospitals" if zlevel_hospital==1
-		keep obs* country round month year  group* x* y* yvac*
+		keep obs* country round month year  group* x* y*
 			
 		append using summary_COVID19HospitalReadiness_`country'_R`round'.dta
 		save summary_COVID19HospitalReadiness_`country'_R`round'.dta, replace 
 		
 	use temp.dta, clear
-	collapse (count) obs* (mean) x* (sum) ybed*  yvac* [iweight=weight], by(country round month year   zpub)
+	collapse (count) obs* (mean) x* (sum) ybed* ypt*  yequip* yvac*  [iweight=weight], by(country round month year   zpub)
 		gen group="Sector"
 		gen grouplabel=""
 			replace grouplabel="3.1 Non-public" if zpub==0
 			replace grouplabel="3.2 Public" if zpub==1
-		keep obs* country round month year  group* x* y* yvac*
+		keep obs* country round month year  group* x* y*
 		
 		append using summary_COVID19HospitalReadiness_`country'_R`round'.dta		
 		save summary_COVID19HospitalReadiness_`country'_R`round'.dta, replace 
@@ -992,7 +998,7 @@ use COVID19HospitalReadiness_`country'_R`round'.dta, clear
 		replace `var'=round(`var'*100, 1)	
 		}
 		
-	foreach var of varlist xocc* xpcr_capacity *score{
+	foreach var of varlist xocc* xcovid_occ* xnrshift* xpcr_capacity *score{
 		replace `var'=round(`var'/100, 1)	
 		}		
 	

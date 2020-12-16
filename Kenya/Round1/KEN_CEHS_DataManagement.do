@@ -47,7 +47,6 @@ numlabel, add
 *** Directory for this do file and a subfolder for "daily exported CSV file from LimeSurvey"  
 cd "C:\Users\YoonJoung Choi\World Health Organization\BANICA, Sorin - HSA unit\1 Admin\Countires\Country Surveys\Pilot Kenya\CEHS\"
 dir
-ok
 
 *** Define a directory for the chartbook, if different from the main directory 
 global chartbookdir "C:\Users\YoonJoung Choi\World Health Organization\BANICA, Sorin - HSA unit\1 Admin\Countires\Country Surveys\Pilot Kenya\CEHS\"
@@ -808,7 +807,7 @@ restore
 		
 	gen xfinance_ontime = xfinance_salaryontime ==1 & (xfinance_otontime==1 | xfinance_otontime==.)
 			
-	gen xfinance_pbf = q310==1
+	gen xfinance_PBF = q310==1
 	
 	sum xuserfee xexempt* xfee xfinance*
 	
@@ -1310,7 +1309,7 @@ restore
 	gen xvac_av_outreach = xvac_av_coldbox ==1 | xvac_av_carrier ==1  
 	gen xvac_avfun_outreach_all_full = xvac_avfun_coldbox_all_full ==1 | xvac_avfun_carrier_all_full==1  
 	
-	foreach var of varlist xvac_av* {
+	foreach var of varlist xvac_av* yvac_av*{
 		replace `var'=. if xvac!=1
 		}
 		
@@ -1408,7 +1407,7 @@ use CEHS_`country'_R`round'.dta, clear
 	gen obs_ipt=1 	if xipt==1
 	gen obs_er=1 	if xer==1
 	gen obs_vac=1 	if xvac==1
-	gen obs_primary=1 	if zlevel_low==1
+	*gen obs_primary=1 	if zlevel_low==1 /*KEYC not relevant for Kenya*/
 		
 	global itemlist "opt ipt del dpt"
 	foreach item in $itemlist{	
