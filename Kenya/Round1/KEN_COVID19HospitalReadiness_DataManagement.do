@@ -45,13 +45,13 @@ numlabel, add
 **************************************************************
 
 *** Directory for this do file and a subfolder for "daily exported CSV file from LimeSurvey"  
-*cd "C:\Users\ctaylor\World Health Organization\BANICA, Sorin - HSA unit\1 Admin\Countires\Country Surveys\Pilot Kenya\Case-Mgmt\"
-cd "C:\Users\YoonJoung Choi\World Health Organization\BANICA, Sorin - HSA unit\1 Admin\Countires\Country Surveys\Pilot Kenya\Case-Mgmt\"
+*cd "C:\Users\YoonJoung Choi\World Health Organization\BANICA, Sorin - HSA unit\1 Admin\Countries\Country Surveys\Kenya\Case-Mgmt"
+cd "C:\Users\ctaylor\World Health Organization\BANICA, Sorin - HSA unit\1 Admin\Countries\Country Surveys\Kenya\Case-Mgmt"
 dir
 
 *** Define a directory for the chartbook, if different from the main directory 
-*global chartbookdir "C:\Users\ctaylor\World Health Organization\BANICA, Sorin - HSA unit\1 Admin\Countires\Country Surveys\Pilot Kenya\Case-Mgmt\"
-global chartbookdir "C:\Users\YoonJoung Choi\World Health Organization\BANICA, Sorin - HSA unit\1 Admin\Countires\Country Surveys\Pilot Kenya\Case-Mgmt\"
+*global chartbookdir "C:\Users\YoonJoung Choi\World Health Organization\BANICA, Sorin - HSA unit\1 Admin\Countries\Country Surveys\Kenya\Case-Mgmt"
+global chartbookdir "C:\Users\ctaylor\World Health Organization\BANICA, Sorin - HSA unit\1 Admin\Countries\Country Surveys\Kenya\Case-Mgmt"
 
 *** Define local macro for the survey 
 local country	 		 Kenya /*country name*/	
@@ -70,7 +70,8 @@ global date=subinstr("`c_today'", " ", "",.)
 
 *****B.1. Import raw data from LimeSurvey 
 
-import delimited "15122020_results-survey447349_codes.csv", case(preserve) clear 
+*import delimited "15122020_results-survey447349_codes.csv", case(preserve) clear 
+import delimited "16122020_results-survey447349_codes.csv", case(preserve) clear 
 
 	drop if Q101=="Test 1" | Q101=="Test 2" /* KE specific, drop test rows*/ 
 
@@ -392,13 +393,13 @@ preserve
 			label val responserate responselist
 
 	tabout responserate using "$chartbookdir\FieldCheckTable_COVID19Hospital_`country'_R`round'_$date.xls", append ///
-		cells(freq col) h2("Interview response rate") f(0 1) clab(n %)
+		cells(freq col) h2("Interview response rate") f(0 1) clab(n %) mi
 	
 	tabout q104 using "$chartbookdir\FieldCheckTable_COVID19Hospital_`country'_R`round'_$date.xls", append ///
-		cells(freq col) h2("Number of completed interviews by area") f(0 1) clab(n %)
+		cells(freq col) h2("number of interviews by area") f(0 1) clab(n %) mi
 		
 	tabout q105 using "$chartbookdir\FieldCheckTable_COVID19Hospital_`country'_R`round'_$date.xls", append ///
-		cells(freq col) h2("Number of completed interviews by hospital type") f(0 1) clab(n %)		
+		cells(freq col) h2("number of interviews by hospital type") f(0 1) clab(n %) mi		
 
 			gen double starttime = clock(startdate, "YMD hms") /* KECT - changed to YMD hms from MDY hm*/
 			gen double endtime = clock(datestamp, "YMD hms") /* KECT - changed to YMD hms from MDY hm*/
@@ -412,14 +413,14 @@ preserve
 			egen time_incomplete = mean(time) if xresult==0
 				replace time_complete = round(time_complete, .1)
 				replace time_incomplete = round(time_incomplete, .1)			
-				
+	/*			
 	*tabout time xresult using "$chartbookdir\FieldCheckTable_COVID19Hospital_`country'_R`round'_$date.xls", append ///
 	*	cells(freq col) h2("Interview length (minutes): incomplete, complete, and total interviews") f(0 1) clab(n %)	
 	tabout time_complete using "$chartbookdir\FieldCheckTable_COVID19Hospital_`country'_R`round'_$date.xls", append ///
 		cells(freq col) h2("Average interview length (minutes), among completed interviews") f(0 1) clab(n %)		
 	tabout time_incomplete using "$chartbookdir\FieldCheckTable_COVID19Hospital_`country'_R`round'_$date.xls", append ///
 		cells(freq col) h2("Average interview length (minutes), among incomplete interviews") f(0 1) clab(n %)	
-
+	*/
 * Missing responses 
 
 			capture drop missing
@@ -453,7 +454,7 @@ keep if xresult==1 /*the following calcualtes % missing in select questions amon
 			lab values missing yesno	
 
 	tabout missing using "$chartbookdir\FieldCheckTable_COVID19Hospital_`country'_R`round'_$date.xls", append ///
-		cells(freq col) h2("2. Missing medicines (either the total number or the number of non-functional) (among completed interviews)") f(0 1) clab(n %)							
+		cells(freq col) h2("2. Missing medicines - in one or more of the tracer items (among completed interviews)") f(0 1) clab(n %)							
 		
 			capture drop missing
 			gen missing=0
@@ -463,7 +464,7 @@ keep if xresult==1 /*the following calcualtes % missing in select questions amon
 			lab values missing yesno		
 
 	tabout missing using "$chartbookdir\FieldCheckTable_COVID19Hospital_`country'_R`round'_$date.xls", append ///
-		cells(freq col) h2("3. Missing PPE item (among completed interviews)") f(0 1) clab(n %)					
+		cells(freq col) h2("3. Missing PPE item - in one or more of the tracer items (among completed interviews)") f(0 1) clab(n %)					
 
 				
 			capture drop missing
@@ -475,7 +476,7 @@ keep if xresult==1 /*the following calcualtes % missing in select questions amon
 			lab values missing yesno	
 
 	tabout missing using "$chartbookdir\FieldCheckTable_COVID19Hospital_`country'_R`round'_$date.xls", append ///
-		cells(freq col) h2("4. Missing PCR capacity (either the total number or the number of non-functional) (among completed interviews)") f(0 1) clab(n %)					
+		cells(freq col) h2("4. Missing PCR capacity  (among completed interviews)") f(0 1) clab(n %)					
 						
 			capture drop missing
 			gen missing=0
@@ -589,10 +590,11 @@ restore
 	
 	*gen xcovid_occ_night = ybed_covid_night/q301 /* KECT calculate % of COVID ready beds occupied by COVID patients, last night */
 	*gen xcovid_occ_month = ybed_covid_month/q301 /* KEYC calculate % of COVID ready beds occupied by COVID patients, last month */
-	gen xcovid_occ_lastnight = ybed_covid_night/ybed /* KECT calculate % of beds occupied by COVID patients, last night  - this in case q301==0? */ 
-	gen xcovid_occ_lastmonth = ybed_covid_month/ybed /* KEYC calculate % of beds occupied by COVID patients, last month  - this in case q301==0? */
+	gen xcovid_occ_lastnight = 100*(ybed_covid_night/ybed) /* KECT calculate % of beds occupied by COVID patients, last night  - this in case q301==0? */ 
+	gen xcovid_occ_lastmonth = 100*(ybed_covid_month/ybed) /* KEYC calculate % of beds occupied by COVID patients, last month  - this in case q301==0? */
 
-	gen ybed_cap_respiso = q306	
+	gen ybed_cap_isolation = q306	
+	gen ybed_cap_respiso_o2 = q306b
 	gen ybed_convert_respiso = q307
 	gen ybed_convert_icu 	 = q308
 	

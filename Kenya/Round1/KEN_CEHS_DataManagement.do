@@ -45,11 +45,13 @@ numlabel, add
 **************************************************************
 
 *** Directory for this do file and a subfolder for "daily exported CSV file from LimeSurvey"  
-cd "C:\Users\YoonJoung Choi\World Health Organization\BANICA, Sorin - HSA unit\1 Admin\Countires\Country Surveys\Pilot Kenya\CEHS\"
+cd "C:\Users\ctaylor\World Health Organization\BANICA, Sorin - HSA unit\1 Admin\Countries\Country Surveys\Kenya\CEHS"
+*cd "C:\Users\YoonJoung Choi\World Health Organization\BANICA, Sorin - HSA unit\1 Admin\Countries\Country Surveys\Kenya\CEHS"
 dir
 
 *** Define a directory for the chartbook, if different from the main directory 
-global chartbookdir "C:\Users\YoonJoung Choi\World Health Organization\BANICA, Sorin - HSA unit\1 Admin\Countires\Country Surveys\Pilot Kenya\CEHS\"
+global chartbookdir "C:\Users\ctaylor\World Health Organization\BANICA, Sorin - HSA unit\1 Admin\Countries\Country Surveys\Kenya\CEHS"
+*global chartbookdir "C:\Users\YoonJoung Choi\World Health Organization\BANICA, Sorin - HSA unit\1 Admin\Countries\Country Surveys\Kenya\CEHS"
 
 *** Define local macro for the survey 
 local country	 		 Kenya /*country name*/	
@@ -69,7 +71,10 @@ global date=subinstr("`c_today'", " ", "",.)
 *****B.1. Import raw data from LimeSurvey 
 
 *import delimited 10122020_results-survey769747_codes.csv, case(preserve) clear 
-import delimited 15122020_results-survey769747_codes.csv, case(preserve) clear 
+*import delimited 15122020_results-survey769747_codes.csv, case(preserve) clear 
+import delimited 16122020_results-survey769747_codes.csv, case(preserve) clear 
+
+	drop if toke=="" /* KE specific, drop first two rows likely testing data*/ 
 		
 	export excel using "$chartbookdir\KEN_CEHS_Chartbook.xlsx", sheet("Facility-level raw data") sheetreplace firstrow(variables) nolabel
 
@@ -288,13 +293,14 @@ import delimited 15122020_results-survey769747_codes.csv, case(preserve) clear
 				
 *****C.4. Recode yes/no & yes/no/NA
 
+/*KECT - in Kenya, questions 607 and 608 have been revised to say "always", "sometimes", and "never" so removing from this section and recoding in their own section q607_* q608_001 - q608_006 */
 	#delimit;
 	sum
 		q202  q205_* q206  q207* 
 		q301  q304 q3041_*  q305_* q306_* q307  q308  q310
 		q402 - q405  q406_* q407  q408  q410_* q411_* q416 q418 q419 
 		q501  q502  q503_* q504  q505_* q506
-		q601  q602  q603  q605  q606  q607_* q608_001 - q608_006 q609 q6091 q610 q614-q615
+		q601  q602  q603  q605  q606 q609 q6091 q610 q614-q615
 		q701_* q702_* q703_* q704
 		q801 q804
 		q901 q902  q905 q908 q912 ; 
@@ -306,7 +312,7 @@ import delimited 15122020_results-survey769747_codes.csv, case(preserve) clear
 		q301  q304  q305_* q306_* q307  q308  q310
 		q402 - q405  q406_* q407  q408  q410_* q411_* q416 q418 q419 
 		q501  q502  q503_* q504  q505_* q506
-		q601  q602  q603  q605  q606  q607_* q608_001 - q608_006 q609 q6091 q610 q614-q615
+		q601  q602  q603  q605  q606  q609  q6091 q610 q614-q615
 		q701_* q702_* q703_* q704
 		q801 q804
 		q901 q902  q905 q908 q912 
@@ -321,6 +327,17 @@ import delimited 15122020_results-survey769747_codes.csv, case(preserve) clear
 		recode `var' 2=0 /*no*/
 		recode `var' 3=. /*not applicable*/
 		}	
+		
+	sum q607_* q608_001 - q608_006 
+	
+	foreach var of varlist q607_* q608_001 - q608_006  {
+		recode `var' 3=0 /*never*/
+		recode `var' 2=4 /*sometimes*/ /*KECT - temporarily setting to 4 or else they look like "always" and get grouped with that*/
+		recode `var' 1=2 /*always*/
+		recode `var' 4=1 /*sometimes*/ /*KECT - now that always is set to 2, can safely set sometimes to 1*/
+				}
+		
+		
 				
 *****C.5. Label values 
 
@@ -372,14 +389,24 @@ import delimited 15122020_results-survey769747_codes.csv, case(preserve) clear
 	lab values q306 q306; 
 	*/
 	
-	lab define change
+	lab define change   /*KECT - q409a is weird (asks if all increased, all decreased, no changes, mixed), so it cannot be included here, changed from q409* to q409_* to address this issue*/
 		1"1.Yes, increased"
 		2"2.Yes, decreased"
 		3"3.No" 
 		4"4.N/A";  
-	foreach var of varlist q409* q412* q414 q415 q417* q420*{;
+	foreach var of varlist q409_* q412* q414 q415 q417* q420*{;
 	lab values `var' change;	
 	};
+	
+	lab define q409a   /*KECT - q409a is weird so doing by itself*/
+		1"1.Yes, increased in all areas"
+		2"2.Yes, decreased in all areas"
+		3"3.Yes, increased in some but decreased in some" 
+		4"4.No changes in any";  
+	foreach var of varlist q409a {;
+	lab values `var' q409a;	
+	};
+	
 	
 	lab define q417
 		1"1.Yes, less frequent"
@@ -450,6 +477,8 @@ import delimited 15122020_results-survey769747_codes.csv, case(preserve) clear
 		4"4.None-no functional freezer" ;
 	lab values q911 icepackfreeze ;	
 		
+/*KECT - in Kenya, questions 607 and 608 have been revised to say "always", "sometimes", and "never" so removing from this section and recoding in their own section q607_* q608_001 - q608_006 */
+		
 	lab define yesno 1"1. yes" 0"0. no"; 	
 	#delimit;
 	foreach var of varlist 
@@ -458,7 +487,7 @@ import delimited 15122020_results-survey769747_codes.csv, case(preserve) clear
 		q301  q304 q3041_* q305_* q306_* q307  q308  q310
 		q402 - q405  q406_* q407  q408  q410_* q411_* q416 q418 q419  
 		q501  q502  q503_* q504  q505_* q506
-		q601  q602  q603  q605  q606  q607_* q608_001 - q608_006 q609 q6091 q610 q614-q615
+		q601  q602  q603  q605  q606  q609 q6091 q610 q614-q615
 		q701_* q702_* q703_* q704
 		q801 q804
 		q901 q902  q905 q908 q912 
@@ -466,6 +495,12 @@ import delimited 15122020_results-survey769747_codes.csv, case(preserve) clear
 	labe values `var' yesno; 
 	};	
 
+	
+	lab define alwayssometimesnever 2"2. Always" 1"1.Sometimes" 0"0. Never"; 
+	foreach var of varlist q607_* q608_001 - q608_006 {;		
+	labe values `var' alwayssometimesnever; 
+	};	
+	
 	lab define yesnona 1"1. yes" 0"0. no"; 
 	foreach var of varlist q204 q309 {;		
 	labe values `var' yesnona; 
@@ -746,8 +781,9 @@ restore
 		gen byte xtraining__`item' = q207_`item' ==1
 		}		
 		
-		gen max=4
-		egen temp=rowtotal(xtraining__001 xtraining__002 xtraining__003 xtraining__004)
+	/* KECT - there are now five training items for Kenya*/	
+		gen max=5
+		egen temp=rowtotal(xtraining__001 xtraining__002 xtraining__003 xtraining__004 xtraining__005)
 	gen xtraining_score	=100*(temp/max)
 	gen xtraining_100 	=xtraining_score>=100
 	gen xtraining_50 	=xtraining_score>=50
@@ -866,8 +902,18 @@ restore
 			replace `item'_change=2 if `item'_decrease==1 & `item'_increase==1 /*mixed*/
 			replace `item'_change=3 if `item'_decrease==1 & `item'_increase==0 /*no service volume increased + at least one decreased*/
 			replace `item'_change=4 if `item'_decrease==0 & `item'_increase==1 /*no service volume decreased + at least one increased*/
-		
 		}				
+	/*
+	*** Chelsea and YJ to discuss further 
+		
+		tab xopt_increase xopt_decrease, m
+		
+		codebook q409a
+		tab q409a xopt_increase, m 
+		tab q409a xopt_decrease, m
+		
+		tab q409a xopt_change, m
+	*/
 	
 	***** REASONS for OPT volume changes
 					
@@ -1102,29 +1148,30 @@ restore
 	gen xcvd_test_rdt		=q603==1 & (q604==2 | q604==3)
 	gen xcvd_spcmtrans		=q603==1 & q604==4 & q605==1
 		
-	gen xcvd_pt = q606==1
+	gen xcvd_pt = q606==1 
 
-	global itemlist "001 002 003 004 005 006 007 "
+	global itemlist "001 002 003 004 005 006 007 "  /* KECT - changed to 2 (for always), could do both alwyas and sometimes*/
 	foreach item in $itemlist{	
-		gen xcvd_pt__`item' 	= xcvd_pt==1 & q607_`item'==1
+		gen xcvd_pt__`item' 	= xcvd_pt==1 & q607_`item'==2
 		}	
 		
-		gen max=3
-		egen temp=rowtotal(xcvd_pt__*) /* check analysis plan */
+		gen max=7							/* KECT - change max to 7 since there are 7 items*/
+		egen temp=rowtotal(xcvd_pt__*)    /* check analysis plan */
 	gen xcvd_pt_score	=100*(temp/max)
 	gen xcvd_pt_100 	=xcvd_pt_score>=100
 	gen xcvd_pt_50 		=xcvd_pt_score>=50
-		drop max temp	
+		drop max temp
+		
 
 		foreach var of varlist xcvd_pt_*{
 			replace `var'=. if xcvd_pt==0
 			}
 			
-	gen xcvd_pthbsi = q607_006==1	
+	gen xcvd_pthbsi = q607_006==2 | q607_006==1	/*KECT - included both always (=2) and sometimes (=1) */
 	
-	global itemlist "001 002 003 004 005 006"
+	global itemlist "001 002 003 004 005 006"   /* KECT - changed to 2 (for always), could do both alwyas and sometimes*/
 	foreach item in $itemlist{	
-		gen xcvd_pthbsi__`item' 	= xcvd_pthbsi==1 & q608_`item'==1
+		gen xcvd_pthbsi__`item' 	= xcvd_pthbsi==1 & q608_`item'==2
 		}	
 		
 		foreach var of varlist xcvd_pthbsi_*{
@@ -1172,6 +1219,8 @@ restore
 	gen xvac_100 	=xvac_score>=100
 	gen xvac_50 	=xvac_score>=50
 		drop max temp
+		
+		
 
 	global itemlist "001 002 003 004 005 006 007 008 009 010 011 012 013 014 015 016 017" 
 	foreach item in $itemlist{	
@@ -1194,6 +1243,16 @@ restore
 		rename xo2__005 xo2__cannula
 		rename xo2__006 xo2__mask
 		rename xo2__007 xo2__humidifier		
+		
+	/* KECT - added score and 50% and 100% for oxygen supplies */
+		
+		gen max=3
+		egen temp=rowtotal(xo2_* )
+	gen xo2_score	=100*(temp/max)
+	gen xo2_100 	=xo2_score>=100
+	gen xo2_50 	=xo2_score>=50
+		drop max temp	
+		
 	///* KE edit ends *///
 	
 	gen xvaccine_child=q409_005>=1 & q409_005<=3	
