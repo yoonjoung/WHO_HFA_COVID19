@@ -45,13 +45,13 @@ numlabel, add
 **************************************************************
 
 *** Directory for this do file and a subfolder for "daily exported CSV file from LimeSurvey"  
-*cd "C:\Users\YoonJoung Choi\World Health Organization\BANICA, Sorin - HSA unit\1 Admin\Countries\Country Surveys\Kenya\Case-Mgmt"
-cd "C:\Users\ctaylor\World Health Organization\BANICA, Sorin - HSA unit\1 Admin\Countries\Country Surveys\Kenya\Case-Mgmt"
+cd "C:\Users\YoonJoung Choi\World Health Organization\BANICA, Sorin - HSA unit\1 Admin\Countries\Country Surveys\Kenya\Case-Mgmt"
+*cd "C:\Users\ctaylor\World Health Organization\BANICA, Sorin - HSA unit\1 Admin\Countries\Country Surveys\Kenya\Case-Mgmt"
 dir
 
 *** Define a directory for the chartbook, if different from the main directory 
-*global chartbookdir "C:\Users\YoonJoung Choi\World Health Organization\BANICA, Sorin - HSA unit\1 Admin\Countries\Country Surveys\Kenya\Case-Mgmt"
-global chartbookdir "C:\Users\ctaylor\World Health Organization\BANICA, Sorin - HSA unit\1 Admin\Countries\Country Surveys\Kenya\Case-Mgmt"
+global chartbookdir "C:\Users\YoonJoung Choi\World Health Organization\BANICA, Sorin - HSA unit\1 Admin\Countries\Country Surveys\Kenya\Case-Mgmt"
+*global chartbookdir "C:\Users\ctaylor\World Health Organization\BANICA, Sorin - HSA unit\1 Admin\Countries\Country Surveys\Kenya\Case-Mgmt"
 
 *** Define local macro for the survey 
 local country	 		 Kenya /*country name*/	
@@ -71,7 +71,9 @@ global date=subinstr("`c_today'", " ", "",.)
 *****B.1. Import raw data from LimeSurvey 
 
 *import delimited "15122020_results-survey447349_codes.csv", case(preserve) clear 
-import delimited "16122020_results-survey447349_codes.csv", case(preserve) clear 
+*import delimited "16122020_results-survey447349_codes.csv", case(preserve) clear 
+*import delimited "17122020_results-survey447349_codes.csv", case(preserve) clear 
+import delimited "18122020_results-survey447349_codes.csv", case(preserve) clear 
 
 	drop if Q101=="Test 1" | Q101=="Test 2" /* KE specific, drop test rows*/ 
 
@@ -978,8 +980,8 @@ use COVID19HospitalReadiness_`country'_R`round'.dta, clear
 	collapse (count) obs* (mean) x* (sum) ybed* ypt*  yequip* yvac*  [iweight=weight], by(country round month year   zlevel_hospital)
 		gen group="Level"
 		gen grouplabel=""
-			replace grouplabel="2.1 Non-hospitals" if zlevel_hospital==0
-			replace grouplabel="2.2 Hospitals" if zlevel_hospital==1
+			replace grouplabel="2.1 Level 2-3 facilities" if zlevel_hospital==0
+			replace grouplabel="2.2 Level 4-6 facilities" if zlevel_hospital==1
 		keep obs* country round month year  group* x* y*
 			
 		append using summary_COVID19HospitalReadiness_`country'_R`round'.dta

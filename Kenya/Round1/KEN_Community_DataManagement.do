@@ -44,10 +44,12 @@ numlabel, add
 **************************************************************
 
 *** Directory for this do file and a subfolder for "daily exported CSV file from LimeSurvey"  
+*cd "C:\Users\ctaylor\World Health Organization\BANICA, Sorin - HSA unit\1 Admin\Countries\Country Surveys\Kenya\Community"
 cd "C:\Users\YoonJoung Choi\World Health Organization\BANICA, Sorin - HSA unit\1 Admin\Countries\Country Surveys\Kenya\Community"
 dir
 
 *** Define a directory for the chartbook, if different from the main directory 
+*global chartbookdir "C:\Users\ctaylor\World Health Organization\BANICA, Sorin - HSA unit\1 Admin\Countries\Country Surveys\Kenya\Community"
 global chartbookdir "C:\Users\YoonJoung Choi\World Health Organization\BANICA, Sorin - HSA unit\1 Admin\Countries\Country Surveys\Kenya\Community"
 
 *** Define local macro for the survey 
@@ -68,8 +70,10 @@ global date=subinstr("`c_today'", " ", "",.)
 
 *****B.1. Import raw data from LimeSurvey 
 
-import delimited 15122020_results-survey451568_codes_TEST.csv, case(preserve) clear 
-	
+*import delimited 15122020_results-survey451568_codes_TEST.csv, case(preserve) clear 
+*import delimited 17122020_results-survey451568_codes.csv, case(preserve) clear 
+import delimited 18122020_results-survey451568_codes.csv, case(preserve) clear 
+
 	gen import = "success" /*to confirm correct import of raw data to Chartbook*/
 
 	export excel using "$chartbookdir\KEN_Community_Chartbook.xlsx", sheet("Respondent-level raw data") sheetreplace firstrow(variables) nolabel
@@ -129,9 +133,9 @@ import delimited 15122020_results-survey451568_codes_TEST.csv, case(preserve) cl
 	*****************************
 	sum q1*
 	
-	codebook q107 q108 q109 q110 q111  /* Lime survey error : question number shifted up by one*/ 
-		
-	foreach var of varlist q107 q108 q109 q110 q111  {	
+	codebook q108 q109 q110 q111 q112  /* Lime survey error : question number shifted up by one*/ 
+										/* KECT - I think that the error may be fixed, I've moved to what matches today's data*/
+	foreach var of varlist q108 q109 q110 q111 q112  {	
 		replace `var' = usubinstr(`var', "A", "", 1) 
 		destring `var', replace 
 		}
@@ -151,7 +155,7 @@ import delimited 15122020_results-survey451568_codes_TEST.csv, case(preserve) cl
 	* Section 3
 	*****************************
 	sum q3*
-	rename q303_09 q303_009 
+	*rename q303_09 q303_009 
 	codebook q302 
 		
 	foreach var of varlist q302 {	
@@ -246,21 +250,22 @@ import delimited 15122020_results-survey451568_codes_TEST.csv, case(preserve) cl
 		1"1.Less than 25" 
 		2"2.25-45"
 		3"3.46-60"
-		3"4.More than 60";  
-	lab values q109 age; /*KE section 1 question number shifted - check*/
+		4"4.More than 60";  
+	lab values q110 age; /*KE section 1 question number shifted - check*/  /*KECT - changed back to q110*/
 	
 	lab define occupation
 		1"1.Commnity leader" 
 		2"2.Community health officer"
 		3"3.Commuunity health volunteer"
-		3"4.Civil society/NGOs";  
-	lab values q110 occupation; /*KE section 1 question number shifted - check*/
+		4"4.Civil society/NGOs";  
+	lab values q111 occupation; /*KE section 1 question number shifted - check*/ /*KECT - changed back to q111*/
+	
 		
 	lab define area
 		1"1.Urban"
-		2"2.Peri_Urban"
-		3"3.Rural" ; 
-	lab values q111 area; /*KE section 1 question number shifted - check*/
+		2"2.Rural";
+	lab values q112 area; /*KE section 1 question number shifted - check*/
+						  /*KECT the urban/rural question is showing up at Q112 (as it should) also based on paper version and responses, is only urban and rural, no periurban, so I've updated this*/	
 	
 	lab define people3
 		1"1.Most people"
@@ -506,7 +511,7 @@ restore
 
 	*gen zsex	
 	gen zchw	=q110>=`chwmin' & q110<=`chwmax'
-	gen zurban	=q111>=`urbanmin' & q111<=`urbanmax'
+	gen zurban	=q112>=`urbanmin' & q112<=`urbanmax'   /*KECT - changed to q112*/
 	
 	lab define zchw 0"non CHWs" 1"CHWs"
 	lab values zchw zchw
@@ -835,7 +840,7 @@ use Community_`country'_R`round'.dta, clear
 save summary_Community_`country'_R`round'.dta, replace 
 
 export delimited using summary_Community_`country'_R`round'.csv, replace 
-export delimited using "C:\Users\YoonJoung Choi\Dropbox\0 iSquared\iSquared_WHO\ACTA\4.ShinyAppCEHS\summary_Community_`country'_R`round'.csv", replace 
+*export delimited using "C:\Users\YoonJoung Choi\Dropbox\0 iSquared\iSquared_WHO\ACTA\4.ShinyAppCEHS\summary_Community_`country'_R`round'.csv", replace 
 
 
 *****F.2. Export indicator estimate data to chartbook AND dashboard

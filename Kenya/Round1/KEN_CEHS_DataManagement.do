@@ -45,13 +45,13 @@ numlabel, add
 **************************************************************
 
 *** Directory for this do file and a subfolder for "daily exported CSV file from LimeSurvey"  
-cd "C:\Users\ctaylor\World Health Organization\BANICA, Sorin - HSA unit\1 Admin\Countries\Country Surveys\Kenya\CEHS"
-*cd "C:\Users\YoonJoung Choi\World Health Organization\BANICA, Sorin - HSA unit\1 Admin\Countries\Country Surveys\Kenya\CEHS"
+*cd "C:\Users\ctaylor\World Health Organization\BANICA, Sorin - HSA unit\1 Admin\Countries\Country Surveys\Kenya\CEHS"
+cd "C:\Users\YoonJoung Choi\World Health Organization\BANICA, Sorin - HSA unit\1 Admin\Countries\Country Surveys\Kenya\CEHS"
 dir
 
 *** Define a directory for the chartbook, if different from the main directory 
-global chartbookdir "C:\Users\ctaylor\World Health Organization\BANICA, Sorin - HSA unit\1 Admin\Countries\Country Surveys\Kenya\CEHS"
-*global chartbookdir "C:\Users\YoonJoung Choi\World Health Organization\BANICA, Sorin - HSA unit\1 Admin\Countries\Country Surveys\Kenya\CEHS"
+*global chartbookdir "C:\Users\ctaylor\World Health Organization\BANICA, Sorin - HSA unit\1 Admin\Countries\Country Surveys\Kenya\CEHS"
+global chartbookdir "C:\Users\YoonJoung Choi\World Health Organization\BANICA, Sorin - HSA unit\1 Admin\Countries\Country Surveys\Kenya\CEHS"
 
 *** Define local macro for the survey 
 local country	 		 Kenya /*country name*/	
@@ -72,7 +72,9 @@ global date=subinstr("`c_today'", " ", "",.)
 
 *import delimited 10122020_results-survey769747_codes.csv, case(preserve) clear 
 *import delimited 15122020_results-survey769747_codes.csv, case(preserve) clear 
-import delimited 16122020_results-survey769747_codes.csv, case(preserve) clear 
+*import delimited 16122020_results-survey769747_codes.csv, case(preserve) clear 
+*import delimited 17122020_results-survey769747_codes.csv, case(preserve) clear 
+import delimited 18122020_results-survey769747_codes.csv, case(preserve) clear 
 
 	drop if toke=="" /* KE specific, drop first two rows likely testing data*/ 
 		
@@ -172,6 +174,7 @@ import delimited 16122020_results-survey769747_codes.csv, case(preserve) clear
 		replace `var' = "88" if `var'=="-oth-"
 		destring `var', replace 
 		}	
+		
 	sum q2*	
 	
 	*****************************	
@@ -184,6 +187,7 @@ import delimited 16122020_results-survey769747_codes.csv, case(preserve) clear
 		replace `var' = usubinstr(`var', "A", "", 1) 
 		destring `var', replace 
 		}		
+		
 	sum q3*
 	
 	*****************************	
@@ -196,7 +200,7 @@ import delimited 16122020_results-survey769747_codes.csv, case(preserve) clear
 	foreach var of varlist q406* q409* q412* q414 q415 q417* q420* q422*   {		
 		replace `var' = usubinstr(`var', "A", "", 1) 
 		destring `var', replace 
-		}	
+		}			
 		
 	//*KEYC edit begins*//
 	rename q410_other q410other  
@@ -220,13 +224,13 @@ import delimited 16122020_results-survey769747_codes.csv, case(preserve) clear
 	sum q5*	
 	codebook q503* q505* q507*
 	
-	foreach var of varlist q503* q505* q507* {		
+	foreach var of varlist q503* q505* q507*  {		
 		replace `var' = usubinstr(`var', "A", "", 1) 
 		destring `var', replace 
 		}	
 		
 	sum q5*	
-	
+
 	*****************************	
 	* Section 6		
 	*****************************	
@@ -236,8 +240,8 @@ import delimited 16122020_results-survey769747_codes.csv, case(preserve) clear
 	foreach var of varlist q604 q607* q608_* {		
 		replace `var' = usubinstr(`var', "A", "", 1) 
 		destring `var', replace 
-		}	
-	
+		}				
+		
 	sum q6*		
 	
 	*****************************
@@ -262,7 +266,7 @@ import delimited 16122020_results-survey769747_codes.csv, case(preserve) clear
 		replace `var' = usubinstr(`var', "A", "", 1) 
 		destring `var', replace 
 		}			
-	
+		
 	sum q8*
 
 	*****************************		
@@ -275,7 +279,7 @@ import delimited 16122020_results-survey769747_codes.csv, case(preserve) clear
 		replace `var' = usubinstr(`var', "A", "", 1) 
 		destring `var', replace 
 		}		
-	
+		
 	sum q9*
 
 	*****************************			
@@ -478,7 +482,8 @@ import delimited 16122020_results-survey769747_codes.csv, case(preserve) clear
 	lab values q911 icepackfreeze ;	
 		
 /*KECT - in Kenya, questions 607 and 608 have been revised to say "always", "sometimes", and "never" so removing from this section and recoding in their own section q607_* q608_001 - q608_006 */
-		
+	
+	/*
 	lab define yesno 1"1. yes" 0"0. no"; 	
 	#delimit;
 	foreach var of varlist 
@@ -494,7 +499,7 @@ import delimited 16122020_results-survey769747_codes.csv, case(preserve) clear
 		{;		
 	labe values `var' yesno; 
 	};	
-
+	*/
 	
 	lab define alwayssometimesnever 2"2. Always" 1"1.Sometimes" 0"0. Never"; 
 	foreach var of varlist q607_* q608_001 - q608_006 {;		
@@ -1503,8 +1508,8 @@ use CEHS_`country'_R`round'.dta, clear
 	collapse (count) obs obs_* (mean) x* (sum) staff_num* yvac* vol* (count) obshmis* [iweight=weight], by(country round month year   zlevel_hospital)
 		gen group="Level"
 		gen grouplabel=""
-			replace grouplabel="2.1 Non-hospitals" if zlevel_hospital==0
-			replace grouplabel="2.2 Hospitals" if zlevel_hospital==1
+			replace grouplabel="2.1 Level 2-3 facilities" if zlevel_hospital==0
+			replace grouplabel="2.2 Level 4-6 facilities" if zlevel_hospital==1
 		keep obs* country round month year  group* x* staff* yvac* vol*
 			
 		append using summary_CEHS_`country'_R`round'.dta
