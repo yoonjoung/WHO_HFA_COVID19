@@ -670,6 +670,12 @@ restore
 	gen	xvac_reason_time 		= xvac_reason__006==1 
 	gen	xvac_reason_cost 		= xvac_reason__007==1 
 
+	foreach var of varlist xvac_reason*{
+		replace `var' = . if xvac_most !=0
+		}
+	
+	sum xvac*
+		
 	*****************************
 	* Section 5: Community assets and vulnerabilities 
 	*****************************	
@@ -764,7 +770,7 @@ restore
 	
 	foreach var of varlist xhbc_* xmortality* {
 		replace `var' = . if xhbc!=1
-	}
+		}
 		
 	sort ïid
 	save Community_`country'_R`round'.dta, replace 		
@@ -782,8 +788,10 @@ restore
 use Community_`country'_R`round'.dta, clear
 	
 	gen obs=1 	
-	gen obs_chw=1 if zchw==1 	
+	*gen obs_chw=1 if zchw==1 	
+	gen obs_chw=1 /*in KENYA all asnwer the secion 6, even though a few occupation are not CHWs*/
 	gen obs_hbc=1 if xhbc==1
+	gen obs_vacreason=1 if xvac_most!=1
 	
 	save temp.dta, replace 
 	
@@ -840,7 +848,7 @@ use Community_`country'_R`round'.dta, clear
 save summary_Community_`country'_R`round'.dta, replace 
 
 export delimited using summary_Community_`country'_R`round'.csv, replace 
-*export delimited using "C:\Users\YoonJoung Choi\Dropbox\0 iSquared\iSquared_WHO\ACTA\4.ShinyAppCEHS\summary_Community_`country'_R`round'.csv", replace 
+export delimited using "C:\Users\YoonJoung Choi\Dropbox\0 iSquared\iSquared_WHO\ACTA\4.ShinyApp\summary_Community_`country'_R`round'.csv", replace 
 
 
 *****F.2. Export indicator estimate data to chartbook AND dashboard

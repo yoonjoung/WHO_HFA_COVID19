@@ -77,6 +77,11 @@ import delimited "18122020_results-survey447349_codes.csv", case(preserve) clear
 
 	drop if Q101=="Test 1" | Q101=="Test 2" /* KE specific, drop test rows*/ 
 
+	codebook token Q101
+		list Q1* if Q101=="" | token=="" /*empty row*/
+		
+	drop if Q101=="" /* KE specific : dummy line generated from Lime survey? */ 
+
 	export excel using "$chartbookdir\KEN_Hospital_Chartbook.xlsx", sheet("Facility-level raw data") sheetreplace firstrow(variables) nolabel
 	
 ***** Change var names to lowercase
@@ -542,16 +547,25 @@ restore
 	foreach var of varlist q104 q105 q106{
 		tab `var'
 		}
-	
+		
 	gen zurban	=q104>=`urbanmin' & q104<=`urbanmax'
 	
-	gen zlevel				=q105
+	gen zlevel			=""
+		replace zlevel	="Level2" if q105==1
+		replace zlevel	="Level3" if q105==2
+		replace zlevel	="Level4" if q105==3
+		replace zlevel	="Level5" if q105==4
+		replace zlevel	="Level6" if q105==5
+	
 	gen zlevel_hospital		=q105>=`minhigh' & q105<=`maxhigh'
 	gen zlevel_primhospital	=q105==`primaryhospital'
 	gen zlevel_low			=q105>=`minlow'  & q105<=`maxlow'
 	
 	gen zpub	=q106>=`pubmin' & q106<=`pubmax'
 	
+	gen zcounty = q101a
+	gen zlevel4 = zlevel=="Level4"
+		
 	lab define zurban 0"Rural" 1"Urban"
 	lab define zlevel_hospital 0"Non-hospital" 1"Hospital"
 	lab define zpub 0"Non-public" 1"Public"
@@ -745,12 +759,15 @@ restore
 	gen xtest			=q603!=1 /*test else where*/
 	gen xtesttransport	=q604==1	
 	
-	/* KEYC revised per numeric var*/
+	/* KEYC revised per numeric var - 
+	*		based on the distribution there is a heaping on day 3. */
+	* 		Revise the cutoff 	. */
+	
 	/* KECT changed categories*/
 	if q605--.{ /*QUESTION - what do we think 0 means? - Currently being treated as less than a day should it be set as missing?*/
-	gen xtesttime_1	=q605<1 	/*Less than a day*/ /*KECT - Chelsea added*/
-	gen xtesttime_2	=q605<2 	/*less than 2 days*/ 
-	gen xtesttime_3 =q605<3 /*less than 3 days*/ 
+	gen xtesttime_1	=q605<=1 	/*Less than a day*/ /*KECT - Chelsea added*/
+	gen xtesttime_2	=q605<=2 	/*less than 2 days*/ 
+	gen xtesttime_3 =q605<=3     /*less than 3 days*/ 
 	}
 	
 	foreach var of varlist xtesttime*	{
@@ -940,7 +957,7 @@ import excel "$chartbookdir\KEN_Hospital_Chartbook.xlsx", sheet("Weight") firstr
 	export delimited using COVID19HospitalReadiness_`country'_R`round'.csv, replace 
 
 	export excel using "$chartbookdir\KEN_Hospital_Chartbook.xlsx", sheet("Facility-level cleaned data") sheetreplace firstrow(variables) nolabel
-			
+						
 **************************************************************
 * F. Create indicator estimate data 
 **************************************************************
@@ -998,6 +1015,24 @@ use COVID19HospitalReadiness_`country'_R`round'.dta, clear
 		append using summary_COVID19HospitalReadiness_`country'_R`round'.dta		
 		save summary_COVID19HospitalReadiness_`country'_R`round'.dta, replace 
 		
+	use temp.dta, clear
+	collapse (count) obs* (sum) ybed* [iweight=weight], by(country round month year   zcounty)
+		gen group="County"
+		gen grouplabel=zcounty 
+		keep obs* country round month year  group* y*
+				
+		append using summary_COVID19HospitalReadiness_`country'_R`round'.dta		
+		save summary_COVID19HospitalReadiness_`country'_R`round'.dta, replace 
+		
+	use temp.dta, clear
+	collapse (count) obs* (sum) ybed* [iweight=weight], by(country round month year   zcounty zlevel)
+		gen group="County and Facility level"
+		catenate grouplabel = zcounty zlevel, p(-) 
+		keep obs* country round month year  group* y*
+				
+		append using summary_COVID19HospitalReadiness_`country'_R`round'.dta		
+		save summary_COVID19HospitalReadiness_`country'_R`round'.dta, replace 	
+			
 	foreach var of varlist x*{
 		replace `var'=round(`var'*100, 1)	
 		}
@@ -1028,6 +1063,7 @@ use summary_COVID19HospitalReadiness_`country'_R`round'.dta, clear
 	replace updatetime="`time'"
 
 export excel using "$chartbookdir\KEN_Hospital_Chartbook.xlsx", sheet("Indicator estimate data") sheetreplace firstrow(variables) nolabel keepcellfmt
+export delimited using "C:\Users\YoonJoung Choi\Dropbox\0 iSquared\iSquared_WHO\ACTA\4.ShinyApp\summary_COVID19HospitalReadiness_`country'_R`round'.csv", replace 
 
 erase temp.dta
 

@@ -77,7 +77,10 @@ global date=subinstr("`c_today'", " ", "",.)
 import delimited 18122020_results-survey769747_codes.csv, case(preserve) clear 
 
 	drop if toke=="" /* KE specific, drop first two rows likely testing data*/ 
-		
+	
+	codebook token Q101
+		list Q1* if Q101==. | token=="" /*empty row*/	
+	
 	export excel using "$chartbookdir\KEN_CEHS_Chartbook.xlsx", sheet("Facility-level raw data") sheetreplace firstrow(variables) nolabel
 
 ***** Change var names to lowercase
@@ -689,7 +692,7 @@ restore
 		local maxlow		 	 2 /*highest code for lower-level facilities in Q105*/
 		local minhigh		 	 3 /*lowest code for hospital/high-level facilities in Q105*/
 		local maxhigh			 5 /*highest code for hospital/high-level facilities in Q105*/
-		local districthospital   3 /*district hospital or equivalent */	
+		local primaryhospital   3 /*district hospital or equivalent */	
 		
 		local pubmin			 1
 		local pubmax			 1
@@ -719,16 +722,25 @@ restore
 	foreach var of varlist q104 q105 q106{
 		tab `var'
 		}
-	
+		
 	gen zurban	=q104>=`urbanmin' & q104<=`urbanmax'
 	
-	gen zlevel				=q105
+	gen zlevel			=""
+		replace zlevel	="Level2" if q105==1
+		replace zlevel	="Level3" if q105==2
+		replace zlevel	="Level4" if q105==3
+		replace zlevel	="Level5" if q105==4
+		replace zlevel	="Level6" if q105==5
+	
 	gen zlevel_hospital		=q105>=`minhigh' & q105<=`maxhigh'
-	gen zlevel_disthospital	=q105==`districthospital'
+	gen zlevel_primhospital	=q105==`primaryhospital'
 	gen zlevel_low			=q105>=`minlow'  & q105<=`maxlow'
 	
 	gen zpub	=q106>=`pubmin' & q106<=`pubmax'
 	
+	gen zcounty = q101a
+	gen zlevel4 = zlevel=="Level4"
+		
 	lab define zurban 0"Rural" 1"Urban"
 	lab define zlevel_hospital 0"Non-hospital" 1"Hospital"
 	lab define zpub 0"Non-public" 1"Public"
@@ -826,12 +838,20 @@ restore
 	gen xexempt_covid= 	q302==1 | q302==3
 	gen xexempt_other= 	q302==2 | q302==3	
 	*gen xexempt_vulnp= 	q303==1 : KEYC edit : no q303 in Kenya*/
-	gen xfeeincrease= 	q304==1 
-		
+	gen xfeeincrease= 	q304==1
+	
 		foreach var of varlist xexempt* xfee{
 			replace `var'=. if xuserfee!=1
 			}
-			
+		
+	gen xfeeincrease__001= 	q3041_001==1		/*[Increased use of PPEs]*/
+	gen xfeeincrease__002= 	q3041_002==1		/*[Increased expenses for facility maintenance and operations ]*/
+	gen xfeeincrease__003= 	q3041_003==1		/*[Reduced utilization of services]*/
+		
+		foreach var of varlist xfeeincrease__* {
+			replace `var'=. if xfeeincrease!=1 
+			}
+	
 	///*KEYC edit begins*///
 	*gen xaddfund = q305==1 | q305==2 /* KEYC edit - error in lime survey programming. should have been a radio button question - i.e., select one */
 	gen xaddfund 		= q305_001==1 | q305_002==1 
@@ -850,7 +870,7 @@ restore
 			
 	gen xfinance_PBF = q310==1
 	
-	sum xuserfee xexempt* xfee xfinance*
+	sum xuserfee xexempt* xfee* xfinance*
 	
 	*****************************
 	* Section 4: service delivery & utlization  
@@ -1325,14 +1345,14 @@ restore
 	global itemlist "001 002 003 004" /*In Kenya, four items asked */
 	foreach item in $itemlist{	
 		gen ximage_av_`item' 	= q805_`item'<=2
-		replace ximage_av_`item'	=. if zlevel==1 /*In Kenya, asked in all facilities, except the level 2*/ 
+		replace ximage_av_`item'	=. if zlevel=="Level2" /*In Kenya, asked in all facilities, except the level 2*/ 
 		}
 		
 
 	global itemlist "001 002 003 004" /*In Kenya,  four items asked */
 	foreach item in $itemlist{	
 		gen ximage_avfun_`item' = q805_`item'<=1  
-		replace ximage_avfun_`item' =. if zlevel==1 /*In Kenya, asked in all facilities, except the level 2*/ 
+		replace ximage_avfun_`item' =. if zlevel=="Level2" /*In Kenya, asked in all facilities, except the level 2*/ 
 		}		
 	
 		gen max=3
@@ -1568,6 +1588,7 @@ use summary_CEHS_`country'_R`round'.dta, clear
 	replace updatetime="`time'"
 	
 export excel using "$chartbookdir\KEN_CEHS_Chartbook.xlsx", sheet("Indicator estimate data") sheetreplace firstrow(variables) nolabel keepcellfmt
+export delimited using "C:\Users\YoonJoung Choi\Dropbox\0 iSquared\iSquared_WHO\ACTA\4.ShinyApp\summary_CEHS_`country'_R`round'.csv", replace 
 
 erase temp.dta
 
