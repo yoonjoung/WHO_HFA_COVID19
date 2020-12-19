@@ -961,17 +961,17 @@ restore
 
 	global varlist "xopt_increase "
 	foreach var in $varlist {
-		gen `var'_reason_covidnow 	= `var'_reason__001==1 | `var'_reason__002==1  
-		gen `var'_reason_covidafter = `var'_reason__003==1 | `var'_reason__004==1 | `var'_reason__005==1 
-		gen `var'_reason_gbv	    = `var'_reason__006==1 //* KEYC edit*//
+		gen `var'_reason_covidnow 	= `var'==1 & (`var'_reason__001==1 | `var'_reason__002==1  )
+		gen `var'_reason_covidafter = `var'==1 & (`var'_reason__003==1 | `var'_reason__004==1 | `var'_reason__005==1 )
+		gen `var'_reason_gbv	    = `var'==1 & (`var'_reason__006==1 ) //* KEYC edit*//
 		}		
 		
 	global varlist "xopt_decrease"
 	foreach var in $varlist {
-		gen `var'_reason_comdemand  = `var'_reason__001==1 | `var'_reason__002==1  | `var'_reason__005==1  //* KEYC edit*//
-		gen `var'_reason_enviro 	= `var'_reason__003==1 | `var'_reason__004==1 
-		gen `var'_reason_intention	= `var'_reason__007==1 | `var'_reason__008==1 | `var'_reason__009==1 | `var'_reason__010==1  
-		gen `var'_reason_disruption = `var'_reason__011==1 | `var'_reason__012==1 
+		gen `var'_reason_comdemand  = `var'==1 & (`var'_reason__001==1 | `var'_reason__002==1  | `var'_reason__005==1  ) //* KEYC edit*//
+		gen `var'_reason_enviro 	= `var'==1 & (`var'_reason__003==1 | `var'_reason__004==1 )
+		gen `var'_reason_intention	= `var'==1 & (`var'_reason__007==1 | `var'_reason__008==1 | `var'_reason__009==1 | `var'_reason__010==1  )
+		gen `var'_reason_disruption = `var'==1 & (`var'_reason__011==1 | `var'_reason__012==1 )
 		}
 		
 	***** ER
@@ -1190,10 +1190,9 @@ restore
 	gen xcvd_pt_score	=100*(temp/max)
 	gen xcvd_pt_100 	=xcvd_pt_score>=100
 	gen xcvd_pt_50 		=xcvd_pt_score>=50
-		drop max temp
-		
+		drop max temp		
 
-		foreach var of varlist xcvd_pt_*{
+		foreach var of varlist xcvd_pt_score xcvd_pt_100 xcvd_pt_50 {
 			replace `var'=. if xcvd_pt==0
 			}
 			
@@ -1203,11 +1202,13 @@ restore
 	foreach item in $itemlist{	
 		gen xcvd_pthbsi__`item' 	= xcvd_pthbsi==1 & q608_`item'==2
 		}	
-		
+
+		/*
 		foreach var of varlist xcvd_pthbsi_*{
 			replace `var'=. if xcvd_pthbsi==0
 			}		
-	
+		*/ 
+		
 	gen ycvd_pthbsi = q6081
 	
 	gen xcvd_guide_casemanage	= q609==1				
@@ -1596,7 +1597,7 @@ use summary_CEHS_`country'_R`round'.dta, clear
 	replace updatetime="`time'"
 	
 export excel using "$chartbookdir\KEN_CEHS_Chartbook.xlsx", sheet("Indicator estimate data") sheetreplace firstrow(variables) nolabel keepcellfmt
-*export delimited using "C:\Users\YoonJoung Choi\Dropbox\0 iSquared\iSquared_WHO\ACTA\4.ShinyApp\summary_CEHS_`country'_R`round'.csv", replace 
+export delimited using "C:\Users\YoonJoung Choi\Dropbox\0 iSquared\iSquared_WHO\ACTA\4.ShinyApp\summary_CEHS_`country'_R`round'.csv", replace 
 
 erase temp.dta
 
