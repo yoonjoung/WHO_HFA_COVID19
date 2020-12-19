@@ -72,7 +72,7 @@ global date=subinstr("`c_today'", " ", "",.)
 
 *import delimited 15122020_results-survey451568_codes_TEST.csv, case(preserve) clear 
 *import delimited 17122020_results-survey451568_codes.csv, case(preserve) clear 
-import delimited 18122020_results-survey451568_codes.csv, case(preserve) clear 
+import delimited 19122020_results-survey451568_codes.csv, case(preserve) clear 
 
 	gen import = "success" /*to confirm correct import of raw data to Chartbook*/
 
@@ -800,6 +800,7 @@ use Community_`country'_R`round'.dta, clear
 	use temp.dta, clear
 	collapse (count) obs* (mean) x* , by(country round month year  )
 		gen group="All"
+		gen grouplabel="All"
 		keep obs* country round month year  group* x* 
 		save summary_Community_`country'_R`round'.dta, replace 
 
@@ -848,7 +849,7 @@ use Community_`country'_R`round'.dta, clear
 save summary_Community_`country'_R`round'.dta, replace 
 
 export delimited using summary_Community_`country'_R`round'.csv, replace 
-export delimited using "C:\Users\YoonJoung Choi\Dropbox\0 iSquared\iSquared_WHO\ACTA\4.ShinyApp\summary_Community_`country'_R`round'.csv", replace 
+*export delimited using "C:\Users\YoonJoung Choi\Dropbox\0 iSquared\iSquared_WHO\ACTA\4.ShinyApp\summary_Community_`country'_R`round'.csv", replace 
 
 
 *****F.2. Export indicator estimate data to chartbook AND dashboard

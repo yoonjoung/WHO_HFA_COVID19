@@ -74,7 +74,7 @@ global date=subinstr("`c_today'", " ", "",.)
 *import delimited 15122020_results-survey769747_codes.csv, case(preserve) clear 
 *import delimited 16122020_results-survey769747_codes.csv, case(preserve) clear 
 *import delimited 17122020_results-survey769747_codes.csv, case(preserve) clear 
-import delimited 18122020_results-survey769747_codes.csv, case(preserve) clear 
+import delimited 19122020_results-survey769747_codes.csv, case(preserve) clear 
 
 	drop if toke=="" /* KE specific, drop first two rows likely testing data*/ 
 	
@@ -1232,7 +1232,7 @@ restore
 		drop max temp
 				
 		gen max=3
-		egen temp=rowtotal(q702_* )
+		egen temp=rowtotal(q702_001 q702_002 q702_003 )
 	gen xsupp_score	=100*(temp/max)
 	gen xsupp_100 	=xsupp_score>=100
 	gen xsupp_50 	=xsupp_score>=50
@@ -1392,8 +1392,10 @@ restore
 
 	gen xvac_av_outreach = xvac_av_coldbox ==1 | xvac_av_carrier ==1  
 	gen xvac_avfun_outreach_all_full = xvac_avfun_coldbox_all_full ==1 | xvac_avfun_carrier_all_full==1  
+		
+	gen xvac_sharp = q912==1
 	
-	foreach var of varlist xvac_av* yvac_av*{
+	foreach var of varlist xvac_av* yvac_av* xvac_sharp{
 		replace `var'=. if xvac!=1
 		}
 		
@@ -1510,6 +1512,7 @@ use CEHS_`country'_R`round'.dta, clear
 	use temp.dta, clear
 	collapse (count) obs obs_* (mean) x* (sum) staff_num* yvac* vol* (count) obshmis* [iweight=weight], by(country round month year  )
 		gen group="All"
+		gen grouplabel="All"
 		keep obs* country round month year  group* x* staff* yvac* vol*
 		save summary_CEHS_`country'_R`round'.dta, replace 
 		
@@ -1588,7 +1591,7 @@ use summary_CEHS_`country'_R`round'.dta, clear
 	replace updatetime="`time'"
 	
 export excel using "$chartbookdir\KEN_CEHS_Chartbook.xlsx", sheet("Indicator estimate data") sheetreplace firstrow(variables) nolabel keepcellfmt
-export delimited using "C:\Users\YoonJoung Choi\Dropbox\0 iSquared\iSquared_WHO\ACTA\4.ShinyApp\summary_CEHS_`country'_R`round'.csv", replace 
+*export delimited using "C:\Users\YoonJoung Choi\Dropbox\0 iSquared\iSquared_WHO\ACTA\4.ShinyApp\summary_CEHS_`country'_R`round'.csv", replace 
 
 erase temp.dta
 

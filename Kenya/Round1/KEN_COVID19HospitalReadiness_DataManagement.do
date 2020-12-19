@@ -73,15 +73,18 @@ global date=subinstr("`c_today'", " ", "",.)
 *import delimited "15122020_results-survey447349_codes.csv", case(preserve) clear 
 *import delimited "16122020_results-survey447349_codes.csv", case(preserve) clear 
 *import delimited "17122020_results-survey447349_codes.csv", case(preserve) clear 
-import delimited "18122020_results-survey447349_codes.csv", case(preserve) clear 
+import delimited "19122020_results-survey447349_codes.csv", case(preserve) clear 
 
-	drop if Q101=="Test 1" | Q101=="Test 2" /* KE specific, drop test rows*/ 
+/*	drop if Q101=="Test 1" | Q101=="Test 2" /* KE specific, drop test rows*/ KECT - removed because Q101 is coming in as numeric without "Test"*/
 
 	codebook token Q101
-		list Q1* if Q101=="" | token=="" /*empty row*/
+		*list Q1* if Q101=="" | token=="" /*empty row*/
+		list Q1* if Q101==. | token=="" /*empty row*/
 		
-	drop if Q101=="" /* KE specific : dummy line generated from Lime survey? */ 
-
+	*drop if Q101=="" /* KE specific : dummy line generated from Lime survey? */ 
+	drop if Q101==.
+	
+	
 	export excel using "$chartbookdir\KEN_Hospital_Chartbook.xlsx", sheet("Facility-level raw data") sheetreplace firstrow(variables) nolabel
 	
 ***** Change var names to lowercase
@@ -603,18 +606,18 @@ restore
 	
 	gen ybed_covid_night   = (q304 + q305)/2
 	gen ybed_covid_month = q305b /* KECT - added monthly average COVID occupancy */
-	
-	*gen xcovid_occ_night = ybed_covid_night/q301 /* KECT calculate % of COVID ready beds occupied by COVID patients, last night */
-	*gen xcovid_occ_month = ybed_covid_month/q301 /* KEYC calculate % of COVID ready beds occupied by COVID patients, last month */
-	gen xcovid_occ_lastnight = 100*(ybed_covid_night/ybed) /* KECT calculate % of beds occupied by COVID patients, last night  - this in case q301==0? */ 
-	gen xcovid_occ_lastmonth = 100*(ybed_covid_month/ybed) /* KEYC calculate % of beds occupied by COVID patients, last month  - this in case q301==0? */
 
 	gen ybed_cap_isolation = q306	
 	gen ybed_cap_respiso_o2 = q306b
 	gen ybed_convert_respiso = q307
 	gen ybed_convert_icu 	 = q308
 	
-	gen xocc_lastnight = 100* (q309 / ybed) /*KEYC review data and confirm*/
+	gen xocc_lastnight 		 = 100* (q309 / ybed) /*KEYC review data and confirm*/
+	gen xocc_lastnight_covid = 100*(ybed_covid_night/ybed) /* KECT calculate % of beds occupied by COVID patients, last night  - this in case q301==0? */ 
+	gen xocc_lastmonth_covid = 100*(ybed_covid_month/ybed) /* KEYC calculate % of beds occupied by COVID patients, last month  - this in case q301==0? */
+	gen xcovid_occ_lastnight = 100*(ybed_covid_night/ybed_cap_covid) /* % of COVID beds occupied by COVID patients, last night  */ 
+	gen xcovid_occ_lastmonth = 100*(ybed_covid_month/ybed_cap_covid) /* % of COVID beds occupied by COVID patients, last month  */
+
 	
 	gen ypt_homecare = q310 /* KECT added number of patients sent home for homebased care */
 	
@@ -859,6 +862,10 @@ restore
 	gen xoxygen_cylinder	= q704_003==1 
 	gen xoxygen_plant 		= q704_004==1   
 	
+		egen temp=rowtotal(xoxygen_*)
+	gen xoxygensource	=temp>=1
+		drop temp
+	
 	gen xoxygen_dist 		= q705==1
 	gen xoxygen_dist__er 		= q706_001==1
 	gen xoxygen_dist__icu 		= q706_002==1
@@ -866,9 +873,10 @@ restore
 	
 		egen temp=rowtotal(xoxygen_dist__*)
 	gen xoxygen_dist_all 		= temp==3  /*piped oxygen distribution in ER, ICU, AND isolation room*/
-	gen xoxygen_dist_any 		= temp==3  /*piped oxygen distribution in ER, ICU, OR isolation room*/
-	
-	gen xocygen_portcylinder	= q707==1
+	gen xoxygen_dist_any 		= temp>=1  /*piped oxygen distribution in ER, ICU, OR isolation room*/
+		drop temp
+		
+	gen xoxygen_portcylinder	= q707==1
 	
 	global itemlist "001 002 003 004 "
 	foreach item in $itemlist{	
@@ -878,7 +886,14 @@ restore
 		rename xo2__002 xo2__mask
 		rename xo2__003 xo2__humidifier		
 		rename xo2__004 xo2__flowmeter
-		
+	
+		gen max=4
+		egen temp=rowtotal(xo2__*)
+	gen xo2supp_score	=100*(temp/max)
+	gen xo2supp_100		=xequip_allfunction_score>=100
+	gen xo2supp_50		=xequip_allfunction_score>=50
+		drop max temp		
+	
 	///* KE edit ends *///
 
 		
@@ -913,7 +928,7 @@ restore
 	
 	gen xvac_sharp = q812==1
 	
-	foreach var of varlist xvac_av* yvac_av*{
+	foreach var of varlist xvac_av* yvac_av* xvac_sharp{
 		replace `var'=. if xvac!=1
 		}
 		
@@ -979,6 +994,7 @@ use COVID19HospitalReadiness_`country'_R`round'.dta, clear
 	use temp.dta, clear
 	collapse (count) obs* (mean) x* (sum) ybed* ypt*  yequip* yvac*  [iweight=weight], by(country round month year  )
 		gen group="All"
+		gen grouplabel="All"
 		keep obs* country round month year  group* x* y*
 		save summary_COVID19HospitalReadiness_`country'_R`round'.dta, replace 
 		
@@ -1029,7 +1045,7 @@ use COVID19HospitalReadiness_`country'_R`round'.dta, clear
 		gen group="County and Facility level"
 		catenate grouplabel = zcounty zlevel, p(-) 
 		keep obs* country round month year  group* y*
-				
+		
 		append using summary_COVID19HospitalReadiness_`country'_R`round'.dta		
 		save summary_COVID19HospitalReadiness_`country'_R`round'.dta, replace 	
 			
@@ -1063,7 +1079,7 @@ use summary_COVID19HospitalReadiness_`country'_R`round'.dta, clear
 	replace updatetime="`time'"
 
 export excel using "$chartbookdir\KEN_Hospital_Chartbook.xlsx", sheet("Indicator estimate data") sheetreplace firstrow(variables) nolabel keepcellfmt
-export delimited using "C:\Users\YoonJoung Choi\Dropbox\0 iSquared\iSquared_WHO\ACTA\4.ShinyApp\summary_COVID19HospitalReadiness_`country'_R`round'.csv", replace 
+*export delimited using "C:\Users\YoonJoung Choi\Dropbox\0 iSquared\iSquared_WHO\ACTA\4.ShinyApp\summary_COVID19HospitalReadiness_`country'_R`round'.csv", replace 
 
 erase temp.dta
 
