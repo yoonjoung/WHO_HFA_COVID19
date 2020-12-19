@@ -76,6 +76,11 @@ import delimited 19122020_results-survey451568_codes.csv, case(preserve) clear
 
 	gen import = "success" /*to confirm correct import of raw data to Chartbook*/
 
+	/*mask ID information*/
+	foreach var of varlist Q101 Q106 Q7011 Q7012 {
+		replace `var'=""
+		}		
+	
 	export excel using "$chartbookdir\KEN_Community_Chartbook.xlsx", sheet("Respondent-level raw data") sheetreplace firstrow(variables) nolabel
 
 	drop import

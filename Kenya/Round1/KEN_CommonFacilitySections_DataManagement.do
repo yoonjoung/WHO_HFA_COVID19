@@ -110,8 +110,8 @@ use CommonFacilitySections_`country'_R`round'.dta, clear
 	collapse (count) obs* (mean) x* [iweight=weight], by(country round month year  zurban)
 		gen group="Location"
 		gen grouplabel=""
-			replace grouplabel="1.1 Rural" if zurban==0
-			replace grouplabel="1.2 Urban" if zurban==1
+			replace grouplabel="Rural" if zurban==0
+			replace grouplabel="Urban" if zurban==1
 				
 		append using summary_CommonFacilitySections_`country'_R`round'.dta, force
 		save summary_CommonFacilitySections_`country'_R`round'.dta, replace 
@@ -128,8 +128,8 @@ use CommonFacilitySections_`country'_R`round'.dta, clear
 	collapse (count) obs* (mean) x* [iweight=weight], by(country round month year  zpub)
 		gen group="Sector"
 		gen grouplabel=""
-			replace grouplabel="3.1 Non-public" if zpub==0
-			replace grouplabel="3.2 Public" if zpub==1
+			replace grouplabel="Non-public" if zpub==0
+			replace grouplabel="Public" if zpub==1
 				
 		append using summary_CommonFacilitySections_`country'_R`round'.dta		
 		save summary_CommonFacilitySections_`country'_R`round'.dta, replace 

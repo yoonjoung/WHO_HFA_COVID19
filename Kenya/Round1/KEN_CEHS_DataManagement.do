@@ -81,6 +81,11 @@ import delimited 19122020_results-survey769747_codes.csv, case(preserve) clear
 	codebook token Q101
 		list Q1* if Q101==. | token=="" /*empty row*/	
 	
+	/*mask ID information*/
+	foreach var of varlist Q1BSQ001comment Q107 Q108 Q109 Q110other Q1102 Q1103 {
+		replace `var'=""
+		}	
+	
 	export excel using "$chartbookdir\KEN_CEHS_Chartbook.xlsx", sheet("Facility-level raw data") sheetreplace firstrow(variables) nolabel
 
 ***** Change var names to lowercase
@@ -1520,8 +1525,8 @@ use CEHS_`country'_R`round'.dta, clear
 	collapse (count) obs obs_* (mean) x* (sum) staff_num* yvac* vol* (count) obshmis* [iweight=weight], by(country round month year   zurban)
 		gen group="Location"
 		gen grouplabel=""
-			replace grouplabel="1.1 Rural" if zurban==0
-			replace grouplabel="1.2 Urban" if zurban==1
+			replace grouplabel="Rural" if zurban==0
+			replace grouplabel="Urban" if zurban==1
 		keep obs* country round month year  group* x* staff* yvac* vol*
 		
 		append using summary_CEHS_`country'_R`round'.dta, force
@@ -1531,8 +1536,8 @@ use CEHS_`country'_R`round'.dta, clear
 	collapse (count) obs obs_* (mean) x* (sum) staff_num* yvac* vol* (count) obshmis* [iweight=weight], by(country round month year   zlevel_hospital)
 		gen group="Level"
 		gen grouplabel=""
-			replace grouplabel="2.1 Level 2-3 facilities" if zlevel_hospital==0
-			replace grouplabel="2.2 Level 4-6 facilities" if zlevel_hospital==1
+			replace grouplabel="Level 2-3" if zlevel_hospital==0
+			replace grouplabel="Level 4-6" if zlevel_hospital==1
 		keep obs* country round month year  group* x* staff* yvac* vol*
 			
 		append using summary_CEHS_`country'_R`round'.dta
@@ -1542,8 +1547,8 @@ use CEHS_`country'_R`round'.dta, clear
 	collapse (count) obs obs_* (mean) x* (sum) staff_num* yvac* vol* (count) obshmis* [iweight=weight], by(country round month year   zpub)
 		gen group="Sector"
 		gen grouplabel=""
-			replace grouplabel="3.1 Non-public" if zpub==0
-			replace grouplabel="3.2 Public" if zpub==1
+			replace grouplabel="Non-public" if zpub==0
+			replace grouplabel="Public" if zpub==1
 		keep obs* country round month year  group* x* staff* yvac* vol*
 		
 		append using summary_CEHS_`country'_R`round'.dta		

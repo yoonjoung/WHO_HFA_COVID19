@@ -82,8 +82,12 @@ import delimited "19122020_results-survey447349_codes.csv", case(preserve) clear
 		list Q1* if Q101==. | token=="" /*empty row*/
 		
 	*drop if Q101=="" /* KE specific : dummy line generated from Lime survey? */ 
-	drop if Q101==.
+	drop if Q101==.	
 	
+	/*mask ID information*/
+	foreach var of varlist Q1BSQ001comment Q107 Q108 Q109 Q110other Q902 Q903 {
+		replace `var'=""
+		}	
 	
 	export excel using "$chartbookdir\KEN_Hospital_Chartbook.xlsx", sheet("Facility-level raw data") sheetreplace firstrow(variables) nolabel
 	
@@ -568,6 +572,7 @@ restore
 	
 	gen zcounty = q101a
 	gen zlevel4 = zlevel=="Level4"
+	gen zlevel56 = zlevel=="Level5" | zlevel=="Level6" 
 		
 	lab define zurban 0"Rural" 1"Urban"
 	lab define zlevel_hospital 0"Non-hospital" 1"Hospital"
@@ -1002,19 +1007,19 @@ use COVID19HospitalReadiness_`country'_R`round'.dta, clear
 	collapse (count) obs* (mean) x* (sum) ybed* ypt*  yequip* yvac*  [iweight=weight], by(country round month year   zurban)
 		gen group="Location"
 		gen grouplabel=""
-			replace grouplabel="1.1 Rural" if zurban==0
-			replace grouplabel="1.2 Urban" if zurban==1
+			replace grouplabel="Rural" if zurban==0
+			replace grouplabel="Urban" if zurban==1
 		keep obs* country round month year  group* x* y*
 		
 		append using summary_COVID19HospitalReadiness_`country'_R`round'.dta, force
 		save summary_COVID19HospitalReadiness_`country'_R`round'.dta, replace 
 
 	use temp.dta, clear
-	collapse (count) obs* (mean) x* (sum) ybed* ypt*  yequip* yvac*  [iweight=weight], by(country round month year   zlevel_hospital)
+	collapse (count) obs* (mean) x* (sum) ybed* ypt*  yequip* yvac*  [iweight=weight], by(country round month year   zlevel56)
 		gen group="Level"
 		gen grouplabel=""
-			replace grouplabel="2.1 Level 2-3 facilities" if zlevel_hospital==0
-			replace grouplabel="2.2 Level 4-6 facilities" if zlevel_hospital==1
+			replace grouplabel="Level 2-4" if zlevel56==0
+			replace grouplabel="Level 5-6" if zlevel56==1
 		keep obs* country round month year  group* x* y*
 			
 		append using summary_COVID19HospitalReadiness_`country'_R`round'.dta
@@ -1024,8 +1029,8 @@ use COVID19HospitalReadiness_`country'_R`round'.dta, clear
 	collapse (count) obs* (mean) x* (sum) ybed* ypt*  yequip* yvac*  [iweight=weight], by(country round month year   zpub)
 		gen group="Sector"
 		gen grouplabel=""
-			replace grouplabel="3.1 Non-public" if zpub==0
-			replace grouplabel="3.2 Public" if zpub==1
+			replace grouplabel="Non-public" if zpub==0
+			replace grouplabel="Public" if zpub==1
 		keep obs* country round month year  group* x* y*
 		
 		append using summary_COVID19HospitalReadiness_`country'_R`round'.dta		
