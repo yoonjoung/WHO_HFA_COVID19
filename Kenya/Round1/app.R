@@ -31,7 +31,7 @@
 # 0. Database update 
 #******************************
 
-#setwd("C:/Users/YoonJoung Choi/Dropbox/0 iSquared/iSquared_WHO/ACTA/4.ShinyApp")
+#setwd("C:/Users/YoonJoung Choi/Dropbox/0 iSquared/iSquared_WHO/ACTA/4.ShinyApp/Kenya")
 #dir()
 
 dta<-read.csv("summary_COVID19HospitalReadiness_Kenya_R1.csv")%>%
@@ -151,7 +151,8 @@ ui<-fluidPage(
                     h6(em(span(paste("Data come from", obs3, "sentinel level 2-6 facilities.")), style = "color:blue")),
                     plotlyOutput("plotAB_vaccine"), 
                     hr(), 
-                    h6("Hover over to see data values and indicator definitions.")
+                    h6("Hover over to see data values and indicator definitions."),
+                    h6("(Application last updated on: December 21, 2020, 2:30PM EST)")
                 ),
                 tabPanel("A: COVID-19 case management",       
                     br(),
