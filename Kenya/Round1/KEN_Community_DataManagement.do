@@ -72,7 +72,7 @@ global date=subinstr("`c_today'", " ", "",.)
 
 *import delimited 15122020_results-survey451568_codes_TEST.csv, case(preserve) clear 
 *import delimited 17122020_results-survey451568_codes.csv, case(preserve) clear 
-import delimited 19122020_results-survey451568_codes.csv, case(preserve) clear 
+import delimited 21122020_results-survey451568_codes.csv, case(preserve) clear 
 
 	gen import = "success" /*to confirm correct import of raw data to Chartbook*/
 
@@ -492,7 +492,7 @@ restore
 * E. Create analytical variables 
 **************************************************************
 
-*****E.1. Country speciic code local 
+*****E.1. Country specific code local 
 		
 		local urbanmin			 1 	
 		local urbanmax			 1
@@ -684,8 +684,10 @@ restore
 	*****************************
 	* Section 5: Community assets and vulnerabilities 
 	*****************************	
-	gen xeconimpact_mod =q501==2 & q501==3
+	gen xeconimpact_mod =q501==2 | q501==3  /*KECT - this had & so it wasn't finding anything (cannot be both 2 and 3), changed | */
 	gen xeconimpact_sig =q501==3  
+	
+	tab xeconimpact_mod xeconimpact_sig
 	
 	gen xinit_ses_increased = q502==1 
 	gen xinit_ses_nochange = q502==2 
@@ -854,7 +856,7 @@ use Community_`country'_R`round'.dta, clear
 save summary_Community_`country'_R`round'.dta, replace 
 
 export delimited using summary_Community_`country'_R`round'.csv, replace 
-*export delimited using "C:\Users\YoonJoung Choi\Dropbox\0 iSquared\iSquared_WHO\ACTA\4.ShinyApp\summary_Community_`country'_R`round'.csv", replace 
+export delimited using "C:\Users\YoonJoung Choi\Dropbox\0 iSquared\iSquared_WHO\ACTA\4.ShinyApp\Kenya\summary_Community_`country'_R`round'.csv", replace 
 
 
 *****F.2. Export indicator estimate data to chartbook AND dashboard

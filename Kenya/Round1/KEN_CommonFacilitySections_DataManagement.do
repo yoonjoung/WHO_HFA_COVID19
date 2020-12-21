@@ -167,7 +167,7 @@ use summary_CommonFacilitySections_`country'_R`round'.dta, clear
 	replace updatetime="`time'"
 	
 *export excel using "$chartbookdir\KEN_CEHS_Chartbook.xlsx", sheet("Indicator estimate data") sheetreplace firstrow(variables) nolabel keepcellfmt
-export delimited using "C:\Users\YoonJoung Choi\Dropbox\0 iSquared\iSquared_WHO\ACTA\4.ShinyApp\summary_CommonFacilitySections_`country'_R`round'.csv", replace 
+export delimited using "C:\Users\YoonJoung Choi\Dropbox\0 iSquared\iSquared_WHO\ACTA\4.ShinyApp\Kenya\summary_CommonFacilitySections_`country'_R`round'.csv", replace 
 
 erase temp.dta
 
