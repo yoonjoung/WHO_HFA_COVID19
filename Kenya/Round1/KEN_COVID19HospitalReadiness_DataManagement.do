@@ -45,13 +45,13 @@ numlabel, add
 **************************************************************
 
 *** Directory for this do file and a subfolder for "daily exported CSV file from LimeSurvey"  
-cd "C:\Users\YoonJoung Choi\World Health Organization\BANICA, Sorin - HSA unit\1 Admin\Countries\Country Surveys\Kenya\Case-Mgmt"
-*cd "C:\Users\ctaylor\World Health Organization\BANICA, Sorin - HSA unit\1 Admin\Countries\Country Surveys\Kenya\Case-Mgmt"
+*cd "C:\Users\YoonJoung Choi\World Health Organization\BANICA, Sorin - HSA unit\3 Country implementation & learning\1 HFAs for COVID-19\Kenya\Case-Mgmt"
+cd "C:\Users\ctaylor\World Health Organization\BANICA, Sorin - HSA unit\3 Country implementation & learning\1 HFAs for COVID-19\Kenya\Case-Mgmt"
 dir
 
 *** Define a directory for the chartbook, if different from the main directory 
-global chartbookdir "C:\Users\YoonJoung Choi\World Health Organization\BANICA, Sorin - HSA unit\1 Admin\Countries\Country Surveys\Kenya\Case-Mgmt"
-*global chartbookdir "C:\Users\ctaylor\World Health Organization\BANICA, Sorin - HSA unit\1 Admin\Countries\Country Surveys\Kenya\Case-Mgmt"
+*global chartbookdir "C:\Users\YoonJoung Choi\World Health Organization\BANICA, Sorin - HSA unit\3 Country implementation & learning\1 HFAs for COVID-19\Kenya\Case-Mgmt"
+global chartbookdir "C:\Users\ctaylor\World Health Organization\BANICA, Sorin - HSA unit\3 Country implementation & learning\1 HFAs for COVID-19\Kenya\Case-Mgmt"
 
 *** Define local macro for the survey 
 local country	 		 Kenya /*country name*/	
@@ -73,7 +73,8 @@ global date=subinstr("`c_today'", " ", "",.)
 *import delimited "15122020_results-survey447349_codes.csv", case(preserve) clear 
 *import delimited "16122020_results-survey447349_codes.csv", case(preserve) clear 
 *import delimited "17122020_results-survey447349_codes.csv", case(preserve) clear 
-import delimited "19122020_results-survey447349_codes.csv", case(preserve) clear 
+*import delimited "19122020_results-survey447349_codes.csv", case(preserve) clear 
+import delimited "04012021_results-survey447349_codes.csv", case(preserve) clear
 
 /*	drop if Q101=="Test 1" | Q101=="Test 2" /* KE specific, drop test rows*/ KECT - removed because Q101 is coming in as numeric without "Test"*/
 
@@ -1084,7 +1085,7 @@ use summary_COVID19HospitalReadiness_`country'_R`round'.dta, clear
 	replace updatetime="`time'"
 
 export excel using "$chartbookdir\KEN_Hospital_Chartbook.xlsx", sheet("Indicator estimate data") sheetreplace firstrow(variables) nolabel keepcellfmt
-export delimited using "C:\Users\YoonJoung Choi\Dropbox\0 iSquared\iSquared_WHO\ACTA\4.ShinyApp\Kenya\summary_COVID19HospitalReadiness_`country'_R`round'.csv", replace 
+*export delimited using "C:\Users\YoonJoung Choi\Dropbox\0 iSquared\iSquared_WHO\ACTA\4.ShinyApp\Kenya\summary_COVID19HospitalReadiness_`country'_R`round'.csv", replace 
 
 erase temp.dta
 

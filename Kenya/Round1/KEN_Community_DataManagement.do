@@ -44,13 +44,13 @@ numlabel, add
 **************************************************************
 
 *** Directory for this do file and a subfolder for "daily exported CSV file from LimeSurvey"  
-*cd "C:\Users\ctaylor\World Health Organization\BANICA, Sorin - HSA unit\1 Admin\Countries\Country Surveys\Kenya\Community"
-cd "C:\Users\YoonJoung Choi\World Health Organization\BANICA, Sorin - HSA unit\1 Admin\Countries\Country Surveys\Kenya\Community"
+*cd "C:\Users\ctaylor\World Health Organization\BANICA, Sorin - HSA unit\3 Country implementation & learning\1 HFAs for COVID-19\Kenya\Community"
+cd "C:\Users\YoonJoung Choi\World Health Organization\BANICA, Sorin - HSA unit\3 Country implementation & learning\1 HFAs for COVID-19\Kenya\Community"
 dir
 
 *** Define a directory for the chartbook, if different from the main directory 
-*global chartbookdir "C:\Users\ctaylor\World Health Organization\BANICA, Sorin - HSA unit\1 Admin\Countries\Country Surveys\Kenya\Community"
-global chartbookdir "C:\Users\YoonJoung Choi\World Health Organization\BANICA, Sorin - HSA unit\1 Admin\Countries\Country Surveys\Kenya\Community"
+*global chartbookdir "C:\Users\ctaylor\World Health Organization\BANICA, Sorin - HSA unit\3 Country implementation & learning\1 HFAs for COVID-19\Kenya\Community"
+global chartbookdir "C:\Users\YoonJoung Choi\World Health Organization\BANICA, Sorin - HSA unit\3 Country implementation & learning\1 HFAs for COVID-19\Kenya\Community"
 
 *** Define local macro for the survey 
 local country	 		 Kenya /*country name*/	
@@ -72,7 +72,8 @@ global date=subinstr("`c_today'", " ", "",.)
 
 *import delimited 15122020_results-survey451568_codes_TEST.csv, case(preserve) clear 
 *import delimited 17122020_results-survey451568_codes.csv, case(preserve) clear 
-import delimited 21122020_results-survey451568_codes.csv, case(preserve) clear 
+*import delimited 21122020_results-survey451568_codes.csv, case(preserve) clear
+import delimited 04012021_results-survey451568_codes.csv, case(preserve) clear  
 
 	gen import = "success" /*to confirm correct import of raw data to Chartbook*/
 
@@ -400,11 +401,7 @@ preserve
 	tabout q110 using "$chartbookdir\FieldCheckTable_Community_`country'_R`round'_$date.xls", append ///
 		cells(freq col) h2("Number of completed interviews by respondent occupation") f(0 1) clab(n %)		
 
-			gen double starttime = clock(startdate, "YMD hms") //*KEYC edit: format*//
-			gen double endtime = clock(datestamp, "YMD hms") //*KEYC edit: format*//
-			format %tc starttime
-			format %tc endtime
-			gen double time = (endtime- starttime)/(1000*60) /*interview length in minute*/
+			gen double time = interviewtime/60	 /*interview length in minute*/
 				replace time = int(time)
 			format time %15.0f
 
@@ -414,8 +411,8 @@ preserve
 				replace time_complete = round(time_complete, .1)
 				replace time_incomplete = round(time_incomplete, .1)
 
-	*tabout time xresult using "$chartbookdir\FieldCheckTable_Community_`country'_R`round'_$date.xls", append ///
-	*	cells(freq col) h2("Interview length (minutes): incomplete, complete, and total interviews") f(0 1) clab(n %)	
+	tabout time xresult using "$chartbookdir\FieldCheckTable_Community_`country'_R`round'_$date.xls", append ///
+		cells(freq col) h2("Interview length (minutes): incomplete, complete, and total interviews") f(0 1) clab(n %)	
 	tabout time_complete using "$chartbookdir\FieldCheckTable_Community_`country'_R`round'_$date.xls", append ///
 		cells(freq col) h2("Average interview length (minutes), among completed interviews") f(0 1) clab(n %)		
 	tabout time_incomplete using "$chartbookdir\FieldCheckTable_Community_`country'_R`round'_$date.xls", append ///
@@ -449,21 +446,36 @@ keep if xresult==1 /*the following calcualtes % missing in select questions amon
 			gen missing=0
 			foreach var of varlist q303_* {	
 				replace missing=1 if `var'==.
-				}		
+				}	
+				replace missing=. if q302==1
+			tab missing, m	
 			lab values missing yesno		
-
+			
 	tabout missing using "$chartbookdir\FieldCheckTable_Community_`country'_R`round'_$date.xls", append ///
 		cells(freq col) h2("2. Missing reason for unmet need during the pandemic in one or more of the tracer items (among completed interviews)") f(0 1) clab(n %)					
+		
+			capture drop missing
+			gen missing=0
+			foreach var of varlist q306_* {	
+				replace missing=1 if `var'==.
+				}	
+				replace missing=. if q305==0
+			tab missing, m	
+			lab values missing yesno	
+			
+	tabout missing using "$chartbookdir\FieldCheckTable_Community_`country'_R`round'_$date.xls", append ///
+		cells(freq col) h2("3. Missing marginalized population (among completed interviews)") f(0 1) clab(n %)					
 
 			capture drop missing
 			gen missing=0
 			foreach var of varlist q402 q403 {	
 				replace missing=1 if `var'==.
 				}		
+			tab missing, m
 			lab values missing yesno		
 
 	tabout missing using "$chartbookdir\FieldCheckTable_Community_`country'_R`round'_$date.xls", append ///
-		cells(freq col) h2("3. Missing vaccine demand among adults OR children, when applicable (among completed interviews)") f(0 1) clab(n %)					
+		cells(freq col) h2("4. Missing vaccine demand among adults OR children, when applicable (among completed interviews)") f(0 1) clab(n %)					
 	
 			capture drop missing
 			gen missing=0
@@ -474,17 +486,61 @@ keep if xresult==1 /*the following calcualtes % missing in select questions amon
 			lab values missing yesno		
 
 	tabout missing using "$chartbookdir\FieldCheckTable_Community_`country'_R`round'_$date.xls", append ///
-		cells(freq col) h2("4. Missing reasons for no vaccine demand in one or more of the tracer items (among completed interviews)") f(0 1) clab(n %)					
+		cells(freq col) h2("5. Missing reasons for no vaccine demand in one or more of the tracer items (among completed interviews)") f(0 1) clab(n %)					
+
+			capture drop missing
+			gen missing=0
+			foreach var of varlist q503_* {	
+				replace missing=1 if `var'==.
+				}	
+				replace missing=. if q502!=1
+			lab values missing yesno		
+
+	tabout missing using "$chartbookdir\FieldCheckTable_Community_`country'_R`round'_$date.xls", append ///
+		cells(freq col) h2("6. Missing increased social initiatives (among completed interviews)") f(0 1) clab(n %)							
+
+			capture drop missing
+			gen missing=0
+			foreach var of varlist q505_* {	
+				replace missing=1 if `var'==.
+				}	
+				replace missing=. if q504!=1
+			lab values missing yesno		
+
+	tabout missing using "$chartbookdir\FieldCheckTable_Community_`country'_R`round'_$date.xls", append ///
+		cells(freq col) h2("7. Missing increased health initiatives (among completed interviews)") f(0 1) clab(n %)		
 		
 			capture drop missing
 			gen missing=0
-			foreach var of varlist q607 {	
+			foreach var of varlist q605_* {	
+				replace missing=1 if `var'==.
+				}	
+				replace missing=. if q604<=2
+			lab values missing yesno		
+
+	tabout missing using "$chartbookdir\FieldCheckTable_Community_`country'_R`round'_$date.xls", append ///
+		cells(freq col) h2("8. Missing reasons for risks (among completed interviews)") f(0 1) clab(n %)			
+				
+			capture drop missing
+			gen missing=0
+			foreach var of varlist q606 {	
 				replace missing=1 if `var'==.
 				}		
 			lab values missing yesno		
 
 	tabout missing using "$chartbookdir\FieldCheckTable_Community_`country'_R`round'_$date.xls", append ///
-		cells(freq col) h2("5. Missing CHW stigma (among completed interviews)") f(0 1) clab(n %)							
+		cells(freq col) h2("9. Missing CHW stigma (among completed interviews)") f(0 1) clab(n %)							
+		
+			capture drop missing
+			gen missing=0
+			foreach var of varlist q608_* {	
+				replace missing=1 if `var'==.
+				}	
+				replace missing=. if q607==1
+			lab values missing yesno		
+
+	tabout missing using "$chartbookdir\FieldCheckTable_Community_`country'_R`round'_$date.xls", append ///
+		cells(freq col) h2("10. Missing support needed (among completed interviews)") f(0 1) clab(n %)					
 	
 restore
 
@@ -568,7 +624,58 @@ restore
 	gen xbar_pre_qinput =0
 	gen xbar_pre_qexp =0
 	gen xbar_pre_admin =0
-	
+
+		/*	correct code using all response options. updated on 1/8/2021
+		
+		RESPONSE OPTIONS FROM THE QUESTIONNAIRE 
+		Informational and cultural reasons
+		xbar_pre_info 1.	Not knowing about available services 
+		xbar_pre_demand 2.	Traditional or folk medicines preferred 
+		xbar_pre_demand 3.	Religious Affiliation 
+
+		Physical access and cost reasons 
+		xbar_pre_phacc 4.	Health facility too far 
+		xbar_pre_phacc 5.	Lack of transportation to facilities 
+		xbar_pre_phacc 6.	Lack of transportation for referral between facilities
+		xbar_pre_fin 7.	Service fees too high 
+		xbar_pre_fin 8.	Informal payments or bribe expected 
+
+		Facility reasons 
+		xbar_pre_qinput 9.	Perceived lack of health workers at facilities 
+		xbar_pre_qinput 10.	Perceived lack of medicines at facilities
+		xbar_pre_qinput 11.	Perceived lack of equipment at facilities
+		xbar_pre_qexp 12.	Perceived lack of culturally/religiously sensitive services
+		xbar_pre_qexp 13.	Disrespectful providers at facilities 
+		xbar_pre_qexp 14.	Mistrust against providers or facilities 
+		xbar_pre_qexp 15.	Discrimination against certain communities 
+		xbar_pre_admin 16.	In convenient opening hours 
+		xbar_pre_admin 17.	Long wait time 
+		xbar_pre_admin 18.	Administrative requirements that exclude certain people (e.g. registration in local area, citizenship) 
+		*/		
+		
+		foreach item in 002 003 {	
+			replace xbar_pre_demand =1 	if q301_`item'==1
+			}		
+		foreach item in 001 {	
+			replace xbar_pre_info =1 	if q301_`item'==1
+			}	
+		foreach item in 004 005 006 {	
+			replace xbar_pre_phacc =1 	if q301_`item'==1
+			}		
+		foreach item in 007 008 {	
+			replace xbar_pre_fin =1 	if q301_`item'==1
+			}			
+		foreach item in 009 010 011 {	
+			replace xbar_pre_qinput =1 	if q301_`item'==1
+			}			
+		foreach item in 012 013 014 015 {	
+			replace xbar_pre_qexp =1 	if q301_`item'==1
+			}					
+		foreach item in 016 017 018 {	
+			replace xbar_pre_admin =1 	if q301_`item'==1
+			}	
+			
+		/*	code used for Charbook until 1/8/2021		
 		foreach item in 002{	
 			replace xbar_pre_demand =1 	if q301_`item'==1
 			}		
@@ -590,7 +697,8 @@ restore
 		foreach item in 015 017{	
 			replace xbar_pre_admin =1 	if q301_`item'==1
 			}	
-	
+		*/
+		
 	***** Overall barriers during COVID "affected/deteriorated" 
 	
 	gen byte xbar_covid = q302>=2 & q302!=.
@@ -606,6 +714,58 @@ restore
 	gen xbar_covid_qinput =0
 	gen xbar_covid_qexp =0
 	
+		/*	correct code using all response options. updated on 1/8/2021
+
+		RESPONSE OPTIONS FROM THE QUESTIONNAIRE 
+		Information, perception, and government recommendations reasons
+		xbar_covid_fear 1.	Fear of getting infected with COVID-19 at facilities 
+		xbar_covid_fear 2.	Fear of getting infected with COVID-19 by leaving house 
+		xbar_covid_fear 3.	Stigma associated with COVID-19
+		xbar_covid_rec 4.	Recommendations to the public to avoid facility visits for mild illness during the pandemic
+		xbar_covid_rec 5.	Recommendations to the public to delay routine care visits until further notice during the pandemic
+		xbar_covid_info 6.	Not knowing where to seek care during the pandemic 
+		Physical access and cost reasons
+		xbar_covid_phacc 7.	Lockdown/curfew or stay-at-home order 
+		xbar_covid_phacc 8.	Disruption in public transportation
+		xbar_covid_fin 9.	Household income dropped during the pandemic
+		xbar_covid_fin 10.	Lost health insurance during the pandemic 
+		xbar_covid_fin 11.	Higher cost because of unavailability of regular care provider (e.g. need to go to providers who charge higher fees)
+		Facility reasons
+		xbar_covid_admin 12.	Facility closure due to COVID-19
+		xbar_covid_admin 13.	Reduced or changed opening hours at facilities due to COVID-19
+		xbar_covid_admin 14.	Provision of specific services suspended at facilities due to COVID-19
+		xbar_covid_qinput 15.	Disrupted or poor service provision at facilities due to COVID-19 (limited availability of medicines, commodities, and staff)
+		xbar_covid_qexp 16.	Longer wait time at facilities because of current crisis context 
+		xbar_covid_fear 17.	Fear of being quarantined  
+		18.	Other, specify _________________
+
+		*/	
+		foreach item in 001 002 003 017 {	
+			replace xbar_covid_fear =1 	if q303_`item'==1
+			}		
+		foreach item in 004 005 {	
+			replace xbar_covid_rec =1 	if q303_`item'==1
+			}		
+		foreach item in 006 {	
+			replace xbar_covid_info =1 	if q303_`item'==1
+			}	
+		foreach item in 007 008 {	
+			replace xbar_covid_phacc =1 	if q303_`item'==1
+			}		
+		foreach item in 009 010 011 {	
+			replace xbar_covid_fin =1 	if q303_`item'==1
+			}			
+		foreach item in 012 013 014 {	
+			replace xbar_covid_admin =1 	if q303_`item'==1
+			}					
+		foreach item in 015 {	
+			replace xbar_covid_qinput =1 	if q303_`item'==1
+			}			
+		foreach item in 016 {	
+			replace xbar_covid_qexp =1 	if q303_`item'==1
+			}	
+			
+		/*	code used for Charbook until 1/8/2021			
 		foreach item in 001 002 016 {	
 			replace xbar_covid_fear =1 	if q303_`item'==1
 			}		
@@ -630,14 +790,21 @@ restore
 		foreach item in 015 {	
 			replace xbar_covid_qexp =1 	if q303_`item'==1
 			}		
-	
+		*/
+			
 	***** Source of care 
 	
 	global itemlist "001 002 003 004 005 006 007 008 009 010 011"
 	foreach item in $itemlist{	
 		gen xsource__`item' 		= q304_`item'==1
-		}		
-
+		}	
+		
+	gen xsource_trained	=0
+		foreach item in 001 002 003 004 005 006 007 008  {	
+			replace xsource_trained	=1 	if q304_`item'==1
+			}		
+	* new var made on 1/8/2021. In Kenya, it's 100%. also mostly CHW, which can be real or biased report.  
+		
 	***** Equity
 	
 	gen byte xmargin = q305==1
@@ -668,6 +835,19 @@ restore
 		gen xvac_reason__`item' 		= q404_`item'==1
 		}		
 	
+	/*
+	
+	RESPONSE OPTIONS FROM QUESTIONNAIRE
+	
+	1.	Not concerned about getting infected with COVID-19 
+	2.	Uncertain if the COVID-19 vaccine will be effective 
+	3.	Concerned about side effects of the COVID-19 vaccine
+	4.	Do not want to go to facilities for fear of getting infected with COVID-19
+	5.	General mistrust/opposition against any vaccine
+	6.	Too busy to get vaccinated
+	7.	Concerned about cost 
+	8.	Other, specify _________________
+	*/
 	gen	xvac_reason_noconcern 	= xvac_reason__001==1
 	gen	xvac_reason_exposure	= xvac_reason__004==1 
 	gen	xvac_reason_anticovac 	= xvac_reason__002==1 | xvac_reason__003==1
@@ -693,7 +873,7 @@ restore
 	gen xinit_ses_nochange = q502==2 
 	gen xinit_ses_decreased = q502==3 
 	
-	global itemlist "001 002 003 004 005 006 007 008"
+	global itemlist "001 002 003 004 005 006 007 008 009"  /*KECT - there are nine items so added 009 to this row*/
 	foreach item in $itemlist{	
 		gen xinit_ses_increased__`item' 		= q503_`item'==1
 		}	
@@ -702,7 +882,7 @@ restore
 	gen xinit_health_nochange = q504==2 
 	gen xinit_health_decreased = q504==3 
 	
-	global itemlist "001 002 003 004 005 006 007 008 009"
+	global itemlist "001 002 003 004 005 006 007 008 009 010"  /*KECT - there are ten items so added 010 to this row*/
 	foreach item in $itemlist{	
 		gen xinit_health_increased__`item' 		= q505_`item'==1
 		}	
@@ -796,7 +976,7 @@ use Community_`country'_R`round'.dta, clear
 	
 	gen obs=1 	
 	*gen obs_chw=1 if zchw==1 	
-	gen obs_chw=1 /*in KENYA all asnwer the secion 6, even though a few occupation are not CHWs*/
+	gen obs_chw=1 /*in KENYA all asnwer the section 6, even though a few occupation are not CHWs*/
 	gen obs_hbc=1 if xhbc==1
 	gen obs_vacreason=1 if xvac_most!=1
 	

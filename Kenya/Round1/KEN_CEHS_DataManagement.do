@@ -45,13 +45,13 @@ numlabel, add
 **************************************************************
 
 *** Directory for this do file and a subfolder for "daily exported CSV file from LimeSurvey"  
-*cd "C:\Users\ctaylor\World Health Organization\BANICA, Sorin - HSA unit\1 Admin\Countries\Country Surveys\Kenya\CEHS"
-cd "C:\Users\YoonJoung Choi\World Health Organization\BANICA, Sorin - HSA unit\1 Admin\Countries\Country Surveys\Kenya\CEHS"
+cd "C:\Users\ctaylor\World Health Organization\BANICA, Sorin - HSA unit\3 Country implementation & learning\1 HFAs for COVID-19\Kenya\CEHS"
+*cd "C:\Users\YoonJoung Choi\World Health Organization\BANICA, Sorin - HSA unit\3 Country implementation & learning\1 HFAs for COVID-19\Kenya\CEHS"
 dir
 
 *** Define a directory for the chartbook, if different from the main directory 
-*global chartbookdir "C:\Users\ctaylor\World Health Organization\BANICA, Sorin - HSA unit\1 Admin\Countries\Country Surveys\Kenya\CEHS"
-global chartbookdir "C:\Users\YoonJoung Choi\World Health Organization\BANICA, Sorin - HSA unit\1 Admin\Countries\Country Surveys\Kenya\CEHS"
+global chartbookdir "C:\Users\ctaylor\World Health Organization\BANICA, Sorin - HSA unit\3 Country implementation & learning\1 HFAs for COVID-19\Kenya\CEHS"
+*global chartbookdir "C:\Users\YoonJoung Choi\World Health Organization\BANICA, Sorin - HSA unit\3 Country implementation & learning\1 HFAs for COVID-19\Kenya\CEHS"
 
 *** Define local macro for the survey 
 local country	 		 Kenya /*country name*/	
@@ -74,7 +74,8 @@ global date=subinstr("`c_today'", " ", "",.)
 *import delimited 15122020_results-survey769747_codes.csv, case(preserve) clear 
 *import delimited 16122020_results-survey769747_codes.csv, case(preserve) clear 
 *import delimited 17122020_results-survey769747_codes.csv, case(preserve) clear 
-import delimited 19122020_results-survey769747_codes.csv, case(preserve) clear 
+*import delimited 19122020_results-survey769747_codes.csv, case(preserve) clear 
+import delimited 04012021_results-survey769747_codes.csv, case(preserve) clear 
 
 	drop if toke=="" /* KE specific, drop first two rows likely testing data*/ 
 	
@@ -1598,7 +1599,7 @@ use summary_CEHS_`country'_R`round'.dta, clear
 	replace updatetime="`time'"
 	
 export excel using "$chartbookdir\KEN_CEHS_Chartbook.xlsx", sheet("Indicator estimate data") sheetreplace firstrow(variables) nolabel keepcellfmt
-export delimited using "C:\Users\YoonJoung Choi\Dropbox\0 iSquared\iSquared_WHO\ACTA\4.ShinyApp\Kenya\summary_CEHS_`country'_R`round'.csv", replace 
+*export delimited using "C:\Users\YoonJoung Choi\Dropbox\0 iSquared\iSquared_WHO\ACTA\4.ShinyApp\Kenya\summary_CEHS_`country'_R`round'.csv", replace 
 
 erase temp.dta
 

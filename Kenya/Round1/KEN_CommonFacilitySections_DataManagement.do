@@ -32,7 +32,8 @@ numlabel, add
 **************************************************************
 
 *** Directory for the country 
-cd "C:\Users\YoonJoung Choi\World Health Organization\BANICA, Sorin - HSA unit\1 Admin\Countries\Country Surveys\Kenya"
+*cd "C:\Users\YoonJoung Choi\World Health Organization\BANICA, Sorin - HSA unit\3 Country implementation & learning\1 HFAs for COVID-19\Kenya"
+cd "C:\Users\ctaylor\World Health Organization\BANICA, Sorin - HSA unit\3 Country implementation & learning\1 HFAs for COVID-19\Kenya"
 dir
 
 *** Define local macro for the survey 
@@ -51,23 +52,36 @@ global date=subinstr("`c_today'", " ", "",.)
 use "CEHS/CEHS_`country'_R`round'.dta", clear
 		gen xresult = q1104==1
 		gen module_CEHS = 1
+		
+		/*
+		tab zlevel xresult, m
+		list facilitycode z* q1104 if xresult!=1
+		*/
 	keep country round month year facilitycode z* xppe* xvac* xresult weight module_*
 	drop xvaccine* xppedispose xvac_score xvac_100 xvac_50 zlevel_* zlevel4 zcounty
-	
+			
 	sort facilitycode
 	save temp.dta, replace
 	
 use "Case-Mgmt/COVID19HospitalReadiness_`country'_R`round'.dta", clear
 		gen xresult = q904==1	
 		gen module_CaseManagement = 1
+		
+		/*
+		tab zlevel xresult, m
+		list facilitycode z* q1104 if xresult!=1
+		*/
+		
 	keep country round month year facilitycode z* xppe* xvac* xresult weight module_*
 	drop zlevel_* zlevel4
-	
+		
 	sort facilitycode
 	merge facilitycode using temp.dta
 	
 		tab zlevel _merge, m /*there are some mismatches here - e.g., level 5 in CEHS*/ 
-	
+		tab xresult _merge, m
+		tab zlevel xresult, m
+			
 	gen module=""
 		replace module = "CaseManagement" if _merge==1
 		replace module = "CEHS" if _merge==2
@@ -78,18 +92,22 @@ use "Case-Mgmt/COVID19HospitalReadiness_`country'_R`round'.dta", clear
 		replace zlevel_3cat="Level 4" if zlevel=="Level4"
 		replace zlevel_3cat="Level 5-6" if zlevel=="Level5" | zlevel=="Level6"
 		
+		tab zlevel module, m
+			tab zlevel , 
+			tab zlevel module_CEHS, 
+			tab zlevel module_CaseManagement, 
 		tab module _merge, m
 		drop _merge
 				
 save "CommonFacilitySections/CommonFacilitySections_`country'_R`round'.dta", replace 
 export delimited using "CommonFacilitySections/CommonFacilitySections_`country'_R`round'.csv", replace 
-
+okok
 *export excel using "$chartbookdir\KEN_CEHS_Chartbook.xlsx", sheet("Facility-level cleaned data") sheetreplace firstrow(variables) nolabel
 			
 **************************************************************
 * C. Create indicator estimate data 
 **************************************************************
-cd "C:\Users\YoonJoung Choi\World Health Organization\BANICA, Sorin - HSA unit\1 Admin\Countries\Country Surveys\Kenya\CommonFacilitySections"
+cd "C:\Users\YoonJoung Choi\World Health Organization\BANICA, Sorin - HSA unit\3 Country implementation & learning\1 HFAs for COVID-19\Kenya\CommonFacilitySections"
 
 use CommonFacilitySections_`country'_R`round'.dta, clear
 	
@@ -167,7 +185,7 @@ use summary_CommonFacilitySections_`country'_R`round'.dta, clear
 	replace updatetime="`time'"
 	
 *export excel using "$chartbookdir\KEN_CEHS_Chartbook.xlsx", sheet("Indicator estimate data") sheetreplace firstrow(variables) nolabel keepcellfmt
-export delimited using "C:\Users\YoonJoung Choi\Dropbox\0 iSquared\iSquared_WHO\ACTA\4.ShinyApp\Kenya\summary_CommonFacilitySections_`country'_R`round'.csv", replace 
+*export delimited using "C:\Users\YoonJoung Choi\Dropbox\0 iSquared\iSquared_WHO\ACTA\4.ShinyApp\Kenya\summary_CommonFacilitySections_`country'_R`round'.csv", replace 
 
 erase temp.dta
 
