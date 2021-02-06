@@ -1,7 +1,7 @@
 # WHO_HFA_COVID19
 This repository has data cleaning/management/analysis programs. There are three survey modules, and each module has standard code in both Stata and R. In each country, the modules are adapted, and country-specific code files are in subfolders. 
 
-### Version1_PreKenya (Feb 6, 2021) 
+### Version1 (initial publication: Feb 6, 2021) 
 
 * COVID-19 Hospital Case Management Capacity Survey/Module   
 -- WHO_COVID19HospitalReadiness_DataManagement.do   
@@ -15,7 +15,7 @@ This repository has data cleaning/management/analysis programs. There are three 
 -- WHO_Community_DataManagement.do   
 -- WHO_CommunityKIS_DataManagement.Rmd(https://rpubs.com/YJ_Choi/WHO_COVID19HFA_Com)  
 
-### Version0_PreKenya (Dec 15, 2020) 
+### Version0_PreKenya (initial publication: Dec 15, 2020) 
 
 * COVID-19 Hospital Case Management Capacity Survey/Module   
 -- COVID19HospitalReadiness_DataManagement.do   
