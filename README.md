@@ -13,7 +13,7 @@ This repository has data cleaning/management/analysis programs. There are three 
 
 * Community 
 -- WHO_Community_DataManagement.do   
--- WHO_CommunityKIS_DataManagement.Rmd(https://rpubs.com/YJ_Choi/WHO_COVID19HFA_Com)  
+-- WHO_CommunityKIS_DataManagement.Rmd (https://rpubs.com/YJ_Choi/WHO_COVID19HFA_Com)  
 
 ### Version0_PreKenya (initial publication: Dec 15, 2020) 
 
