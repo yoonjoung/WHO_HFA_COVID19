@@ -5,11 +5,11 @@ This repository has data cleaning/management/analysis programs. There are three 
 
 * COVID-19 Hospital Case Management Capacity Survey/Module   
 -- WHO_COVID19HospitalReadiness_DataManagement.do   
--- WHO_HospitalReadiness_DataManagement.Rmd (https://rpubs.com/YJ_Choi/WHO_COVID19HFA_Hosp)  
+-- WHO_HospitalReadiness_DataManagement.Rmd (https://rpubs.com/YJ_Choi/WHO_COVID19HFA_HospCM)  
 
 * Continuity of Essential Health Services Survey/Module   
 -- WHO_CEHS_DataManagement.do   
--- WHO_CEHS_DataManagement.Rmd (https://rpubs.com/YJ_Choi/WHO_HFA_COVID19HFA_CEHS)  
+-- WHO_CEHS_DataManagement.Rmd (https://rpubs.com/YJ_Choi/WHO_COVID19HFA_CEHS)  
 
 * Community 
 -- WHO_Community_DataManagement.do   
