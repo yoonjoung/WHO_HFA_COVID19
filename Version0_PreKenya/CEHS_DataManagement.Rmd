@@ -1,0 +1,1674 @@
+---
+output:
+  html_document:
+    toc: true
+    toc_depth: 5
+    toc_float: true
+---
+
+```{r intro, echo=FALSE, results="hide"}
+knitr::opts_chunk$set(echo=TRUE, 
+                      message=FALSE, 
+                      warning=FALSE, 
+                      comment = "", 
+                      results="hide") 
+
+date<-as.Date(Sys.time(	), format='%d%b%Y')
+time<-Sys.time()
+
+suppressMessages(library(dplyr))
+suppressWarnings(suppressMessages(library(tidyverse)))
+suppressWarnings(suppressMessages(library(readxl)))
+suppressWarnings(suppressMessages(library(xlsx)))
+#suppressWarnings(suppressMessages(library(openxlsx)))
+#suppressMessages(library(Matrix))
+suppressWarnings(suppressMessages(library(stringr)))
+suppressWarnings(suppressMessages(library(stringi)))
+suppressWarnings(suppressMessages(library(lubridate)))
+suppressWarnings(suppressMessages(library(zoo)))
+suppressWarnings(suppressMessages(library(knitr)))
+suppressWarnings(suppressMessages(library(data.table)))
+```
+
+###Data cleaning, management, and analyis of Continuity of Essential Health Services    
+
+This provides steps and code for data cleaning, management, and analysis of __Continuity of Essential Health Services__ assessment survey. [See here for the questionnare (link forthcoming)](). This code:   
+1. Imports and cleans Continuity of Essential Health Services (aka "EHS") dataset from Lime Survey (i.e., green and blue tabs in the chartbook),   
+2. Creates field check tables for data quality monitoring, and   
+3. Creates indicator estimate data for dashboards and chartbook (purple tab in the chartbook).   
+
+<span style="color: blue;">
+__THREE parts must be updated per country-specific adaptation.__    
+1. Directories and local macro in __A. SETTING__ per survey implementation information   
+2. Local macro in __E.1. Country speciic code local__ per section 1         
+3. Staff variables in __E.2. Construct analysis variables__ per section 2</span>     
+
+---
+
+####A. SETTING   
+```{r setting}
+#working directory where this markdown file and subfolders are located.
+setwd("C:/Users/YoonJoung Choi/Dropbox/0 iSquared/iSquared_WHO/ACTA/3.AnalysisPlan/")
+
+#chartbookdir<-("C:/Users/YoonJoung Choi/World Health Organization/BANICA, Sorin - HSA unit/2 Global goods & tools/2 HFAs/1 HFAs for COVID-19/4. Implementation support materials/4. Analysis and dashboards/")
+chartbookdir<-("C:/Users/YoonJoung Choi/Dropbox/0 iSquared/iSquared_WHO/ACTA/3.AnalysisPlan/")
+
+limesurveydir<-("C:/Users/YoonJoung Choi/Dropbox/0 iSquared/iSquared_WHO/ACTA/3.AnalysisPlan/ExportedCSV_FromLimeSurvey/")
+
+# Define local macro for the survey 
+country<-"COUNTRY NAME" #country name 
+round<-1                #round		
+year<-2020              #year of the mid point in data collection	
+month<-12               #month of the mid point in data collection				
+
+# local macro for analysis: no change needed  
+```
+
+---
+
+####B. Import and drop duplicate cases
+#####B.1. Import raw data from LimeSurvey 
+```{r importraw}
+dtaraw<-read.csv(paste0(limesurveydir,"LimeSurvey_CEHS_GreecePilot_R1.csv"))
+#dtaraw <- read_csv(paste0(limesurveydir,"LimeSurvey_CEHS_GreecePilot_R1.csv"))
+
+obsraw<-nrow(dtaraw)
+cols<-ncol(dtaraw)
+```
+As of `r time`, the downloaded raw data has `r obsraw` observations and `r cols` variables. 
+
+Then, export the raw data into the chartbook (green tab: "Facility-level raw data") - as is.
+```{r chartbookexport1, eval=FALSE, echo=FALSE}
+dtaraw<-dtaraw%>%mutate(test=Sys.time())
+
+wb <- loadWorkbook(paste0(chartbookdir, "WHO_CEHS_ChartbookTest.xlsx"))
+writeData(wb, sheet = "Facility-level raw data", dtaraw)
+saveWorkbook(wb,paste0(chartbookdir, "WHO_CEHS_ChartbookTest.xlsx"),overwrite = TRUE)
+
+# OR
+
+dtaraw<-dtaraw%>%mutate(test=Sys.time())
+
+wb <- loadWorkbook(paste0(chartbookdir, "WHO_CEHS_ChartbookTest.xlsx"))
+
+removeWorksheet(wb, "Facility-level raw data")
+addWorksheet(wb, "Facility-level raw data")
+writeData(wb, "Facility-level raw data", dtaraw)
+saveWorkbook(wb, 
+             paste0(chartbookdir, "WHO_CEHS_ChartbookTest.xlsx"), 
+             overwrite = TRUE)
+
+# OR
+
+#https://danganothererror.wordpress.com/2012/02/12/write-data-frame-to-excel-file/
+#This one doesn't work when the worksheet already exists. Ugh.... 
+dtaraw<-dtaraw%>%mutate(test=Sys.time())
+
+write.xlsx(dtaraw, 
+           paste0(chartbookdir, "WHO_CEHS_ChartbookTest.xlsx"), 
+           sheet = "Facility-level raw data", 
+           append = TRUE)
+```
+
+---
+
+#####B.2. Drop duplicate cases 
+Assess duplicate rows based on facility code: Q101. Among the duplicate rows, keep the latest row, based on the submission date/time. 
+```{r duplicates}
+# Identify duplicates 
+dta<-dtaraw %>% 
+    mutate(
+        submitdate_string=as.character(submitdate),
+        submitdate=as.POSIXct(as.character(submitdate),format= "%m/%d/%Y %H:%M")
+        )%>%
+    group_by(Q101)%>% 
+    mutate(
+        dupe = n()>1, 
+        latest = submitdate ==max(submitdate, na.rm = TRUE))%>%
+    ungroup()
+
+# Assess duplicates 
+    table(dta$dupe, dta$latest) #cross tab
+    dtaduplicate<-dta%>%filter(dupe==1)
+    obsduplicate<-dtaduplicate%>%nrow() #number of duplicate rows
+    obsduplicateunique<-length(unique(dtaduplicate$Q101)) #number of unique facilities among duplicate rows
+
+#keep only unique/latest rows per facility     
+dta<-dta%>%
+    filter(latest==1)%>%
+    select(-dupe, -latest)
+
+obs<-nrow(dta)
+obsunique<-length(unique(dta$Q101))
+```
+A total of `r obsduplicate` duplicate rows from `r obsduplicateunique` unique facilities were identified based on Q101. Now keeping only one unique row per facility, the dataset has `r obs` observations.  
+
+```{r, echo=FALSE}
+#*****B.3. Expand Greek data by 12 times /ONLY FOR GREECE DUMMY DATA/
+dta<-rbind(dta, dta, dta, dta, dta, dta, dta, dta, dta, dta, dta, dta)
+
+obs<-nrow(dta)
+obsunique<-length(unique(dta$Q101))
+```
+
+---
+
+####C. Destring and recoding 
+#####C.1. Change variable names to lowercase	
+```{r vartolow}
+names(dta)<-tolower(names(dta))
+```
+
+---
+
+#####C.2. Change variable names to drop odd elements "y" "sq" - because of Lime survey's naming convention 
+```{r varnames}
+#Assess odd names to change
+#colnames(dta)
+
+dtanew<-dta%>%
+    #/*replace .other with other*/
+    rename_all(.funs = funs(sub(".other.", "other", .)))%>% 
+    #/*replace y with nothing*/
+    rename_all(.funs = funs(sub("y", "", .)))%>%
+    #/*deal with "sq"*/
+    rename_at(.vars = vars(ends_with("sq")), .funs = funs(sub("sq", "", .)))%>%
+    rename_all(.funs = funs(sub("sq.sq", "_", .)))%>%
+    rename_all(.funs = funs(sub("sq", "_", .)))%>%
+    rename_all(.funs = funs(sub("qa1._00", "qa1_00", .)))%>%
+    rename_all(.funs = funs(sub("_sq", "_", .)))%>%
+    rename_all(.funs = funs(sub("sq_", "_", .)))%>%
+    #/*replace any remaining . with nothing - BUT THESE NOT WORKING??/!!*/
+    #rename_at(.vars = vars(ends_with(".")), .funs = funs(sub(".", "", .)))%>%
+    #rename_all(.funs = funs(sub(".", "", .)))%>%
+    #rename_all(.funs = funs(sub("._", "_", .)))%>%
+    rename_all(.funs = funs(sub("q118._", "q118_", .)))%>%
+    rename_all(.funs = funs(sub("q201._", "q201_", .)))%>%
+    rename_all(.funs = funs(sub("q203._", "q203_", .)))%>%
+    rename_all(.funs = funs(sub("q205._", "q205_", .)))%>%
+    rename_all(.funs = funs(sub("q207._", "q207_", .)))%>%
+    rename_all(.funs = funs(sub("q406._", "q406_", .)))%>%
+    rename_all(.funs = funs(sub("q409._", "q409_", .)))%>%
+    rename_all(.funs = funs(sub("q701._", "q701_", .)))%>%
+    rename_all(.funs = funs(sub("q702._", "q702_", .)))%>%
+    rename_all(.funs = funs(sub("q810._", "q810_", .)))%>%
+    rename_all(.funs = funs(sub("q811._", "q811_", .)))%>%
+    #more
+    rename_all(.funs = funs(sub("001.", "001", .)))%>% 
+    rename_all(.funs = funs(sub("002.", "002", .)))%>% 
+    rename_all(.funs = funs(sub("003.", "003", .)))%>% 
+    rename_all(.funs = funs(sub("004.", "004", .)))%>% 
+    rename_all(.funs = funs(sub("005.", "005", .)))%>% 
+    rename_all(.funs = funs(sub("006.", "006", .)))%>% 
+    rename_all(.funs = funs(sub("007.", "007", .)))%>%
+    rename_all(.funs = funs(sub("008.", "008", .)))%>%
+    rename_all(.funs = funs(sub("009.", "009", .)))%>%
+    rename_all(.funs = funs(sub("010.", "010", .)))%>%
+    rename_all(.funs = funs(sub("011.", "011", .)))%>%
+    rename_all(.funs = funs(sub("012.", "012", .)))%>%
+    rename_all(.funs = funs(sub("013.", "013", .)))%>% 
+    rename_all(.funs = funs(sub("014.", "014", .)))%>% 
+    rename_all(.funs = funs(sub("015.", "015", .)))%>% 
+    rename_all(.funs = funs(sub("016.", "016", .)))%>% 
+    rename_all(.funs = funs(sub("017.", "017", .)))%>%
+    rename_all(.funs = funs(sub("018.", "018", .)))%>%
+    rename_all(.funs = funs(sub("0010", "001_00", .)))%>%
+    rename_all(.funs = funs(sub("00200", "002_00", .)))%>%
+    rename_all(.funs = funs(sub("00300", "003_00", .)))
+
+dtanew<-dtanew%>%
+    rename_all(.funs = funs(sub("00400", "004_00", .)))%>%
+    rename_all(.funs = funs(sub("0050", "005_00", .)))%>%
+    rename_all(.funs = funs(sub("0060", "006_00", .)))%>%
+    rename_all(.funs = funs(sub("0070", "007_00", .)))%>%
+    rename_all(.funs = funs(sub("0080", "008_00", .)))%>%
+    rename_all(.funs = funs(sub("0090", "009_00", .)))%>%
+    rename_all(.funs = funs(sub("01000", "010_00", .)))
+        
+# Assess new names 
+colnames(dtanew)
+
+# take care of still strange col names (why do they exist?)
+dtanew<-dtanew%>%    
+    rename_all(.funs = funs(sub("q201_001_001.", "q201_001_001", .)))%>%
+    rename_all(.funs = funs(sub("q201_002_002.", "q201_002_002", .)))%>%
+    rename_all(.funs = funs(sub("q201_00401", "q201_004_001", .)))%>%      
+    rename_all(.funs = funs(sub("q201_00402", "q201_004_002", .)))%>%
+    rename_all(.funs = funs(sub("q201_01001", "q201_010_001", .)))%>%      
+    rename_all(.funs = funs(sub("q201_01002", "q201_010_002", .)))%>%
+    rename_at(.vars = vars(ends_with("0001")), .funs = funs(sub("0001", "001", .)))%>%
+    rename_at(.vars = vars(ends_with("0002")), .funs = funs(sub("0002", "002", .)))
+
+colnames(dtanew)
+
+dta<-dtanew
+```
+
+---
+
+#####C.3. Find non-numeric variables and desting 
+Check variables section by scion, drop prefix "A" in categorical/character variables, and convert to numeric. 
+```{r varformat}
+#change all factor to numeric
+dta<-dta%>%
+    mutate_if(is.factor, as.character) 
+
+#####* Section 1
+    varlist<-dta%>%select(q104, q105, q106, q115, q116, q117, starts_with("q118"))%>%colnames()
+    str(dta[varlist])
+    
+    dta<-dta%>%
+        mutate_at(vars(varlist), list(~ sub("^A", "\\1", .)))%>%
+        mutate_at(vars(varlist), list(~ sub("-oth-", "88", .)))%>%
+        mutate_at(vars(varlist), funs(as.numeric))
+    
+    str(dta[varlist]) #check variables ready for further processing
+
+#####* Section 2
+    varlist<-dta%>%select(starts_with("q2"))%>%colnames()
+    str(dta[varlist]) 
+    
+    varlist<-c("q204")    
+    
+    dta<-dta%>%
+        mutate_at(vars(q204), list(~ sub("^A", "\\1", .)))%>%
+        mutate_at(vars(q204), funs(as.numeric))    
+
+#####* Section 3
+    varlist<-dta%>%select(starts_with("q3"))%>%colnames()
+    str(dta[varlist])
+
+    varlist<-c("q309")    
+    
+    dta<-dta%>%
+        mutate_at(vars(varlist), list(~ sub("^A", "\\1", .)))%>%
+        mutate_at(vars(varlist), funs(as.numeric)) 
+    
+    str(dta[varlist])     
+
+
+#####* Section 4
+    varlist<-dta%>%select(starts_with("q409"), starts_with("q412"), q414, q415, starts_with("q417"), starts_with("q420"))%>%colnames()
+    str(dta[varlist])
+
+    dta<-dta%>%
+        mutate_at(vars(varlist), list(~ sub("^A", "\\1", .)))%>%
+        mutate_at(vars(varlist), funs(as.numeric))
+    
+    str(dta[varlist]) 
+    
+    str(dta$q410_006)
+    str(dta$q411_012)
+    
+    dta<-dta%>%
+        rename(
+            RAWq410_006 = q410_006, 
+            RAWq411_012 = q411_012 
+        )%>%
+        mutate(
+            q410_006=RAWq410_006!="", 
+            q411_012=RAWq411_012!=""
+        )%>%
+        mutate_at(vars(q410_006, q411_012), funs(as.numeric))
+
+#####* Section 5
+    varlist<-dta%>%select(starts_with("q507"))%>%colnames()
+    str(dta[varlist])
+    
+    dta<-dta%>%
+        mutate_at(vars(varlist), list(~ sub("^A", "\\1", .)))%>%
+        mutate_at(vars(varlist), funs(as.numeric))
+    
+    str(dta[varlist]) 
+
+#####* Section 6
+
+    # NEW SECTION 
+
+#####* Section 7
+    varlist<-dta%>%select(starts_with("q701"), starts_with("q702"), starts_with("q703"))%>%colnames()
+    str(dta[varlist])
+    
+    dta<-dta%>%
+        mutate_at(vars(varlist), list(~ sub("^A", "\\1", .)))%>%
+        mutate_at(vars(varlist), funs(as.numeric))
+    
+    str(dta[varlist]) 
+
+#####* Section 8
+    varlist<-dta%>%select(starts_with("q8"))%>%colnames()
+    str(dta[varlist])
+    
+    varlist<-dta%>%select(starts_with("q805"), starts_with("q806"), starts_with("q807"), starts_with("q808"), starts_with("q810"), starts_with("q811"))%>%colnames()
+    str(dta[varlist])
+    
+    dta<-dta%>%
+        mutate_at(vars(varlist), list(~ sub("^A", "\\1", .)))%>%
+        mutate_at(vars(varlist), funs(as.numeric))
+    
+    str(dta[varlist]) 
+    
+#####* Section 9
+    varlist<-dta%>%select(starts_with("q9"))%>%colnames()
+    str(dta[varlist])
+    
+    varlist<-dta%>%select(starts_with("q907"), starts_with("q910"), starts_with("q911"))%>%colnames()
+    str(dta[varlist])
+    
+    dta<-dta%>%
+        mutate_at(vars(varlist), list(~ sub("^A", "\\1", .)))%>%
+        mutate_at(vars(varlist), funs(as.numeric))
+    
+    str(dta[varlist]) 
+
+#####* Section 10: INFRASTRUCTURE
+    
+#####* Section 11
+    varlist<-dta%>%select(starts_with("q110"))%>%colnames()
+    str(dta[varlist])
+
+```
+
+---
+
+#####C.4. Recode yes/no & yes/no/NA
+```{r varcode}
+# Recode 2=0 for no
+varlist<-dta%>%
+    select(
+        q202, starts_with("q205_"), q206, starts_with("q207"), 
+		q301, q303, q304, q307, q308, q310,
+		q401, q402, q403, q404, q405, starts_with("q406"), q407, q408,
+		    starts_with("q410"), starts_with("q411"), q416, q418, q419, q421,
+		q501, q502, starts_with("q503"), q504, starts_with("q505"), q506,
+		q601, q602, q603, q605, q606, starts_with("q607"), starts_with("q608"),
+		    q609, q610, q612, q613, q614, q615, q616, q617,
+		starts_with("q701"), starts_with("q702"), starts_with("q703"), q704, 
+		q801, q802, q803, q804, 
+		    starts_with("q805"), starts_with("q807"), starts_with("q810"),  
+		q901, q902, q905, q908 
+    )%>%
+    colnames()
+
+dta[varlist][dta[varlist] == 2 ] <- 0 #no
+
+# Recode 2=0 for no & 3=NA for not applicable 
+varlist<-dta%>%
+    select(
+        q204, 
+        q309, 
+        starts_with("q806"), starts_with("q808"), starts_with("q811")
+    )%>%
+    colnames()
+
+dta[varlist][dta[varlist] == 2 ] <- 0  #no
+dta[varlist][dta[varlist] == 3 ] <- NA #not applicable
+
+```
+
+---
+
+#####C.5. Label values 
+The following is value labels. 
+```
+	#delimit;	
+	
+	#lab define q104 
+		1"1. urban" 
+		2"2. rural";  
+	#lab values  q104 q104; 
+	
+	#lab define q105 
+		1"1.Primary care centre/clinic"
+		2"2.First referral hospital (district hospital)"
+		3"3.Other general hospital with specialties or single-specialty hospital"
+		4"4.Long-term care facility"
+		88"5.Other" ; 
+	#lab values  q105 q105;
+	
+	#lab define q106 
+		1"1.Government"
+		2"2.Private for profit"
+		3"3.Private not for profit"
+		4"4.Other"; 
+	#lab values  q106 q106; 
+	
+	#lab define ppe
+		1"1.Currently available for all health workers"
+		2"2.Currently available only for some health workers"
+		3"3.Currently unavailable for any health workers"
+		4"4.Not applicable - never procured or provided" ;
+	foreach var of varlist q502* {;
+	#lab values  `var' ppe;	
+	};		
+	
+	#lab define q605
+		1"1.<24 hrs"
+		2"2.24-47 hrs (1-2 days)"
+		3"3.48-72 hrs (2-3 days)"
+		4"4.>=72 hrs ( days or longer)" ;
+	#lab values  q605 q605;	
+
+	#lab define availfunc 
+		1"1.Yes, functional"
+		2"2.Yes, but not functional"
+		3"3.No";
+	foreach var of varlist 
+		q608 q804 q805   {;
+	#lab values  `var' availfunc ;	
+	};			
+
+	#lab define icepack 
+		1"1.Yes, a set of ice packs for all cold boxes"
+		2"1.Yes, a set of ice packs only for some cold boxes"
+		3"3.No";
+	foreach var of varlist q808 q811 {;
+	#lab values  `var' icepack ;	
+	};		
+	
+	#lab define icepackfreeze 
+		1"1.All"
+		2"2.Only some"
+		3"3.None-no ice packs"
+		4"4.None-no functional freezer" ;
+	#lab values  q813 icepackfreeze ;	
+		
+	#lab define yesno 1"1. yes" 0"0. no"; 	
+	foreach var of varlist 
+		q115 q118* 
+		q2* 
+		q501
+		q601 q603 q604 	
+		q801 q802 q806 q809
+		{;		
+	labe values `var' yesno; 
+	};
+	
+	#lab define yesnona 1"1. yes" 0"0. no"; 
+	foreach var of varlist 
+		q401_* q402_* q404_* q503_* q602_* 
+		{;		
+	labe values `var' yesnona; 
+	};
+	
+	#delimit cr
+
+```
+
+---
+
+####D. Create field check tables 
+As of `r date`, the following are "field check tables." In Stata program, xls file is created. In R, the results are directly presented in this markdown file.  
+```{r fieldcheck1}
+dtacheck<-dta%>%
+    mutate(
+        updatedate= as.character(as.Date(Sys.time(	), format='%d%b%Y')), 
+        date=as.POSIXct(as.character(submitdate_string),format= "%m/%d/%Y"), 
+        #xresult=q904==1, recover this line with real data
+            xresult=1, #delete this line with real data
+            xresult= ifelse(q101==1222, 0, xresult), #delete this line with real data
+        responserate= xresult==1, #label define responselist 0 "Not complete" 1 "Complete"    
+    
+        starttime=as.POSIXct(as.character(startdate),format= "%m/%d/%Y %H:%M"), 
+        endtime=as.POSIXct(as.character(datestamp),format= "%m/%d/%Y %H:%M"),
+        time= endtime - starttime,
+        time_all = round(mean(time, na.rm=TRUE), 1))%>%
+    group_by(xresult)%>%
+    mutate(
+        time_ = round(mean(time, na.rm=TRUE), 1),
+        time_complete = time_,
+        time_complete  = ifelse(xresult==0, NA, time_complete),
+        time_incomplete = time_,
+        time_incomplete = ifelse(xresult==1, NA, time_incomplete)        )%>%
+    ungroup()
+```
+
+__Assess interview characteristics among all interviews.__ 
+```{r fieldcheck1results, results="asis"}
+# Date of field check table update and the total number of interviews
+print(date)
+
+# Date of interviews (submission date, final)
+table(dtacheck$date)
+
+# Interview response rate (%)
+print(paste(as.character(round(mean(dtacheck$responserate, na.rm=TRUE)*100, 1)), "%"))
+
+# Number of interviews by facility type
+table(dtacheck$q104)
+
+#Average interview length (minutes), among all interviews
+print(paste(as.character(round(mean(dtacheck$time_all, na.rm=TRUE))), "minutes")) 
+
+#Average interview length (minutes), among completed interviews
+print(paste(as.character(round(mean(dtacheck$time_complete, na.rm=TRUE))), "minutes"))
+
+#Average interview length (minutes), among partly completed interviews
+print(paste(as.character(round(mean(dtacheck$time_incomplete, na.rm=TRUE))), "minutes"))
+```
+
+```{r fieldcheck2}
+#####/*the following calcualtes % missing in select questions among completed interviews*/	
+
+#1. Missing number of beds when facility provides inpatient services  
+dtacheck<-dtacheck%>%
+    mutate(
+        missing1 = 0,
+        missing1 = ifelse(q115==1 & is.na(q116)==1, 1, 
+                          ifelse(q115==1 & is.na(q116)==1, 1, 
+                                 ifelse(is.na(q115)==1, 1, 
+                                        ifelse(q115==0, NA, missing1)))) 
+        )
+
+#2. Missing salary
+dtacheck<-dtacheck%>%
+    mutate(
+        missingot = 0,
+        missingot= ifelse(q308==1 & is.na(q309)==1, 1, 
+                         ifelse(is.na(q308)==1, 1, missing1)) 
+        )
+
+#3. Missing response to strategy change 
+varlist<-dtacheck%>%select(starts_with("q406_"))%>%colnames()
+str(dtacheck[varlist])
+dtacheck[varlist] <- lapply(dtacheck[varlist],
+                             function(x){ifelse(is.na(x)==0,0,
+                                                ifelse(is.na(x)==1,1,x))})
+
+dtacheck<-dtacheck%>%
+    mutate(
+        missingstr_num = rowSums(dtacheck[varlist] ), 
+        missingstr = missingstr_num, 
+        missingstr = ifelse(missingstr_num>=1, 1, missingstr) )
+
+#4. Missing response to OPT volume change
+varlist<-dtacheck%>%select(starts_with("q409_"))%>%colnames()
+str(dtacheck[varlist])
+dtacheck[varlist] <- lapply(dtacheck[varlist],
+                             function(x){ifelse(is.na(x)==0,0,
+                                                ifelse(is.na(x)==1,1,x))})
+
+dtacheck<-dtacheck%>%
+    mutate(
+        missingopt_num = rowSums(dtacheck[varlist] ), 
+        missingopt = missingopt_num, 
+        missingopt = ifelse(missingopt_num>=1, 1, missingopt) )
+
+#5. Missing response to restoration plan 
+varlist<-dtacheck%>%select(starts_with("q420_"))%>%colnames()
+str(dtacheck[varlist])
+dtacheck[varlist] <- lapply(dtacheck[varlist],
+                             function(x){ifelse(is.na(x)==0,0,
+                                                ifelse(is.na(x)==1,1,x))})
+
+dtacheck<-dtacheck%>%
+    mutate(
+        missingrst_num = rowSums(dtacheck[varlist] ), 
+        missingrst = missingrst_num, 
+        missingrst = ifelse(missingrst_num>=1, 1, missingrst) )
+
+#6. Missing response to PPE
+varlist<-dtacheck%>%select(starts_with("q507_"))%>%colnames()
+str(dtacheck[varlist])
+dtacheck[varlist] <- lapply(dtacheck[varlist],
+                             function(x){ifelse(is.na(x)==0,0,
+                                                ifelse(is.na(x)==1,1,x))})
+
+dtacheck<-dtacheck%>%
+    mutate(
+        missingppe_num = rowSums(dtacheck[varlist] ), 
+        missingppe = missingppe_num, 
+        missingppe = ifelse(missingppe_num>=1, 1, missingppe) )
+
+#7. Missing response to medicines questions  
+varlist<-dtacheck%>%select(starts_with("q701_"))%>%colnames()
+str(dtacheck[varlist])
+dtacheck[varlist] <- lapply(dtacheck[varlist],
+                             function(x){ifelse(is.na(x)==0,0,
+                                                ifelse(is.na(x)==1,1,x))})
+
+dtacheck<-dtacheck%>%
+    mutate(
+        missingmed_num = rowSums(dtacheck[varlist] ), 
+        missingmed = missingmed_num, 
+        missingmed = ifelse(missingmed_num>=1, 1, missingmed) )
+
+```
+
+__Assess level of missing responses among COMPLETED interviews.__  	
+```{r fieldcheck2results, results="asis"}
+dtacheck<-dtacheck%>%
+    filter(xresult==1)
+
+#1. Missing number of beds when facility provides inpatient services  
+#print("1. Percent of interviews with missing responses for inpatient or ICU beds")   
+print(paste(as.character(round(mean(dtacheck$missing1, na.rm=TRUE)*100, 1)), "%"))
+
+#2. Missing overtime and overtime payment responses 
+#print("1. Percent of interviews with missing responses for overtime and overtime payment")   
+print(paste(as.character(round(mean(dtacheck$missingot, na.rm=TRUE)*100, 1)), "%"))
+
+#3. Missing response to strategy changes
+#print("3. Percent of interviews with one or missing responses in strategy changes")
+print(paste(as.character(round(mean(dtacheck$missingstr, na.rm=TRUE)*100, 1)), "%")) 
+#print("3.1. Of those, average number of missing responses")
+temp<-dtacheck%>%filter(missingstr==1)
+round(mean(temp$missingstr_num, na.rm=TRUE), 1)
+
+#4. Missing response to OPT volume changes
+#print("4. Percent of interviews with one or missing responses in OPT volume changes")
+print(paste(as.character(round(mean(dtacheck$missingopt, na.rm=TRUE)*100, 1)), "%")) 
+#print("4.1. Of those, average number of missing responses")
+temp<-dtacheck%>%filter(missingopt==1)
+round(mean(temp$missingopt_num, na.rm=TRUE), 1)
+
+#5. Missing response to restoration plan questions 
+#print("5. Percent of interviews with one or missing responses in restoration plan questions ")
+print(paste(as.character(round(mean(dtacheck$missingrst, na.rm=TRUE)*100, 1)), "%")) 
+#print("5.1. Of those, average number of missing responses")
+temp<-dtacheck%>%filter(missingrst==1)
+round(mean(temp$missingrst_num, na.rm=TRUE), 1)
+
+#6. Missing response to PPE (%)
+#print("6. Percent of interviews with one or missing responses in PPE questions")
+print(paste(as.character(round(mean(dtacheck$missingppe, na.rm=TRUE)*100, 1)), "%")) 
+#print("6.1. Of those, average number of missing responses")
+temp<-dtacheck%>%filter(missingppe==1)
+round(mean(temp$missingppe_num, na.rm=TRUE), 1)
+
+#7. Missing response to medicines questins 
+#print("7. Percent of interviews with one or missing responses in medicines questions")   
+print(paste(as.character(round(mean(dtacheck$missingmed, na.rm=TRUE)*100, 1)), "%")) 
+#print("7.1. Of those, average number of missing responses")
+temp<-dtacheck%>%filter(missingmed==1)
+round(mean(temp$missingmed_num, na.rm=TRUE), 1)
+
+```
+
+---
+
+####E. Create analytical variables 
+#####E.1. Country speciic code local 
+Update code here based on the questionnaire in the country 
+```{r surveylocal}
+urbanmin<-1
+urbanmax<-1
+
+minlow  <-1 #/*lowest code for lower-level facilities in Q105*/
+maxlow  <-1 #/*highest code for lower-level facilities in Q105*/
+minhigh <-2 #/*lowest code for hospital/high-level facilities in Q105*/
+maxhigh	<-88 #/*highest code for hospital/high-level facilities in Q105*/
+districthospital <-2 #/*district hospital or equivalent */	
+
+pubmin<-1
+pubmax<-1
+
+maxtrainingsupport <-8 #/*total medicines asked in q401*/
+
+maxdrug <-17 #/*total medicines asked in q401*/
+```
+
+---
+
+#####E.2. Construct analysis variables 
+Created analysis variables section by section.   
+* give prefix __z__ for background characteristics, which can be used as analysis strata     
+* give prefix __x__ for binary variables, which will be used to calculate percentage   
+* give prefix __y__ for integer/continuous variables, which will be used to calculate total number     
+```{r section1}
+#####* Section 1 
+dta<-dta%>%
+	mutate(
+    	country = country, 
+    	round = round,      
+    	facilitycode = q101, 
+    	month = month, 
+    	year = year, 
+    	
+    	zurban	= q104>=urbanmin & q104<=urbanmax,  
+    	zlevel				=q105,
+    	zlevel_hospital		=q105>=minhigh & q105<=maxhigh,
+    	zlevel_disthospital	=q105==districthospital, 
+    	zlevel_low			=q105>=minlow  & q105<=maxlow, 
+    	
+    	zpub	=q106>=pubmin & q106<=pubmax
+	)%>%
+    mutate_if(is.logical, as.numeric)%>%
+    mutate_at(vars(starts_with("z")), 
+              ~replace(., is.na(.)==TRUE, 0))
+    
+
+	#lab define zurban 0"Rural" 1"Urban"
+	#lab define zlevel_hospital 0"Non-hospital" 1"Hospital"
+	#lab define zpub 0"Non-public" 1"Public"
+
+	#lab values  zurban zurban
+	#lab values  zlevel_hospital zlevel_hospital
+	#lab values  zpub zpub
+	
+	#lab var id "ID generated from Lime Survey"
+	#lab var facilitycode "facility ID from sample list" /*this will be used to merge with sampling weight, if relevant*/
+```
+
+```{r section2}
+#####* Section 2: staff
+dta<-dta%>%
+    mutate(
+        staff_num_total_md=q201_001_001 , 
+    	staff_num_covid_md=q201_001_002 , 
+    	
+    	staff_num_total_nr=q201_002_001 , 
+    	staff_num_covid_nr=q201_002_002 , 
+    	
+    	staff_num_total_mw=q201_003_001 , 
+    	staff_num_covid_mw=q201_003_002 , 
+    	
+    	staff_num_total_co=q201_004_001 , 
+    	staff_num_covid_co=q201_004_002 )
+
+dta<-dta%>%
+    mutate(
+        staff_num_total_othclinical=rowSums(dta[ c("q201_003_001", "q201_004_001", "q201_005_001", "q201_006_001", "q201_007_001")], na.rm = TRUE), 
+        staff_num_covid_othclinical=rowSums(dta[ c("q201_003_002", "q201_004_002", "q201_005_002", "q201_006_002", "q201_007_002")], na.rm = TRUE))
+        
+dta<-dta%>%
+    mutate(        
+    	staff_num_total_clinical=rowSums(dta[ c("staff_num_total_md", "staff_num_total_nr", "staff_num_total_othclinical")], na.rm = TRUE) , 
+    	staff_num_covid_clinical=rowSums(dta[ c("staff_num_covid_md", "staff_num_covid_nr", "staff_num_covid_othclinical")], na.rm = TRUE) , 
+    	
+    	staff_num_total_nonclinical=rowSums(dta[ c("q201_008_001", "q201_009_001", "q201_010_001")], na.rm = TRUE) , 
+    	staff_num_covid_nonclinical=rowSums(dta[ c("q201_008_002", "q201_009_002", "q201_010_002")], na.rm = TRUE) )
+
+dta<-dta%>%
+    mutate(
+    	staff_num_total_all=rowSums(dta[ c("staff_num_total_clinical", "staff_num_total_nonclinical")], na.rm = TRUE),  
+    	staff_num_covid_all=rowSums(dta[ c("staff_num_covid_clinical", "staff_num_covid_nonclinical")], na.rm = TRUE), 
+        
+    	xabsence=q202==1,
+    	xabsence_medical=	q203_003==1 | q203_004==1 ,
+    	xabsence_structure=	q203_005==1 | q203_006==1 | q203_007==1 ,
+    	xabsence_social=	q203_008==1 | q203_009==1 | q203_010==1 ,
+    			
+    	xhr=q204==1,
+    	xhr_shift=		q205_001,
+    	xhr_increase=	q205_002==1 | q205_003==1 | q205_004==1 | q205_005==1 | q205_006==1 ,
+    	xhr_increase_exp=	q205_002==1 | q205_003==1 ,
+    	xhr_increase_new=	q205_004==1 | q205_005==1 | q205_006==1 ,
+    	xhr_secondment=	q205_007==1,
+    	xhr_decrease=	q205_008==1,
+	
+	    xtraining=q206==1
+        )%>%
+    mutate_at(vars(xabsence, starts_with("xabsence_"), xhr, starts_with("xhr_"), starts_with("xtraining")), 
+              ~replace(., is.na(.)==TRUE, 0))%>%
+    rename_at(.vars = vars(starts_with("q207_")), .funs = funs(sub("q207_", "xtraining__", .)))%>%
+    mutate_if(is.logical, as.numeric)%>%
+    mutate_at(vars(starts_with("xtraining__")), 
+              ~replace(., is.na(.)==TRUE, 0))
+
+dta<-dta%>%	
+    mutate(
+            max=4,
+    		temp=rowSums(dta[ c("xtraining__001", "xtraining__002", "xtraining__003", "xtraining__004")], na.rm=TRUE) , 
+    	xtraining_score	=100*(temp/max) , 
+    	xtraining_100 	=xtraining_score>=100,
+    	xtraining_50 	=xtraining_score>=50,
+		
+    		max=maxtrainingsupport,
+    		temp=rowSums(dta[colnames(select(dta, starts_with("xtraining__")))], na.rm=TRUE ) , 
+    	xtrainingsupport_score	=100*(temp/max) , 
+    	xtrainingsupport_100	=xtrainingsupport_score>=100,
+    	xtrainingsupport_50 	=xtrainingsupport_score>=50
+        
+    )
+```
+
+```{r section3}
+#####* Section 3: finance
+dta<-dta%>%
+    mutate(
+    	xuserfee=		q301==1 ,
+    	xexempt= 		q302==1 | q302==2 | q302==3 | q303==1 , 
+    	xexempt_covid= 	q302==1 | q302==3 ,
+    	xexempt_other= 	q302==2 | q302==3 ,	
+    	xexempt_vulnp= 	q303==1  ,
+    	xfeeincrease= 	q304==1 )%>%
+    mutate_if(is.logical, as.numeric)%>%
+    mutate_at(vars(starts_with("xuserfee"), starts_with("xexempt"), starts_with("xfeeincrease")), 
+              ~replace(., is.na(.)==TRUE, 0))%>%
+    mutate_at(vars(starts_with("xexempt"), xfeeincrease), 
+              funs(ifelse(xuserfee!=1, NA, .)) )%>%
+    mutate(
+    	xaddfund = q305==1 | q305==2 ,
+    	xaddfund_gov = q306==1  ,
+    	xaddfund_other = q306>=2  ,
+    		
+    	xfinance_salaryontime 	= q307==1 ,
+    	xfinance_ot 			= q308==1  )%>%
+    mutate_at(vars(starts_with("xaddfund"), starts_with("xfinance")), 
+              ~replace(., is.na(.)==TRUE, 0))%>%
+    mutate(
+    	xfinance_otontime 	= q309==1 | q309==3 ,
+    		xfinance_otontime = ifelse(xfinance_ot==0, NA, xfinance_otontime) ,
+    		
+    	xfinance_ontime = xfinance_salaryontime ==1 & (xfinance_otontime==1 | is.na(xfinance_otontime)==TRUE) 
+    )%>%
+    mutate_if(is.logical, as.numeric)%>%
+    mutate_at(vars(xfinance_ontime), 
+              ~replace(., is.na(.)==TRUE, 0))
+```
+
+```{r section4}
+#####* Section 4: service delivery & utlization  
+    
+        varlist=dtacheck%>%select(q402, q403, starts_with("q406"))%>%colnames()
+
+dta<-dta%>%
+    mutate(
+    	###*** Service delivery strategy 
+        xstrategy= rowSums(dta[varlist], na.rm = TRUE)>=1, 
+    	
+    	xstrategy_reduce= 	q402==1  | q403==1  | q406_001==1 | q406_002==1 | q406_003==1 | q406_004==1 | q406_005==1,
+    	xstrategy_reduce_closure= 	q402==1  ,
+    	xstrategy_reduce_hrchange= 	q403==1  | q406_001==1 | q406_002==1 | q406_003==1 | q406_004==1 | q406_005==1,
+    	xstrategy_reduce_reduce= 	q406_001==1 | q406_002==1 | q406_003==1,
+    	xstrategy_reduce_redirect= 	q406_004==1,
+    	xstrategy_reduce_priority= 	q406_005==1,
+    	xstrategy_self= 	q406_007==1,
+    	xstrategy_home= 	q406_008==1,
+    	xstrategy_remote= 	q406_009==1 ,
+    	xstrategy_prescription= 	q406_010==1 | q406_011==1 | q406_012==1 ,
+    	
+    	###*** Referral/transportation for COVID patients 
+    	xcvd_ref		= q407==1	, 
+    	xcvd_reftrans	= q407==1 | q408==1	 	 
+    )%>%
+    mutate_if(is.logical, as.numeric)%>%
+    mutate_at(vars(starts_with("xstrategy"), starts_with("xcvd_")), 
+              ~replace(., is.na(.)==TRUE, 0))%>%
+    mutate_at(vars(starts_with("q409_")), 
+              funs(ifelse(is.na(.)==TRUE, 0, .)) )
+
+	    ###***** OPT
+    
+        temp1<-dta%>%select(starts_with("q409_"))%>%
+            rename_all(.funs = funs(sub("q409_", "xopt_increase__", .)))%>%
+            mutate_all( funs(ifelse(. ==1 , 1, 
+                                  ifelse(. !=1, 0,  .))) )%>%
+            mutate_all(~replace(., is.na(.), 0)) 
+        
+        temp2<-dta%>%select(starts_with("q409_"))%>%
+            rename_all(.funs = funs(sub("q409_", "xopt_decrease__", .)))%>%
+            mutate_all( funs(ifelse(. ==2 , 1, 
+                                  ifelse(. !=2, 0,  .))) )%>%
+            mutate_all(~replace(., is.na(.), 0)) 
+        
+        temp3<-dta%>%select(starts_with("q409_"))%>%
+            rename_all(.funs = funs(sub("q409_", "xopt_nochange__", .)))%>%
+            mutate_all( funs(ifelse(. ==3 , 1, 
+                                  ifelse(. !=3, 0, .))) )%>%
+            mutate_all(~replace(., is.na(.), 0)) 
+
+dta<-cbind(dta, temp1, temp2, temp3)
+
+dta<-dta%>%
+    mutate(
+        xopt_increase_num=rowSums(dta[colnames(select(dta, starts_with("xopt_increase__")))], na.rm=TRUE) , 
+        xopt_decrease_num=rowSums(dta[colnames(select(dta, starts_with("xopt_decrease__")))], na.rm=TRUE) , 
+        xopt_nochange_num=rowSums(dta[colnames(select(dta, starts_with("xopt_nochange__")))], na.rm=TRUE) , 
+        xopt_increase = xopt_increase_num>=1, 
+        xopt_decrease = xopt_decrease_num>=1    )%>%
+    mutate_if(is.logical, as.numeric)%>%
+    mutate_at(vars(xopt_increase, xopt_decrease, 
+                   starts_with("xopt_increase_num"), starts_with("xopt_decrease_num")), 
+              ~replace(., is.na(.)==TRUE, 0))%>%
+    mutate(
+        xopt_change=NA, 
+            xopt_change=ifelse(xopt_decrease==0 & xopt_increase==0, 1, xopt_change), #/*no change in any*/
+            xopt_change=ifelse(xopt_decrease==1 & xopt_increase==1, 2, xopt_change), #/*mixed*/
+            xopt_change=ifelse(xopt_decrease==1 & xopt_increase==0, 3, xopt_change), #/*no service volume increased + at least one decreased*/
+            xopt_change=ifelse(xopt_decrease==0 & xopt_increase==1, 4, xopt_change) #/*no service volume decreased + at least one increased*/
+    )
+
+    	###***** REASONS for OPT volume changes
+
+        temp1<-dta%>%select(xopt_increase, starts_with("q410_"))%>%
+            rename_all(.funs = funs(sub("q410_", "xopt_increase_reason__", .)))%>%
+            mutate_at(vars(starts_with("xopt_increase_reason__")), 
+                      funs(ifelse(. !=1, 0, .)) )%>%
+            mutate_at(vars(starts_with("xopt_increase_reason__")), 
+                      funs(ifelse(xopt_increase==0, NA, .)) )%>%
+            select( - xopt_increase)
+        
+        temp2<-dta%>%select(xopt_decrease, starts_with("q411_"))%>%
+            rename_all(.funs = funs(sub("q411_", "xopt_decrease_reason__", .)))%>%
+            mutate_at(vars(starts_with("xopt_decrease_reason__")), 
+                      funs(ifelse(. !=1, 0, .)) )%>%
+            mutate_at(vars(starts_with("xopt_decrease_reason__")), 
+                      funs(ifelse(xopt_decrease==0, NA, .)) )%>%
+            select( - xopt_decrease)
+        
+dta<-cbind(dta, temp1, temp2)
+
+dta<-dta%>%
+    mutate(
+    	xopt_increase_reason_covidnow 	= xopt_increase_reason__001==1 | xopt_increase_reason__002==1  , 
+    	xopt_increase_reason_covidafter = xopt_increase_reason__003==1 | xopt_increase_reason__004==1 | xopt_increase_reason__005==1, 
+	
+    	xopt_decrease_reason_comdemand  = xopt_decrease_reason__001==1 | xopt_decrease_reason__002==1  ,
+    	xopt_decrease_reason_enviro 	= xopt_decrease_reason__003==1 | xopt_decrease_reason__004==1 ,
+    	xopt_decrease_reason_intention	= xopt_decrease_reason__006==1 | xopt_decrease_reason__007==1 | xopt_decrease_reason__008==1 | xopt_decrease_reason__009==1,
+    	xopt_decrease_reason_disruption = xopt_decrease_reason__010==1 | xopt_decrease_reason__011==1 
+    )%>%
+    mutate_if(is.logical, as.numeric)%>%
+    mutate_at(vars(starts_with("xopt_increase_reason"), starts_with("xopt_decrease_reason")), 
+              ~replace(., is.na(.)==TRUE, 0))
+
+    	###***** ER
+dta<-dta%>%
+    mutate(
+    	xer = q118_001==1,
+    	xer_increase= q412_001 ==1,
+    	xer_decrease= q412_001 ==2,
+    	xer_nochange= q412_001 ==3) %>%
+    mutate_if(is.logical, as.numeric)%>%
+    mutate_at(vars(starts_with("xer")), 
+              ~replace(., is.na(.)==TRUE, 0))%>%
+    mutate_at(vars(starts_with("xer_")), 
+              funs(ifelse(xer==0, NA, .)) )
+
+        temp1<-dta%>%select(starts_with("q412_"))%>%
+            rename_all(.funs = funs(sub("q412_", "xer_increase__", .)))%>%
+            mutate_at(vars(starts_with("xer_increase__")), 
+                      funs(ifelse(. ==1, 1, 
+                                  ifelse(. !=1, 0, .))) )
+        
+        temp2<-dta%>%select(starts_with("q412_"))%>%
+            rename_all(.funs = funs(sub("q412_", "xer_decrease__", .)))%>%
+            mutate_at(vars(starts_with("xer_decrease__")), 
+                      funs(ifelse(. ==2, 1, 
+                                  ifelse(. !=2, 0, .))) )
+
+dta<-cbind(dta, temp1, temp2)%>%
+    mutate_at(vars(starts_with("xer_")), 
+              funs(ifelse(xer==0, NA, .)) )
+
+    	###***** IPT 
+dta<-dta%>%
+    mutate(
+        xipt = q115==1, 
+        xbed = q116,
+    	xbedrate = q413,
+    	xipt_increase = q414==1,
+    	xipt_decrease = q414==2,
+    	xipt_nochange = q414==3
+    )%>%
+    mutate_if(is.logical, as.numeric)%>%
+    mutate_at(vars(starts_with("xipt")), 
+              ~replace(., is.na(.)==TRUE, 0))%>%
+    mutate_at(vars(starts_with("xipt_")), 
+              funs(ifelse(xipt==0, NA, .)) )
+    		
+    	###***** Pre hospital ER
+dta<-dta%>%    
+    mutate(
+    	xpreer = q414<=3,
+    	
+    	xpreer_increase = q415==1,
+    	xpreer_decrease = q415==2,
+    	xpreer_nochange = q415==3
+    )%>%
+    mutate_if(is.logical, as.numeric)%>%
+    mutate_at(vars(starts_with("xpreer")), 
+              ~replace(., is.na(.)==TRUE, 0))%>%    
+    mutate_at(vars(starts_with("xpreer_")), 
+              funs(ifelse(xpreer==0, NA, .)) )
+    	    
+    	###***** community outreach
+dta<-dta%>%
+    mutate(
+    	xout = q416==1)%>%
+    mutate_if(is.logical, as.numeric)%>%
+    mutate_at(vars(xout), 
+              ~replace(., is.na(.)==TRUE, 0))
+
+        temp1<-dta%>%select(starts_with("q417_"))%>%
+            rename_all(.funs = funs(sub("q417_", "xout_decrease__", .)))%>%
+            mutate_all( funs(ifelse(. <=2 , 1, 
+                                  ifelse(. >3, 0, .))) )%>%
+            mutate_all(~replace(., is.na(.), 0)) 
+
+dta<-cbind(dta, temp1)
+
+dta<-dta%>%
+    mutate(
+    	xout_decrease_num=rowSums(dta[colnames(select(dta, starts_with("xout_decrease__")))], na.rm=TRUE ) , 
+    	xout_decrease= xout_decrease_num>=1	        
+    )%>%
+    mutate_if(is.logical, as.numeric)%>%
+    mutate_at(vars(starts_with("xout_decrease")), 
+              ~replace(., is.na(.)==TRUE, 0))%>%
+    mutate_at(vars(starts_with("xout_decrease")), 
+              funs(ifelse(xout==0, NA, .)) )
+
+    	###***** missed appointment 
+dta<-dta%>%
+    mutate(    	
+    	xresto = q418==1 & q419==1)%>%
+    mutate_at(vars(xresto), 
+              ~replace(., is.na(.)==TRUE, 0)) %>%
+    mutate(
+    	xresto_imp_preg 	= q420_001==1 ,
+    	xresto_imp_immunization 	= q420_002==1 ,
+    	xresto_imp_chronic 	= q420_003==1 ,
+    	
+    	xresto_imppln_preg 			= q420_001==1 | q420_001==2,
+    	xresto_imppln_immunization 	= q420_002==1 | q420_002==2,
+    	xresto_imppln_chronic 		= q420_003==1 | q420_003==2,
+    	
+    	xresto_imp_preg = ifelse(q420_001>=4 | is.na(q420_001)==TRUE, NA, xresto_imp_preg), 
+    	xresto_imppln_preg = ifelse(q420_001>=4 | is.na(q420_001)==TRUE, NA, xresto_imppln_preg), 
+
+    	xresto_imp_immunization = ifelse(q420_002>=4 | is.na(q420_002)==TRUE, NA, xresto_imp_immunization), 
+    	xresto_imppln_immunization = ifelse(q420_002>=4 | is.na(q420_002)==TRUE, NA, xresto_imppln_immunization),
+    	
+    	xresto_imp_chronic = ifelse(q420_003>=4 | is.na(q420_003)==TRUE, NA, xresto_imp_chronic),
+    	xresto_imppln_chronic = ifelse(q420_003>=4 | is.na(q420_003)==TRUE, NA, xresto_imppln_chronic)
+    )%>%
+    mutate_if(is.logical, as.numeric)
+```
+
+```{r section5}
+#####* Section 5: IPC 
+dta<-dta%>%
+	mutate(	
+        xipcpp= q501==1, 
+        xsafe= q502==1)%>%
+    rename_at(.vars = vars(starts_with("q503_")), 
+              .funs = funs(sub("q503_", "xsafe__", .)))%>%	
+    mutate_at(vars(xipcpp, xsafe, starts_with("xsafe__")), 
+              ~replace(., is.na(.)==TRUE, 0))%>%
+    mutate(
+            max=9,
+    		temp=rowSums(dta[colnames(select(dta, starts_with("xsafe__")))], na.rm=TRUE ) , 
+    	xsafe_score	=100*(temp/max),
+    	xsafe_100 		=xsafe_score>=100,
+    	xsafe_50 		=xsafe_score>=50
+    )%>%
+    rename_at(.vars = vars(starts_with("q505_")), 
+              .funs = funs(sub("q505_", "xguideline__", .)))%>%	
+    mutate_at(vars(starts_with("xguideline__")), 
+              ~replace(., is.na(.)==TRUE, 0))%>%
+    mutate(
+        xguideline= q504, 
+    		max=5,
+    		temp=rowSums(dta[colnames(select(dta, starts_with("xguideline__")))], na.rm=TRUE ) , 
+    	xguideline_score	=100*(temp/max),
+    	xguideline_100 		=xguideline_score>=100,
+    	xguideline_50 		=xguideline_score>=50
+    )%>%
+    mutate_if(is.logical, as.numeric)
+
+        temp1<-dta%>%select(starts_with("q507_"))%>%
+            rename_all(.funs = funs(sub("q507_", "xppe_allsome__", .)))%>%
+            mutate_all( funs(ifelse(. <=2 , 1, 
+                                  ifelse(. >2, 0,  .))) )%>%
+            mutate_all(~replace(., is.na(.), 0)) 
+        
+        temp2<-dta%>%select(starts_with("q507_"))%>%
+            rename_all(.funs = funs(sub("q507_", "xppe_all__", .)))%>%
+            mutate_all( funs(ifelse(. ==1 , 1, 
+                                  ifelse(. >1, 0, .))) )%>%
+            mutate_all(~replace(., is.na(.), 0)) 
+
+dta<-cbind(dta, temp1, temp2)
+
+dta<-dta%>%
+    mutate_if(is.logical, as.numeric)%>%
+	mutate(
+    		max=6,
+    		temp=rowSums(dta[colnames(select(dta, starts_with("xppe_allsome__")))], na.rm=TRUE ) , 
+    	xppe_allsome_score	=100*(temp/max),
+    	xppe_allsome_100 		=xppe_allsome_score>=100,
+    	xppe_allsome_50 		=xppe_allsome_score>=50, 
+    	
+    		max=6,
+    		temp=rowSums(dta[colnames(select(dta, starts_with("xppe_all__")))], na.rm=TRUE ) , 
+    	xppe_all_score	=100*(temp/max),
+    	xppe_all_100 		=xppe_all_score>=100,
+    	xppe_all_50 		=xppe_all_score>=50
+	)%>%
+    mutate_if(is.logical, as.numeric)
+
+```
+
+```{r section6}
+#####* Section 6: COVID management in primary care setting 
+dta<-dta%>%
+    mutate(
+    	xcvd_team		=q601==1,
+    	xcvd_sop		=q602==1,
+    		
+    	xcvd_spcm		=q603==1,
+    	xcvd_test		=q603==1 & q604<=3,
+    	xcvd_test_pcr		=q603==1 & (q604==1 | q604==3),
+    	xcvd_test_rdt		=q603==1 & (q604==2 | q604==3),
+    	xcvd_spcmtrans		=q603==1 & q604==4 & q605==1,
+    		
+    	xcvd_pt = q606==1        
+    )%>%
+    mutate_if(is.logical, as.numeric)%>%
+    mutate_at(vars(starts_with("xcvd_")), 
+              ~replace(., is.na(.)==TRUE, 0))
+
+            temp1<-dta%>%select(xcvd_pt, starts_with("q607_"))%>%
+                rename_all(.funs = funs(sub("q607_", "xcvd_pt__", .)))%>%
+                mutate_at(vars(starts_with("xcvd_pt__")), 
+                          funs(ifelse(xcvd_pt==1 & .==1, 1, 
+                                      ifelse(xcvd_pt!=1 | .!=1, 1, .))) )%>%
+                mutate_all(~replace(., is.na(.), 0))%>%
+                select(-xcvd_pt)
+
+dta<-cbind(dta, temp1)
+
+dta<-dta%>%
+    mutate(
+    		max=3,
+    		temp=rowSums(dta[ c("xcvd_pt__001", "xcvd_pt__002", "xcvd_pt__003")], na.rm = TRUE), 
+    	xcvd_pt_score	=100*(temp/max),
+    	xcvd_pt_100 	=xcvd_pt_score>=100,
+    	xcvd_pt_50 		=xcvd_pt_score>=50, 
+    	
+    	xcvd_ptmild = q607_006==1
+    )%>%
+    mutate_if(is.logical, as.numeric)%>%
+    mutate_at(vars(starts_with("xcvd")), 
+              ~replace(., is.na(.)==TRUE, 0))
+
+            temp1<-dta%>%select(xcvd_ptmild, starts_with("q608_"))%>%
+                rename_all(.funs = funs(sub("q608_", "xcvd_ptmild__", .)))%>%
+                mutate_at(vars(starts_with("xcvd_ptmild__")), 
+                          funs(ifelse(xcvd_ptmild==1 & .==1, 1, 
+                                      ifelse(xcvd_ptmild!=1 | .!=1, 1, .))) )%>%
+                mutate_all(~replace(., is.na(.), 0))%>%
+                select(-xcvd_ptmild)
+
+dta<-cbind(dta, temp1)
+
+dta<-dta%>%
+    mutate(
+    	xcvd_guide_ptmild = q609==1	,			
+    	xcvd_info = q610==1	,
+    	
+    	xcvd_info_moh 	= NA,
+    	xcvd_info_local	= NA,
+    	xcvd_info_who 	= NA,
+    	xcvd_info_prof 	= NA,
+    	xcvd_info_other	= NA        
+    )%>%
+    mutate_if(is.logical, as.numeric)%>%
+    mutate_at(vars(starts_with("xcvd")), 
+              ~replace(., is.na(.)==TRUE, 0))
+    			
+```
+
+```{r section7}
+#####* Section 7: Therapeutics
+dta<-dta%>%
+	mutate(	
+        	max=maxdrug,
+        	temp=rowSums(dta[colnames(select(dta, starts_with("q701_")))], na.rm=TRUE ) , 
+    	xdrug_score	=100*(temp/max),
+    	xdrug_100 	=xdrug_score>=100,
+    	xdrug_50 	=xdrug_score>=50, 
+    
+        	max=3,
+        	temp=rowSums(dta[colnames(select(dta, starts_with("q702_")))], na.rm=TRUE ) , 
+    	xsupp_score	=100*(temp/max),
+    	xsupp_100 	=xsupp_score>=100,
+    	xsupp_50 	=xsupp_score>=50,
+
+    		max=5,
+    		temp=rowSums(dta[colnames(select(dta, starts_with("q703_")))], na.rm=TRUE ) , 
+    	xvac_score	=100*(temp/max),
+    	xvac_100 	=xvac_score>=100,
+    	xvac_50 	=xvac_score>=50
+    	)%>%
+    rename_all(.funs = funs(sub("q701_", "xdrug__", .)))%>%     
+    rename_all(.funs = funs(sub("q702_", "xsupply__", .)))%>%   
+    rename_all(.funs = funs(sub("q703_", "xvaccine__", .)))%>%   
+    mutate_at(vars(starts_with("xdrug__"), starts_with("xsupply__"), starts_with("xvaccine__")), 
+              ~replace(., is.na(.)==TRUE, 0))%>%
+    mutate(
+        xvaccine_child=q409_005>=1 & q409_005<=3
+    )%>%
+    mutate_at(vars(xvaccine_child), 
+              ~replace(., is.na(.)==TRUE, 0))%>%    
+    mutate_at(vars(starts_with("xvac_"), starts_with("xvaccine__")), 
+                          funs(ifelse(xvaccine_child!=1, NA, .)) )
+
+```
+
+```{r section8}
+
+            temp1<-dta%>%select(starts_with("q805_"))%>%
+                rename_all(.funs = funs(sub("q805_", "xdiag_av_a", .)))%>%
+                mutate_all(~replace(., is.na(.), 0))
+            
+            temp2<-dta%>%select(starts_with("q807_"))%>%
+                rename_all(.funs = funs(sub("q807_", "xdiag_av_h", .)))%>%
+                mutate_all(~replace(., is.na(.), 0))
+            
+            temp3<-dta%>%select(starts_with("q810_"))%>%
+                rename_all(.funs = funs(sub("q810_", "ximage_av_", .)))%>%
+                mutate_all(~replace(., is.na(.), 0))
+
+dta<-cbind(dta, temp1, temp2, temp3)
+
+dta<-dta%>%
+    mutate(
+        xdiag_avfun_a001 = q805_001==1 & q806_001==1 , 
+        xdiag_avfun_a002 = q805_002==1 & q806_002==1 , 
+        xdiag_avfun_a003 = q805_003==1 & q806_003==1 , 
+        xdiag_avfun_a004 = q805_004==1 & q806_004==1 , 
+        xdiag_avfun_a005 = q805_005==1 & q806_005==1 , 
+        
+        xdiag_avfun_h001 = q807_001==1 & q808_001==1 , 
+        xdiag_avfun_h002 = q807_002==1 & q808_002==1 , 
+        xdiag_avfun_h003 = q807_003==1 & q808_003==1 , 
+        xdiag_avfun_h004 = q807_004==1 & q808_004==1 , 
+        xdiag_avfun_h005 = q807_005==1 & q808_005==1 , 
+        
+        ximage_avfun_001 = q810_001==1 & q811_001==1 , 
+        ximage_avfun_002 = q810_002==1 & q811_002==1 , 
+        ximage_avfun_003 = q810_003==1 & q811_003==1  
+    )%>%
+    mutate_if(is.logical, as.numeric)%>%
+    mutate_at(vars(starts_with("xdiag_"), starts_with("ximage_")), 
+              ~replace(., is.na(.)==TRUE, 0))%>%
+    mutate_at(vars(starts_with("xdiag_av_h"), starts_with("xdiag_avfun_h"),
+                   starts_with("ximage_av_"), starts_with("ximage_avfun_")), 
+              funs(ifelse(zlevel_hospital!=1, NA, .) ) )%>%
+    mutate(
+    	xdiag=q804==1)%>%
+    mutate_at(vars(xdiag), 
+              ~replace(., is.na(.)==TRUE, 0))%>%
+    mutate(
+    	xhospital = zlevel_hospital==1,    	
+    	
+    		max=5,
+    	    temp=rowSums(dta[colnames(select(dta, starts_with("xdiag_avfun_a")))], na.rm=TRUE ) ,     
+    	xdiagbasic_score	=100*(temp/max),
+    	xdiagbasic_100 	=xdiagbasic_score>=100,
+    	xdiagbasic_50 	=xdiagbasic_score>=50,
+    		
+    		max=5, 
+    			max=ifelse(zlevel_hospital==1 , 10, max), 
+    		temp=rowSums(dta[colnames(select(dta, starts_with("xdiag_avfun_")))], na.rm=TRUE ) ,     
+    	xdiag_score	=100*(temp/max),
+    	xdiag_100 	=xdiag_score>=100,
+    	xdiag_50 	=xdiag_score>=50,
+    
+    		max=3,
+    		temp=rowSums(dta[colnames(select(dta, starts_with("ximage_avfun_")))], na.rm=TRUE ) ,     
+    	ximage_score	=100*(temp/max),
+    	ximage_100 	=ximage_score>=100,
+    	ximage_50 	=ximage_score>=50
+    )%>%
+    mutate_at(vars(starts_with("ximage")), 
+              funs(ifelse(zlevel_hospital!=1, NA, .) ) )
+
+```
+
+```{r section9}
+#####* Section 9: vaccine
+dta<-dta%>%
+	mutate(	
+    	xvac= q901==1 | q902==1)%>%
+    mutate_at(vars(xvac), 
+              ~replace(., is.na(.)==TRUE, 0))%>%
+    mutate(
+    	
+    	xvac_av_fridge 		= q903==1 | q903==2, 
+    	xvac_avfun_fridge 	= q903==1 ,
+    	xvac_avfun_fridgetemp 	= q903==1 & q904==1,
+    	
+    	xvac_av_coldbox	= q905==1,
+    	
+    	xvac_avfun_coldbox_all		= q905==1 & (q906>=1 & is.na(q906)==FALSE) & q907==1,
+    	xvac_avfun_coldbox_all_full	= q905==1 & (q906>=1 & is.na(q906)==FALSE) & q907==1 & q911==1,
+    	
+    	yvac_avfun_coldbox_all		=NA, 
+    	yvac_avfun_coldbox_all		= ifelse(xvac_avfun_coldbox_all==1, q906, 
+    	                                     yvac_avfun_coldbox_all), 
+    	yvac_avfun_coldbox_all_full	=NA, 
+    	yvac_avfun_coldbox_all_full	= ifelse(xvac_avfun_coldbox_all==1 & q911==1, q906, 
+    	                                     yvac_avfun_coldbox_all_full),  
+    	
+    	xvac_av_carrier	= q908==1,
+    	
+    	xvac_avfun_carrier_all		= q908==1 & (q909>=1 & is.na(q909)==FALSE) & q910==1,
+    	xvac_avfun_carrier_all_full	= q908==1 & (q909>=1 & is.na(q909)==FALSE) & q910==1 & q911==1,	
+    	
+    	yvac_avfun_carrier_all		=NA, 
+    	yvac_avfun_carrier_all		= ifelse(xvac_avfun_carrier_all==1, q909, 
+    	                                     yvac_avfun_carrier_all), 	
+    	yvac_avfun_carrier_all_full	=NA, 
+    	yvac_avfun_carrier_all_full	= ifelse(xvac_avfun_carrier_all==1 & q911==1, q909, 
+    	                                     yvac_avfun_carrier_all_full), 
+    		
+    	xvac_av_outreach = xvac_av_coldbox ==1 | xvac_av_carrier ==1,  
+    	xvac_avfun_outreach_all_full = xvac_avfun_coldbox_all_full ==1 | xvac_avfun_carrier_all_full==1
+    	
+    ) %>%
+    mutate_if(is.logical, as.numeric)%>%
+    mutate_at(vars(starts_with("xvac_")), 
+              ~replace(., is.na(.)==TRUE, 0))%>% #this changes section 7 xvac"var"
+    mutate_at(vars(starts_with("xvac_av")), 
+              funs(ifelse(xvac!=1, NA, .)) )%>%
+    mutate_at(vars(xvac_score, xvac_100, xvac_50), 
+                          funs(ifelse(xvaccine_child!=1, NA, .)) ) #convert section 7 xvac"var" accordingly 
+	
+	#lab var xvac_av_fridge "has fridge"
+	#lab var xvac_avfun_fridge "has functioning fridge"
+	#lab var xvac_avfun_fridgetemp "has functioning fridge with temp log"
+	
+	#lab var xvac_av_coldbox "has coldbox"
+	#lab var xvac_avfun_coldbox_all "has functioning coldbox, all"
+	#lab var xvac_avfun_coldbox_all_full "has functioning coldbox with icepacks, all"
+	
+	#lab var xvac_av_carrier "has carrier"
+	#lab var xvac_avfun_carrier_all "has functioning carrier, all"
+	#lab var xvac_avfun_carrier_all_full "has functioning carrier with icepacks, all"
+```
+
+```{r annex}
+
+            temp<-dta%>%select(starts_with("qa1_002_"))
+            temp1<-temp%>%select(1:4)%>%
+                rename_all(.funs = funs(sub("qa1_002_", "vol_opt_now_", .)))
+            temp2<-temp%>%select(5:8)%>%
+                rename_all(.funs = funs(sub("qa1_002_", "vol_opt_last_", .)))
+
+dta<-cbind(dta, temp1, temp2)
+
+            temp<-dta%>%select(starts_with("qa1_003_"))
+            temp1<-temp%>%select(1:4)%>%
+                rename_all(.funs = funs(sub("qa1_003_", "vol_ipt_now_", .)))
+            temp2<-temp%>%select(5:8)%>%
+                rename_all(.funs = funs(sub("qa1_003_", "vol_ipt_last_", .)))
+
+dta<-cbind(dta, temp1, temp2)
+
+            temp<-dta%>%select(starts_with("qa1_004_"))
+            temp1<-temp%>%select(1:4)%>%
+                rename_all(.funs = funs(sub("qa1_004_", "vol_del_now_", .)))
+            temp2<-temp%>%select(5:8)%>%
+                rename_all(.funs = funs(sub("qa1_004_", "vol_del_last_", .)))
+
+dta<-cbind(dta, temp1, temp2)
+
+            temp<-dta%>%select(starts_with("qa1_005_"))
+            temp1<-temp%>%select(1:4)%>%
+                rename_all(.funs = funs(sub("qa1_005_", "vol_dpt_now_", .)))
+            temp2<-temp%>%select(5:8)%>%
+                rename_all(.funs = funs(sub("qa1_005_", "vol_dpt_last_", .)))
+
+dta<-cbind(dta, temp1, temp2)
+
+```
+
+---
+
+#####E.3. Merge with sampling weight 
+This code chunk can be skipped if no sampling weight is used. 
+```{r weightmerge}
+# read sampling weight in the chartbook provided by the country. Makesure there are no duplicates 
+dtaweight<-read_excel(paste0(chartbookdir, "WHO_CEHS_ChartbookTest.xlsx"), sheet = "Weight")
+
+    names(dtaweight)<-tolower(names(dtaweight))
+
+    dtaweight<-dtaweight%>%
+        rename_all(.funs = funs(sub(" ", "", .)))%>%
+        select(facilitycode, weight)%>%
+        distinct(facilitycode, .keep_all=TRUE)
+
+# check datasets     
+dim(dta)
+dim(dtaweight)
+str(dta$facilitycode)
+str(dtaweight$facilitycode)
+
+# check datasets 
+dta<-left_join(dta, dtaweight, by = c("facilitycode"))%>%
+    arrange(id)#/*this is generated from Lime survey*/
+
+# confirm dimension 
+dim(dta)
+```
+
+---
+
+#####E.4. Export clean Respondent-level data to chart book 
+```{r cleandatacsv}
+write.csv(dta, paste0("CEHS_", country, "_R", round, ".csv"))
+```
+
+```{r chartbookexport2, eval=FALSE, echo=FALSE}
+dta<-dta%>%mutate(test=Sys.time())
+
+#write.xlsx(dta, 
+#           paste0(chartbookdir, "WHO_CEHS_ChartbookTest.xlsx"), 
+#           sheet = "Facility-level cleaned data", 
+#           append = TRUE)
+```
+
+---
+
+####F. Create and export indicator estimate data 
+#####F.1. Calculate estimates 
+```{r dtatemp_prep}
+dtatemp<-dta%>%
+    mutate(
+    	obs=1, 	
+    	
+    	obs_userfee=NA,
+    	obs_ipt=NA,
+    	obs_er=NA, 	
+    	obs_vac=NA, 
+    	obs_primary=NA, 
+    	
+    	obs_userfee=ifelse( xuserfee==1, 1, obs_userfee),
+    	obs_ipt=ifelse( xipt==1, 1, obs_ipt),
+    	obs_er=ifelse( xer==1, 1, obs_er),
+    	obs_vac=ifelse( xvac==1, 1, obs_vac),
+    	obs_primary=ifelse( zlevel_low==1, 1, obs_primary), 
+        
+        
+        obshmis_opt=rowSums(dta[colnames(select(dta, starts_with("vol_opt_")))], na.rm=TRUE )>0 , 
+        obshmis_ipt=rowSums(dta[colnames(select(dta, starts_with("vol_ipt_")))], na.rm=TRUE )>0 , 
+        obshmis_del=rowSums(dta[colnames(select(dta, starts_with("vol_del_")))], na.rm=TRUE )>0 , 
+        obshmis_dpt=rowSums(dta[colnames(select(dta, starts_with("vol_dpt_")))], na.rm=TRUE )>0 
+    )
+
+dtatempx<-dtatemp%>%select(country, round, month, year, starts_with("z"), starts_with("x"))
+dtatempy<-dtatemp%>%select(country, round, month, year, starts_with("z"), starts_with("obs"), starts_with("y"),
+                           starts_with("staff"), starts_with("vol"))
+
+```
+
+```{r calculation}
+# Among all facilities 
+dtasummaryx<-dtatempx%>%
+    group_by(country, round, month, year)%>%
+    summarize_all(funs(mean(., na.rm = TRUE)))%>%
+    ungroup()%>%
+    mutate(group="All", grouplabel="")
+
+dtasummaryy<-dtatempy%>%
+    group_by(country, round, month, year)%>%
+    summarize_all(funs(sum(., na.rm = TRUE)))%>%
+    ungroup()%>%
+    mutate(group="All", grouplabel="")
+
+dtasummaryall<-left_join(dtasummaryx, dtasummaryy, 
+                      by = c("country", "round", "month", "year", "group", "grouplabel"))
+
+# By residential area
+dtasummaryx<-dtatempx%>%
+    group_by(country, round, month, year, zurban)%>%
+    summarize_all(funs(mean(., na.rm = TRUE)))%>%
+    ungroup()%>%
+    mutate(
+        group="Location", 
+		grouplabel="",
+		grouplabel= ifelse(zurban==0, "1.1 Rural" , grouplabel),
+		grouplabel= ifelse(zurban==1, "1.2 Urban" , grouplabel) )
+
+dtasummaryy<-dtatempy%>%
+    group_by(country, round, month, year, zurban)%>%
+    summarize_all(funs(sum(., na.rm = TRUE)))%>%
+    ungroup()%>%
+    mutate(
+        group="Location", 
+		grouplabel="",
+		grouplabel= ifelse(zurban==0, "1.1 Rural" , grouplabel),
+		grouplabel= ifelse(zurban==1, "1.2 Urban" , grouplabel) )
+
+dtasummarylocation<-left_join(dtasummaryx, dtasummaryy, 
+                      by = c("country", "round", "month", "year", "group", "grouplabel"))
+
+# By facility type
+dtasummaryx<-dtatempx%>%
+    group_by(country, round, month, year, zlevel_hospital)%>%
+    summarize_all(funs(mean(., na.rm = TRUE)))%>%
+    ungroup()%>%
+    mutate(
+        group="Level", 
+		grouplabel="",
+		grouplabel= ifelse(zlevel_hospital==0, "2.1 Non-hospitals" , grouplabel),
+		grouplabel= ifelse(zlevel_hospital==1, "2.2 Hospitals" , grouplabel) )
+
+dtasummaryy<-dtatempy%>%
+    group_by(country, round, month, year, zlevel_hospital)%>%
+    summarize_all(funs(sum(., na.rm = TRUE)))%>%
+    ungroup()%>%
+    mutate(
+        group="Level", 
+		grouplabel="",
+		grouplabel= ifelse(zlevel_hospital==0, "2.1 Non-hospitals" , grouplabel),
+		grouplabel= ifelse(zlevel_hospital==1, "2.2 Hospitals" , grouplabel) )
+
+dtasummarylevel<-left_join(dtasummaryx, dtasummaryy, 
+                      by = c("country", "round", "month", "year", "group", "grouplabel"))
+
+# By facility managing authority
+dtasummaryx<-dtatempx%>%
+    group_by(country, round, month, year, zpub)%>%
+    summarize_all(funs(mean(., na.rm = TRUE)))%>%
+    ungroup()%>%
+    mutate(
+        group="Sector", 
+		grouplabel="",
+		grouplabel= ifelse(zpub==0, "3.2 Non-public" , grouplabel),
+		grouplabel= ifelse(zpub==1, "3.1 Public" , grouplabel) )
+
+dtasummaryy<-dtatempy%>%
+    group_by(country, round, month, year, zpub)%>%
+    summarize_all(funs(sum(., na.rm = TRUE)))%>%
+    ungroup()%>%
+    mutate(
+        group="Sector", 
+		grouplabel="",
+		grouplabel= ifelse(zpub==0, "3.2 Non-public" , grouplabel),
+		grouplabel= ifelse(zpub==1, "3.1 Public" , grouplabel) )
+
+dtasummarysector<-left_join(dtasummaryx, dtasummaryy, 
+                      by = c("country", "round", "month", "year", "group", "grouplabel"))
+
+# Append all 
+dim(dtasummaryall)
+dim(dtasummarylocation)
+dim(dtasummarylevel)
+dim(dtasummarysector)
+
+dtasummary<-rbind(dtasummaryall, dtasummarylocation, dtasummarylevel, dtasummarysector)
+dim(dtasummary)
+
+dtasummary<-dtasummary%>%
+    select(-starts_with("z"))%>%
+    mutate_at(vars(starts_with("x")), 
+              funs(round((. * 100), 0)))%>%
+    mutate_at(vars(ends_with("_score"), ends_with("_num")), 
+              funs(round((. / 100), 0)))%>%
+    mutate(
+        staff_pct_covid_md = round(100* (staff_num_covid_md / staff_num_total_md ), 1),
+        staff_pct_covid_nr = round(100* (staff_num_covid_nr / staff_num_total_nr ), 1),
+        staff_pct_covid_mw = round(100* (staff_num_covid_mw / staff_num_total_mw ), 1),
+        staff_pct_covid_co = round(100* (staff_num_covid_co / staff_num_total_co ), 1),
+        staff_pct_covid_othclinical = round(100* (staff_num_covid_othclinical / staff_num_total_othclinical ), 1),
+        staff_pct_covid_clinicalmd = round(100* (staff_num_covid_clinical / staff_num_total_clinical ), 1),
+        staff_pct_covid_nonclinical = round(100* (staff_num_covid_nonclinical / staff_num_total_nonclinical ), 1),
+        staff_pct_covid_all = round(100* (staff_num_covid_all / staff_num_total_all ), 1)
+    )%>%
+    rename(
+	    xsafe__triage = xsafe__004,  
+	    xsafe__isolation = xsafe__005        
+    )%>%
+    arrange(country, round, group, grouplabel)
+#move up identification variables 
+setcolorder(dtasummary, c("country", "round", "month", "year", "group", "grouplabel"))
+colnames(dtasummary[ , 1:10])
+```
+
+---
+
+#####F.2. Export indicator estimate data to chart book 
+```{r summarydatacsv}
+write.csv(dtasummary, paste0("summary_CEHS_", country, "_R", round, ".csv"))
+```
+
+```{r chartbookexport3, eval=FALSE, echo=FALSE}
+dtasummary<-dtasummary%>%
+    mutate(
+        updatedate = as.Date(Sys.time(	), format='%d%b%Y'), 
+        updatetimes = Sys.time()
+	)
+
+#write.xlsx(dta, 
+#           paste0("WHO_CEHS_ChartbookTest.xlsx"), 
+#           sheet = "Indicator estimate Data", 
+#           append = TRUE)
+```
+
+---
+
+(Last updated: `r time`)    
+END OF MARKDOWN FILE 
+
+```{r, eval=FALSE, echo=FALSE}
+#compare this against outcome from Stata
+temp<-read.csv("summary_CEHS_COUNTRY NAME_R1.csv")%>%
+    filter(group=="All")
+
+    dim(temp)
+    colnames(temp)[colSums(is.na(temp)) > 0]
+    
+
+table(temp$xsafe_score)    
+```
+
+```{r, eval=FALSE, echo=FALSE}
+    select(temp, starts_with("x"))%>%ncol()
+    select(temp, -starts_with("x"))%>%ncol()
+    select(temp, -starts_with("x"))%>%colnames()
+    select(temp, -starts_with("x"))%>%str()
+```
+
+```{r, eval=FALSE, echo=FALSE}
+#compare this against outcome from Stata
+temp<-read.csv("CEHS_COUNTRY NAME_R1.csv")
+
+table(temp$xsafe_score)
+```
+
