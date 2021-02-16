@@ -41,10 +41,13 @@ This code:
 3. Creates indicator estimate data for dashboards and chartbook (purple tab in the chartbook).   
 
 <span style="color: blue;">
-__THREE parts must be updated per country-specific adaptation.__    
+__THREE parts must be updated, based on the minmum country-specific adaptation.__    
 1. Directories and local macro in __A. SETTING__ per survey implementation information   
 2. Local macro in __E.1. Country speciic code local__ per section 1         
-3. Staff variables in __E.2. Construct analysis variables__ per section 2</span>     
+3. Staff variables in __E.2. Construct analysis variables__ per section 2</span>   
+
+<span style="color: blue;">
+Depending on the extent of additional country-specific adaptation, further revise __E.2. Construct analysis variables__.</span>     
 
 (Last updated: `r time`)
 
@@ -997,30 +1000,28 @@ dta<-dta%>%
         temp1<-dta%>%select(xopt_increase, starts_with("q410_"))%>%
             rename_all(.funs = funs(sub("q410_", "xopt_increase_reason__", .)))%>%
             mutate_at(vars(starts_with("xopt_increase_reason__")), 
-                      funs(ifelse(. !=1, 0, .)) )%>%
-            mutate_at(vars(starts_with("xopt_increase_reason__")), 
-                      funs(ifelse(xopt_increase==0, NA, .)) )%>%
+                      funs(ifelse(is.na(.)==TRUE, 0, .)) )%>%
             select( - xopt_increase)
         
         temp2<-dta%>%select(xopt_decrease, starts_with("q411_"))%>%
             rename_all(.funs = funs(sub("q411_", "xopt_decrease_reason__", .)))%>%
             mutate_at(vars(starts_with("xopt_decrease_reason__")), 
-                      funs(ifelse(. !=1, 0, .)) )%>%
-            mutate_at(vars(starts_with("xopt_decrease_reason__")), 
-                      funs(ifelse(xopt_decrease==0, NA, .)) )%>%
+                      funs(ifelse(is.na(.)==TRUE, 0, .)) )%>%
             select( - xopt_decrease)
         
 dta<-cbind(dta, temp1, temp2)
 
 dta<-dta%>%
     mutate(
-    	xopt_increase_reason_covidnow 	= xopt_increase_reason__001==1 | xopt_increase_reason__002==1  , 
-    	xopt_increase_reason_covidafter = xopt_increase_reason__003==1 | xopt_increase_reason__004==1 | xopt_increase_reason__005==1, 
+    	xopt_increase_reason_covidnow 	= xopt_increase==1 & (xopt_increase_reason__001==1 | xopt_increase_reason__002==1 ) , 
+    	xopt_increase_reason_covidafter = xopt_increase==1 & (xopt_increase_reason__003==1 | xopt_increase_reason__004==1 | xopt_increase_reason__005==1), 
+    	xopt_increase_reason_gbv        = xopt_increase==1 & (xopt_increase_reason__006==1 ), 
 	
-    	xopt_decrease_reason_comdemand  = xopt_decrease_reason__001==1 | xopt_decrease_reason__002==1 | xopt_decrease_reason__005==1  ,
-    	xopt_decrease_reason_enviro 	= xopt_decrease_reason__003==1 | xopt_decrease_reason__004==1 ,
-    	xopt_decrease_reason_intention	= xopt_decrease_reason__007==1 | xopt_decrease_reason__008==1 | xopt_decrease_reason__009==1 | xopt_decrease_reason__010==1 ,
-    	xopt_decrease_reason_disruption = xopt_decrease_reason__011==1 | xopt_decrease_reason__012==1 
+    	xopt_decrease_reason_comdemand  = xopt_decrease==1 & (xopt_decrease_reason__001==1 | xopt_decrease_reason__002==1 | xopt_decrease_reason__005==1  ),
+    	xopt_decrease_reason_enviro 	= xopt_decrease==1 & (xopt_decrease_reason__003==1 | xopt_decrease_reason__004==1 ),
+    	xopt_decrease_reason_intention	= xopt_decrease==1 & (xopt_decrease_reason__007==1 | xopt_decrease_reason__008==1 | xopt_decrease_reason__009==1 | xopt_decrease_reason__010==1 ),
+    	xopt_decrease_reason_disruption = xopt_decrease==1 & (xopt_decrease_reason__011==1 | xopt_decrease_reason__012==1) 
+    	
     )%>%
     mutate_if(is.logical, as.numeric)%>%
     mutate_at(vars(starts_with("xopt_increase_reason"), starts_with("xopt_decrease_reason")), 
@@ -1040,16 +1041,20 @@ dta<-dta%>%
               funs(ifelse(xer==0, NA, .)) )
 
         temp1<-dta%>%select(starts_with("q412_"))%>%
+            select(-q412_001)%>%
             rename_all(.funs = funs(sub("q412_", "xer_increase__", .)))%>%
             mutate_at(vars(starts_with("xer_increase__")), 
-                      funs(ifelse(. ==1, 1, 
-                                  ifelse(. !=1, 0, .))) )
+                      funs(ifelse(. !=1, 0, 
+                                  ifelse(. ==1, 1, .))))%>%
+            mutate_all(~replace(., is.na(.), 0)) 
         
         temp2<-dta%>%select(starts_with("q412_"))%>%
+            select(-q412_001)%>%
             rename_all(.funs = funs(sub("q412_", "xer_decrease__", .)))%>%
             mutate_at(vars(starts_with("xer_decrease__")), 
-                      funs(ifelse(. ==2, 1, 
-                                  ifelse(. !=2, 0, .))) )
+                      funs(ifelse(. !=2, 0, 
+                                  ifelse(. ==2, 1, .))))%>%
+            mutate_all(~replace(., is.na(.), 0)) 
 
 dta<-cbind(dta, temp1, temp2)%>%
     mutate_at(vars(starts_with("xer_")), 
@@ -1097,7 +1102,7 @@ dta<-dta%>%
         temp1<-dta%>%select(starts_with("q417_"))%>%
             rename_all(.funs = funs(sub("q417_", "xout_decrease__", .)))%>%
             mutate_all( funs(ifelse(. <=2 , 1, 
-                                  ifelse(. >3, 0, .))) )%>%
+                                  ifelse(. >=3, 0, .))) )%>%
             mutate_all(~replace(., is.na(.), 0)) 
 
 dta<-cbind(dta, temp1)
@@ -1146,14 +1151,18 @@ dta<-dta%>%
     	
     	xresto_imp_hiv = ifelse(q420_005>=4 | is.na(q420_005)==TRUE, NA, xresto_imp_hiv),
     	xresto_imppln_hiv = ifelse(q420_005>=4 | is.na(q420_005)==TRUE, NA, xresto_imppln_hiv)
-    	)%>%
-    
-    rename_at(.vars = vars(starts_with("q421_")), 
-              .funs = funs(sub("q421_", "xdisrupt__", .))  )%>%	
-    mutate_at(vars(starts_with("xdisrupt__")),
-              funs(ifelse( . >=4 & . <=5 , 1,
-                        ifelse( . <=3, 0, 
-                            ifelse(is.na(.)==TRUE, 0, .))))  )%>%
+    	)
+
+        ###***** disruption  
+        temp1<-dta%>%select(starts_with("q421_"))%>%
+            rename_all(.funs = funs(sub("q421_", "xdisrupt__", .)))%>%
+            mutate_all(~replace(., is.na(.), 0))%>% 
+            mutate_at(vars(starts_with("xdisrupt__")),
+                      funs(ifelse( . <=3, 0,
+                                  ifelse( . ==4 | . ==5, 1, .))))
+            
+        
+dta<-cbind(dta, temp1)%>%
     rename(
         xdisrupt__hr = xdisrupt__001, 
         xdisrupt__finance = xdisrupt__002, 
@@ -1168,43 +1177,52 @@ dta<-dta%>%
 dta<-dta%>%
 	mutate(	
         xipcpp= q501==1, 
-        xsafe= q502==1)%>%
-    rename_at(.vars = vars(starts_with("q503_")), 
-              .funs = funs(sub("q503_", "xsafe__", .)))%>%	
-    mutate_at(vars(xipcpp, xsafe, starts_with("xsafe__")), 
+        xsafe= q502==1, 
+        xguideline= q504==1, 
+        xppe=q506==1)%>%
+    mutate_if(is.logical, as.numeric)%>%
+    mutate_at(vars(xipcpp, xsafe, xguideline, xppe), 
               ~replace(., is.na(.)==TRUE, 0))%>%
+    rename_all(.funs = funs(sub("q503_", "xsafe__", .)))%>%   
+    rename_all(.funs = funs(sub("q505_", "xguideline__", .)))%>%     	
+    mutate_at(vars(starts_with("xsafe__"), starts_with("xguideline__")), 
+              ~replace(., is.na(.)==TRUE, 0))
+
+    varlist<-dta%>%select(starts_with("xsafe__"))%>%colnames()
+
+dta<-dta%>%
     mutate(
             max=11,
-    		temp=rowSums(dta[colnames(select(dta, starts_with("xsafe__")))], na.rm=TRUE ) , 
+    		temp=rowSums(dta[ , varlist], na.rm=TRUE),         
     	xsafe_score	=100*(temp/max),
     	xsafe_100 		=xsafe_score>=100,
     	xsafe_50 		=xsafe_score>=50
-    )%>%
-    rename_at(.vars = vars(starts_with("q505_")), 
-              .funs = funs(sub("q505_", "xguideline__", .)))%>%	
-    mutate_at(vars(starts_with("xguideline__")), 
-              ~replace(., is.na(.)==TRUE, 0))%>%
+    )
+
+    varlist<-dta%>%select(starts_with("xguideline__"))%>%colnames()
+    
+dta<-dta%>%
     mutate(
-        xguideline= q504, 
+        
     		max=6,
-    		temp=rowSums(dta[colnames(select(dta, starts_with("xguideline__")))], na.rm=TRUE ) , 
+    		temp=rowSums(dta[colnames(select(dta, starts_with("xguideline__")))],
+    		             na.rm=TRUE ),  
     	xguideline_score	=100*(temp/max),
     	xguideline_100 		=xguideline_score>=100,
     	xguideline_50 		=xguideline_score>=50
-    )%>%
-    mutate_if(is.logical, as.numeric)
+    )
 
         temp1<-dta%>%select(starts_with("q507_"))%>%
             rename_all(.funs = funs(sub("q507_", "xppe_allsome__", .)))%>%
             mutate_all( funs(ifelse(. <=2 , 1, 
                                   ifelse(. >2, 0,  .))) )%>%
-            mutate_all(~replace(., is.na(.), 0)) 
+            mutate_all(~replace(., is.na(.)==TRUE, 0)) 
         
         temp2<-dta%>%select(starts_with("q507_"))%>%
             rename_all(.funs = funs(sub("q507_", "xppe_all__", .)))%>%
             mutate_all( funs(ifelse(. ==1 , 1, 
                                   ifelse(. >1, 0, .))) )%>%
-            mutate_all(~replace(., is.na(.), 0)) 
+            mutate_all(~replace(., is.na(.)==TRUE, 0)) 
 
 dta<-cbind(dta, temp1, temp2)
 
@@ -1224,9 +1242,7 @@ dta<-dta%>%
     	xppe_all_50 		=xppe_all_score>=50, 
     	
     	xppedispose = q508==1 
-	)%>%
-    mutate_if(is.logical, as.numeric)
-
+	)
 ```
 
 ```{r section6}
@@ -1248,10 +1264,12 @@ dta<-dta%>%
     mutate_at(vars(starts_with("xcvd_")), 
               ~replace(., is.na(.)==TRUE, 0))
 
+
             temp1<-dta%>%select(xcvd_pt, starts_with("q607_"))%>%
                 rename_all(.funs = funs(sub("q607_", "xcvd_pt__", .)))%>%
                 mutate_at(vars(starts_with("xcvd_pt__")), 
-                          funs(ifelse(xcvd_pt==1 & .==1, 1, .)) )%>%
+                          funs(ifelse(xcvd_pt==1 & .>=2, 0,
+                                    ifelse(xcvd_pt==1 & .==1, 1,.))) )%>%
                 mutate_all(~replace(., is.na(.), 0))%>%
                 select(-xcvd_pt)
 
@@ -1265,19 +1283,23 @@ dta<-dta%>%
     	xcvd_pt_100 	=xcvd_pt_score>=100,
     	xcvd_pt_50 		=xcvd_pt_score>=50 
     )%>%
-    mutate_at(vars(xcvd_pt_score, xcvd_pt_100, xcvd_pt_50),
+    mutate_at(vars(xcvd_pt_score, xcvd_pt_100, xcvd_pt_50, starts_with("xcvd_pt__")),
               funs(ifelse(xcvd_pt==0, NA, .)) )%>%
     mutate_if(is.logical, as.numeric)
 
 dta<-dta%>%
-    mutate(xcvd_pthbsi = q607_006==1 | q607_006==2)	
+    mutate(xcvd_pthbsi = (q607_006==1 | q607_006==2))%>%
+    mutate_if(is.logical, as.numeric)%>%
+    mutate_at(vars(xcvd_pthbsi), 
+              funs(ifelse(is.na(.)==TRUE, 0, .))) 
 
             temp1<-dta%>%select(xcvd_pthbsi, starts_with("q608_"))%>%
                 rename_all(.funs = funs(sub("q608_", "xcvd_pthbsi__", .)))%>%
                 mutate_at(vars(starts_with("xcvd_pthbsi__")), 
-                          funs(ifelse(xcvd_pthbsi==1 & .==1, 1, .)) )%>%
+                          funs(ifelse(xcvd_pthbsi==1 & .>=2, 0,
+                                    ifelse(xcvd_pthbsi==1 & .==1, 1,.))) )%>%
                 mutate_all(~replace(., is.na(.), 0))%>%
-                select(-xcvd_pthbsi)
+                select(-xcvd_pthbsi)            
 
 dta<-cbind(dta, temp1)
 
@@ -1288,7 +1310,7 @@ dta<-dta%>%
     	xcvd_info = q610==1	,
     	
     	xcvd_info_moh 	= q610==1	& q611_001==1,
-    	xcvd_info_local	= q610==1	& q611_002==1,
+    	xcvd_info_localgov	= q610==1	& q611_002==1,
     	xcvd_info_who 	= q610==1	& q611_003==1,
     	xcvd_info_prof 	= q610==1	& q611_004==1,
     	xcvd_info_other	= q610==1	& q611_005==1
@@ -1341,64 +1363,77 @@ dta<-dta%>%
 
             temp1<-dta%>%select(starts_with("q802_"))%>%
                 rename_all(.funs = funs(sub("q802_", "xdiag_av_a", .)))%>%
-                mutate_all(~replace(., . <=2, 1))            
+                mutate_all(~replace(., . ==1 |.==2, 1))%>%
+                mutate_all(~replace(., . ==3, 0))%>%
+                mutate_all(~replace(., is.na(.), 0))
     
             temp2<-dta%>%select(starts_with("q803_"))%>%
                 rename_all(.funs = funs(sub("q803_", "xdiag_av_h", .)))%>%
-                mutate_all(~replace(., . <=2, 1))   
+                mutate_all(~replace(., . ==1 |.==2, 1))%>%
+                mutate_all(~replace(., . ==3, 0))%>%
+                mutate_all(~replace(., is.na(.), 0))
             
             temp3<-dta%>%select(starts_with("q805_"))%>%
                 rename_all(.funs = funs(sub("q805_", "ximage_av_", .)))%>%
-                mutate_all(~replace(., . <=2, 1))          
+                mutate_all(~replace(., . ==1 |.==2, 1))%>%
+                mutate_all(~replace(., . ==3, 0))%>%
+                mutate_all(~replace(., is.na(.), 0))        
             
             temp4<-dta%>%select(starts_with("q802_"))%>%
                 rename_all(.funs = funs(sub("q802_", "xdiag_avfun_a", .)))%>%
-                mutate_all(~replace(., . <=1, 1))          
+                mutate_all(~replace(., . ==1, 1))%>%
+                mutate_all(~replace(., . ==2 |.==3, 0))%>%
+                mutate_all(~replace(., is.na(.), 0))
             
             temp5<-dta%>%select(starts_with("q803_"))%>%
                 rename_all(.funs = funs(sub("q803_", "xdiag_avfun_h", .)))%>%
-                mutate_all(~replace(., . <=1, 1))          
+                mutate_all(~replace(., . ==1, 1))%>%
+                mutate_all(~replace(., . ==2 |.==3, 0))%>%
+                mutate_all(~replace(., is.na(.), 0))         
             
             temp6<-dta%>%select(starts_with("q805_"))%>%
                 rename_all(.funs = funs(sub("q805_", "ximage_avfun_", .)))%>%
-                mutate_all(~replace(., . <=1, 1))          
+                mutate_all(~replace(., . ==1, 1))%>%
+                mutate_all(~replace(., . ==2 |.==3, 0))%>%
+                mutate_all(~replace(., is.na(.), 0))          
 
 dta<-cbind(dta, temp1, temp2, temp3, temp4, temp5, temp6)
 
 dta<-dta%>%
+    mutate(
+    	xdiag=q801==1, 
+    	ximage=q804==1)%>%
     mutate_if(is.logical, as.numeric)%>%
-    mutate_at(vars(starts_with("xdiag_"), starts_with("ximage_")), 
+    mutate_at(vars(xdiag, ximage), 
               ~replace(., is.na(.)==TRUE, 0))%>%
-    mutate_at(vars(starts_with("xdiag_av_h"), starts_with("xdiag_avfun_h"),
-                   starts_with("ximage_av_"), starts_with("ximage_avfun_")), 
-              funs(ifelse(zlevel_hospital!=1, NA, .) ) )%>%
+
     mutate(
-    	xdiag=q804==1)%>%
-    mutate_at(vars(xdiag), 
-              ~replace(., is.na(.)==TRUE, 0))%>%
-    mutate(
-    	
     		max=5,
-    	    temp=rowSums(dta[colnames(select(dta, starts_with("xdiag_avfun_a")))], na.rm=TRUE ) ,     
-    	xdiagbasic_score	=100*(temp/max),
+    	    tempbasic=rowSums(dta[colnames(select(dta, starts_with("xdiag_avfun_a")))], na.rm=TRUE ) ,     
+    	xdiagbasic_score	=100*(tempbasic/max),
     	xdiagbasic_100 	=xdiagbasic_score>=100,
     	xdiagbasic_50 	=xdiagbasic_score>=50,
     		
     		max=5, 
     		max=ifelse(zlevel_hospital==1 , 10, max), 
-    		temp=rowSums(dta[colnames(select(dta, starts_with("xdiag_avfun_")))], na.rm=TRUE ) ,     
-    	xdiag_score	=100*(temp/max),
+    		temphosp=rowSums(dta[colnames(select(dta, starts_with("xdiag_avfun_h")))], na.rm=TRUE ) ,   
+        	temprelevant=tempbasic,   
+    	    temprelevant=ifelse(zlevel_hospital==1 , tempbasic+ temphosp, temprelevant), 
+    	xdiag_score	=100*(temprelevant/max),
     	xdiag_100 	=xdiag_score>=100,
     	xdiag_50 	=xdiag_score>=50,
     
     		max=4,
-    		temp=rowSums(dta[colnames(select(dta, starts_with("ximage_avfun_")))], na.rm=TRUE ) ,     
-    	ximage_score	=100*(temp/max),
+    		tempimage=rowSums(dta[colnames(select(dta, starts_with("ximage_avfun_")))], na.rm=TRUE ) ,     
+    	ximage_score	=100*(tempimage/max),
     	ximage_100 	=ximage_score>=100,
     	ximage_50 	=ximage_score>=50
     )%>%
-    mutate_at(vars(starts_with("ximage")), 
+    mutate_if(is.logical, as.numeric)%>%
+    mutate_at(vars(starts_with("xdiag_av_h"), starts_with("xdiag_avfun_h"),
+                   starts_with("ximage")), 
               funs(ifelse(zlevel_hospital!=1, NA, .) ) )
+    
 
 ```
 
@@ -1443,15 +1478,14 @@ dta<-dta%>%
     	
     	xvac_aefikit = q913==1, 
     	xvac_aefireport = q914==1 
-    	
     ) %>%
     mutate_if(is.logical, as.numeric)%>%
-    mutate_at(vars(starts_with("xvac_")), 
+    mutate_at(vars(starts_with("xvac_av"), xvac_sharp, starts_with("xvac_aefi")), 
               ~replace(., is.na(.)==TRUE, 0))%>%
     mutate_at(vars(starts_with("xvac_av"), starts_with("yvac_av"), 
                    xvac_sharp, starts_with("xvac_aefi")), 
               funs(ifelse(xvac!=1, NA, .)) )
-	
+
 	#lab var xvac_av_fridge "has fridge"
 	#lab var xvac_avfun_fridge "has functioning fridge"
 	#lab var xvac_avfun_fridgetemp "has functioning fridge with temp log"
@@ -1702,7 +1736,7 @@ dtasummary<-dtasummary%>%
     select(-starts_with("z"))%>%
     mutate_at(vars(starts_with("x")), 
               funs(round((. * 100), 0)))%>%
-    mutate_at(vars(ends_with("_score"), ends_with("_num")), 
+    mutate_at(vars(xbedrate, ends_with("_score"), ends_with("_num")), 
               funs(round((. / 100), 0)))%>%
     mutate(
         staff_pct_covid_md = round(100* (staff_num_covid_md / staff_num_total_md ), 1),
@@ -1716,10 +1750,16 @@ dtasummary<-dtasummary%>%
 	    xsafe__triage = xsafe__004,  
 	    xsafe__isolation = xsafe__005        
     )%>%
+    #drop categorial var
+    select(-xopt_change)%>% 
     arrange(country, round, group, grouplabel)
+
 #move up identification variables 
 setcolorder(dtasummary, c("country", "round", "month", "year", "group", "grouplabel"))
 colnames(dtasummary[ , 1:10])
+
+#deal with NaN
+dtasummary[sapply(dtasummary, is.nan)] <- NA
 ```
 
 ---
@@ -1727,14 +1767,19 @@ colnames(dtasummary[ , 1:10])
 #####F.2. Export indicator estimate data to chart book 
 ```{r summarydatacsv}
 write.csv(dtasummary, paste0("summary_CEHS_", country, "_R", round, ".csv"))
+
+
 ```
 
-```{r chartbookexport3, eval=FALSE, echo=FALSE}
+```{r chartbookexport3}
 dtasummary<-dtasummary%>%
     mutate(
         updatedate = as.Date(Sys.time(	), format='%d%b%Y'), 
-        updatetimes = Sys.time()
+        updatetime = Sys.time()
 	)
+
+# for cross check against Stata results 
+write.csv(dtasummary, paste0("summary_CEHS_", country, "_R", round, "_R.csv"))
 
 #write.xlsx(dta, 
 #           paste0("WHO_CEHS_Chartbook.xlsx"), 

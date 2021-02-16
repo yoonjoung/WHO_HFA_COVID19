@@ -273,11 +273,12 @@ div.tocify {
 1. Imports and cleans COVID-19 hospital case management capacity (aka &quot;hospital products&quot;) dataset from Lime Survey (i.e., green and blue tabs in the chartbook),<br />
 2. Creates field check tables for data quality monitoring, and<br />
 3. Creates indicator estimate data for dashboards and chartbook (purple tab in the chartbook).</p>
-<p><span style="color: blue;"> <strong>REQUIRED country-specific changes.</strong><br />
+<p><span style="color: blue;"> <strong>THREE parts must be updated, based on the minmum country-specific adaptation.</strong><br />
 1. Directories and local macro in <strong>A. SETTING</strong> per survey implementation information<br />
-2. Local macro in <strong>E.1. Country speciic code local</strong> per country-specific questionnaire<br />
+2. Local macro in <strong>E.1. Country speciic code local</strong> per section 1<br />
 3. Staff variables in <strong>E.2. Construct analysis variables</strong> per section 2</span></p>
-<p>(Last updated: 2021-02-06 17:34:18)</p>
+<p><span style="color: blue;"> Depending on the extent of additional country-specific adaptation, further revise <strong>E.2. Construct analysis variables</strong>.</span></p>
+<p>(Last updated: 2021-02-15 14:24:21)</p>
 <hr />
 <div id="a.-setting" class="section level4">
 <h4>A. SETTING</h4>
@@ -317,7 +318,7 @@ dtaraw&lt;-read.csv(paste0(limesurveydir,&quot;LimeSurvey_COVID19HospitalReadine
 
 obsraw&lt;-nrow(dtaraw)
 cols&lt;-ncol(dtaraw)</code></pre>
-<p>As of 2021-02-06 17:34:18, the downloaded raw data has 61 observations and 219 variables.</p>
+<p>As of 2021-02-15 14:24:21, the downloaded raw data has 61 observations and 221 variables.</p>
 <hr />
 </div>
 <div id="b.2.-exportsave-the-data-daily-in-csv-form-with-date" class="section level5">
@@ -587,7 +588,7 @@ dta[varlist][dta[varlist] == 2 ] &lt;- 0 #no</code></pre>
 </div>
 <div id="d.-create-field-check-tables" class="section level4">
 <h4>D. Create field check tables</h4>
-<p>As of 2021-02-06, the following are &quot;field check tables.&quot; In Stata program, xls file is created. In R, the results are directly presented in this markdown file.</p>
+<p>As of 2021-02-15, the following are &quot;field check tables.&quot; In Stata program, xls file is created. In R, the results are directly presented in this markdown file.</p>
 <pre class="r"><code>dtacheck&lt;-dta%&gt;%
     mutate(
         updatedate= as.character(as.Date(Sys.time(  ), format='%d%b%Y')), 
@@ -607,7 +608,7 @@ dta[varlist][dta[varlist] == 2 ] &lt;- 0 #no</code></pre>
 <p><strong>Assess interview characteristics among all interviews.</strong></p>
 <pre class="r"><code># Date of field check table update and the total number of interviews
 print(date)</code></pre>
-<p>[1] &quot;2021-02-06&quot;</p>
+<p>[1] &quot;2021-02-15&quot;</p>
 <pre class="r"><code># Date of interviews (submission date, final)
 table(dtacheck$date)</code></pre>
 <p>2020-12-15 2020-12-16 2020-12-17 2020-12-18 2020-12-22 20 16 12 8 4</p>
@@ -706,7 +707,7 @@ print(paste(as.character(round(mean(dtacheck$missing2, na.rm=TRUE)*100, 1)), &qu
 <pre class="r"><code>#print(&quot;2.1. Of those, average number of missing responses&quot;)
 temp&lt;-dtacheck%&gt;%filter(missing2==1)
 round(mean(temp$missingmed_num, na.rm=TRUE), 1)</code></pre>
-<p>[1] 1</p>
+<p>[1] 2</p>
 <pre class="r"><code>#3. Missing response to PPE (%)
 #print(&quot;3. Percent of interviews with one or missing responses in PPE questions&quot;)
 print(paste(as.character(round(mean(dtacheck$missing3, na.rm=TRUE)*100, 1)), &quot;%&quot;)) </code></pre>
@@ -714,7 +715,7 @@ print(paste(as.character(round(mean(dtacheck$missing3, na.rm=TRUE)*100, 1)), &qu
 <pre class="r"><code>#4. Missing PCR capacity
 #print(&quot;4. Percent of interviews with missing responses regarding PCR questions&quot;)
 print(paste(as.character(round(mean(dtacheck$missing4, na.rm=TRUE)*100, 1)), &quot;%&quot;))</code></pre>
-<p>[1] &quot;100 %&quot;</p>
+<p>[1] &quot;0 %&quot;</p>
 <pre class="r"><code>#5. Missing response to equipment 
 #print(&quot;5. Percent of interviews with one or missing responses in equipment questions&quot;)
 print(paste(as.character(round(mean(dtacheck$missing5, na.rm=TRUE)*100, 1)), &quot;%&quot;))</code></pre>
@@ -892,7 +893,13 @@ dta&lt;-dta%&gt;%
     )%&gt;%
     mutate_if(is.logical, as.numeric)</code></pre>
 <pre class="r"><code>#####* Section 4: Therapeutics
-    varlist&lt;-dta%&gt;%select(starts_with(&quot;q401_&quot;))%&gt;%colnames()
+dta&lt;-dta%&gt;%
+    rename_all(.funs = funs(sub(&quot;q401_&quot;, &quot;xdrug__&quot;, .)))%&gt;%     
+    rename_all(.funs = funs(sub(&quot;q402_&quot;, &quot;xsupply__&quot;, .)))%&gt;%
+    mutate_at(vars(starts_with(&quot;xdrug__&quot;), starts_with(&quot;xsupply__&quot;)), 
+              ~replace(., .&gt;=2 | is.na(.)==TRUE, 0))
+
+    varlist&lt;-dta%&gt;%select(starts_with(&quot;xdrug__&quot;))%&gt;%colnames()
 dta&lt;-dta%&gt;%
     mutate( 
             max=maxdrug,
@@ -902,7 +909,7 @@ dta&lt;-dta%&gt;%
         xdrug_50    =xdrug_score&gt;=50
     )
 
-    varlist&lt;-dta%&gt;%select(starts_with(&quot;q402_&quot;))%&gt;%colnames()
+    varlist&lt;-dta%&gt;%select(starts_with(&quot;xsupply__&quot;))%&gt;%colnames()
 dta&lt;-dta%&gt;%
     mutate( 
             max=3,
@@ -910,54 +917,57 @@ dta&lt;-dta%&gt;%
         xsupp_score =100*(temp/max),
         xsupp_100   =xsupp_score&gt;=100,
         xsupp_50    =xsupp_score&gt;=50
-)
-
-dta&lt;-dta%&gt;%
-    rename_all(.funs = funs(sub(&quot;q401_&quot;, &quot;xdrug__&quot;, .)))%&gt;%     
-    rename_all(.funs = funs(sub(&quot;q402_&quot;, &quot;xsupply__&quot;, .)))%&gt;%
-    mutate_at(vars(starts_with(&quot;xdrug__&quot;), starts_with(&quot;xsupply__&quot;)), 
-              ~replace(., is.na(.)==TRUE, 0))</code></pre>
+)</code></pre>
 <pre class="r"><code>#####* Section 5: IPC 
 dta&lt;-dta%&gt;%
     mutate( 
         xipcpp= q501==1, 
-        xsafe= q502==1)%&gt;%
-    rename_at(.vars = vars(starts_with(&quot;q503_&quot;)), 
-              .funs = funs(sub(&quot;q503_&quot;, &quot;xsafe__&quot;, .)))%&gt;%  
-    mutate_at(vars(xipcpp, xsafe, starts_with(&quot;xsafe__&quot;)), 
+        xsafe= q502==1, 
+        xguideline= q504==1, 
+        xppe=q506==1)%&gt;%
+    mutate_if(is.logical, as.numeric)%&gt;%
+    mutate_at(vars(xipcpp, xsafe, xguideline, xppe), 
               ~replace(., is.na(.)==TRUE, 0))%&gt;%
+    rename_all(.funs = funs(sub(&quot;q503_&quot;, &quot;xsafe__&quot;, .)))%&gt;%   
+    rename_all(.funs = funs(sub(&quot;q505_&quot;, &quot;xguideline__&quot;, .)))%&gt;%        
+    mutate_at(vars(starts_with(&quot;xsafe__&quot;), starts_with(&quot;xguideline__&quot;)), 
+              ~replace(., is.na(.)==TRUE, 0))
+
+    varlist&lt;-dta%&gt;%select(starts_with(&quot;xsafe__&quot;))%&gt;%colnames()
+
+dta&lt;-dta%&gt;%
     mutate(
             max=11,
-            temp=rowSums(dta[colnames(select(dta, starts_with(&quot;xsafe__&quot;)))], na.rm=TRUE ) , 
+            temp=rowSums(dta[ , varlist], na.rm=TRUE),         
         xsafe_score =100*(temp/max),
         xsafe_100       =xsafe_score&gt;=100,
         xsafe_50        =xsafe_score&gt;=50
-    )%&gt;%
-    rename_at(.vars = vars(starts_with(&quot;q505_&quot;)), 
-              .funs = funs(sub(&quot;q505_&quot;, &quot;xguideline__&quot;, .)))%&gt;% 
-    mutate_at(vars(starts_with(&quot;xguideline__&quot;)), 
-              ~replace(., is.na(.)==TRUE, 0))%&gt;%
+    )
+
+    varlist&lt;-dta%&gt;%select(starts_with(&quot;xguideline__&quot;))%&gt;%colnames()
+    
+dta&lt;-dta%&gt;%
     mutate(
-        xguideline= q504, 
+        
             max=6,
-            temp=rowSums(dta[colnames(select(dta, starts_with(&quot;xguideline__&quot;)))], na.rm=TRUE ) , 
+            temp=rowSums(dta[colnames(select(dta, starts_with(&quot;xguideline__&quot;)))],
+                         na.rm=TRUE ),  
         xguideline_score    =100*(temp/max),
         xguideline_100      =xguideline_score&gt;=100,
         xguideline_50       =xguideline_score&gt;=50
-    )%&gt;%
-    mutate_if(is.logical, as.numeric)
+    )
 
         temp1&lt;-dta%&gt;%select(starts_with(&quot;q507_&quot;))%&gt;%
             rename_all(.funs = funs(sub(&quot;q507_&quot;, &quot;xppe_allsome__&quot;, .)))%&gt;%
             mutate_all( funs(ifelse(. &lt;=2 , 1, 
                                   ifelse(. &gt;2, 0,  .))) )%&gt;%
-            mutate_all(~replace(., is.na(.), 0)) 
+            mutate_all(~replace(., is.na(.)==TRUE, 0)) 
         
         temp2&lt;-dta%&gt;%select(starts_with(&quot;q507_&quot;))%&gt;%
             rename_all(.funs = funs(sub(&quot;q507_&quot;, &quot;xppe_all__&quot;, .)))%&gt;%
             mutate_all( funs(ifelse(. ==1 , 1, 
                                   ifelse(. &gt;1, 0, .))) )%&gt;%
-            mutate_all(~replace(., is.na(.), 0)) 
+            mutate_all(~replace(., is.na(.)==TRUE, 0)) 
 
 dta&lt;-cbind(dta, temp1, temp2)
 
@@ -977,16 +987,13 @@ dta&lt;-dta%&gt;%
         xppe_all_50         =xppe_all_score&gt;=50, 
         
         xppedispose = q508==1 
-    )%&gt;%
-    mutate_if(is.logical, as.numeric)
-
+    )
 
 dta&lt;-dta%&gt;%
-    rename_at(.vars = vars(starts_with(&quot;q509_&quot;)), 
-              .funs = funs(sub(&quot;q509_&quot;, &quot;xipcitem__&quot;, .)))%&gt;%   
+    rename_all(.funs = funs(sub(&quot;q509_&quot;, &quot;xipcitem__&quot;, .)))%&gt;%   
     mutate_at(vars(starts_with(&quot;xipcitem__&quot;)), 
-              ~replace(., is.na(.)==TRUE, 0))
-    
+              ~replace(., .&gt;=2 | is.na(.)==TRUE, 0))
+
     varlist&lt;-dta%&gt;%select(starts_with(&quot;xipcitem__&quot;))%&gt;%colnames()
 
 dta&lt;-dta%&gt;%
@@ -1003,7 +1010,10 @@ dta&lt;-dta%&gt;%
         xspcm       =q601==1, 
         xspcmitem__001 = q602_001==1, 
         xspcmitem__002 = q602_002==1
-    )
+    )%&gt;%
+    mutate_if(is.logical, as.numeric)%&gt;%
+    mutate_at(vars(starts_with(&quot;xspcmitem__&quot;)), 
+              ~replace(., is.na(.)==TRUE, 0))
     
     varlist&lt;-dta%&gt;%select(starts_with(&quot;xspcmitem__&quot;))%&gt;%colnames()  
 
@@ -1027,17 +1037,26 @@ dta&lt;-dta%&gt;%
         xrdt_capacity   = round(100*(q609/q610), 1)
     )%&gt;%
     mutate_if(is.logical, as.numeric)%&gt;%
+    mutate_at(vars(xpcr , xrdt), 
+              ~replace(., is.na(.)==TRUE, 0))%&gt;%
     mutate_at(vars(starts_with(&quot;xpcr_&quot;)), 
-              funs(ifelse(xpcr!=1, NA, .)))%&gt;%
+              funs(ifelse(xpcr==0, NA, .)))%&gt;%
     mutate_at(vars(starts_with(&quot;xrdt_&quot;)), 
-              funs(ifelse(xrdt!=1, NA, .)))%&gt;%
+              funs(ifelse(xrdt==0, NA, .)))%&gt;%
     mutate(
         xonsite= xpcr==1 | xrdt==1,
-        xonsite_waste= q611==1,
-        xonsite_ready= (xpcr_equip==1 | xrdt_equip==1) &amp; xonsite_waste==1
+        xonsite_waste= q611==1)
+
+    varlist&lt;-dta%&gt;%select(xpcr_equip, xrdt_equip)%&gt;%colnames()  
+
+dta&lt;-dta%&gt;%
+    mutate(
+            temp=rowSums(dta[ , varlist], na.rm=TRUE), 
+        xonsite_equip= temp&gt;=1, 
+        xonsite_ready= xonsite_equip==1 &amp; xonsite_waste==1
     )%&gt;%
     mutate_at(vars(starts_with(&quot;xonsite_&quot;)), 
-              funs(ifelse(xonsite!=1, NA, .)))%&gt;%
+              funs(ifelse(xonsite==0, NA, .)) )%&gt;%
     mutate(
         xoffsite            =q603_001!=1 &amp; q603_002!=1 , #/*neither PCR nor RDT on-site*/
         xoffsitetransport   =(q603_001!=1 &amp; q603_002!=1) &amp; q612==1, 
@@ -1047,8 +1066,10 @@ dta&lt;-dta%&gt;%
         xoffsitetime_3  =q613&lt;=3, #/*less than 3 days*/
         xoffsitetime_7  =q613&lt;=4 #/*less than 7 days*/
     )%&gt;%
-    mutate_at(vars(starts_with(&quot;xoffsite_&quot;)), 
-              funs(ifelse(xoffsite!=1, NA, .)))
+    mutate_at(vars(xoffsite , xoffsitetransport), 
+              ~replace(., is.na(.)==TRUE, 0))%&gt;%
+    mutate_at(vars(starts_with(&quot;xoffsitetime_&quot;)), 
+              funs(ifelse(xoffsite==0, NA, .)) )
 
     varlist&lt;-dta%&gt;%select(xspcmitem_100, xoffsitetime_3, xonsite_ready)%&gt;%colnames()    
 
@@ -1076,8 +1097,8 @@ dta&lt;-dta%&gt;%
         xequip_allfunction__003 = q701_003_002&gt;=1 &amp; (q701_003_001==q701_003_002),
         xequip_allfunction__004 = q701_004_002&gt;=1 &amp; (q701_004_001==q701_004_002),
         
-        xequip_anymalfunctin__003 = q701_003_001&gt;=1 &amp; (q701_003_001!=q701_003_002),
-        xequip_anymalfunctin__004 = q701_004_001&gt;=1 &amp; (q701_004_001!=q701_004_002)
+        xequip_anymalfunction__003 = q701_003_001&gt;=1 &amp; (q701_003_001!=q701_003_002),
+        xequip_anymalfunction__004 = q701_004_001&gt;=1 &amp; (q701_004_001!=q701_004_002)
         
     )%&gt;%
     mutate_if(is.logical, as.numeric)%&gt;%
@@ -1131,15 +1152,18 @@ dta&lt;-dta%&gt;%
     mutate_at(vars(starts_with(&quot;xoxygen_&quot;)), 
               funs(as.numeric(.) ))%&gt;% 
     mutate_at(vars(starts_with(&quot;xoxygen_&quot;)), 
-              ~replace(., is.na(.)==TRUE, 0))%&gt;%
+              ~replace(., is.na(.)==TRUE, 0))
+
+varlist&lt;-dta%&gt;%select(starts_with(&quot;xoxygen_&quot;))%&gt;%colnames()
+dta&lt;-dta%&gt;%
     mutate(
-        temp=rowSums(.[grep(&quot;xoxygen_&quot;, names(.))], na.rm = TRUE), 
-        xoxygensource   = temp&gt;=3
-    )%&gt;%
-    mutate(
+            temp=rowSums(dta[ , varlist], na.rm=TRUE), 
+        xoxygensource   = temp&gt;=1, 
+        
         xoxygen_dist         = q705==1,
         xoxygen_portcylinder = q706==1
-    )</code></pre>
+    )%&gt;%
+    mutate_if(is.logical, as.numeric)</code></pre>
 <pre class="r"><code>#####* Section 8: vaccine
 dta&lt;-dta%&gt;%
     mutate( 
@@ -1389,7 +1413,7 @@ dtasummary&lt;-dtasummary%&gt;%
     select(-starts_with(&quot;z&quot;))%&gt;%
     mutate_at(vars(starts_with(&quot;x&quot;)), funs(round((.*100), 0)))%&gt;%
     mutate_at(vars(starts_with(&quot;xocc&quot;), starts_with(&quot;xcovid_occ&quot;), 
-                   xpcr_capacity, ends_with(&quot;_score&quot;)), 
+                   ends_with(&quot;_capacity&quot;), ends_with(&quot;_score&quot;)), 
               funs(round((./100), 0)))%&gt;%
     mutate(
         staff_pct_covid_md = round(100* (staff_num_covid_md / staff_num_total_md ), 1),
@@ -1407,12 +1431,28 @@ dtasummary&lt;-dtasummary%&gt;%
 
 #move up identification variables 
 setcolorder(dtasummary, c(&quot;country&quot;, &quot;round&quot;, &quot;month&quot;, &quot;year&quot;, &quot;group&quot;, &quot;grouplabel&quot;))
-colnames(dtasummary[ , 1:10])</code></pre>
+colnames(dtasummary[ , 1:10])
+
+#deal with NaN
+dtasummary[sapply(dtasummary, is.nan)] &lt;- NA</code></pre>
 <hr />
 </div>
 <div id="f.2.-export-indicator-estimate-data-to-chart-book" class="section level5">
 <h5>F.2. Export indicator estimate data to chart book</h5>
 <pre class="r"><code>write.csv(dtasummary, paste0(&quot;summary_COVID19HospitalReadiness_&quot;, country, &quot;_R&quot;, round, &quot;.csv&quot;))</code></pre>
+<pre class="r"><code>dtasummary&lt;-dtasummary%&gt;%
+    mutate(
+        updatedate = as.Date(Sys.time(  ), format='%d%b%Y'), 
+        updatetime = Sys.time()
+    )
+
+# for cross check against Stata results 
+write.csv(dtasummary, paste0(&quot;summary_COVID19HospitalReadiness_&quot;, country, &quot;_R&quot;, round, &quot;_R.csv&quot;))
+
+#write.xlsx(dta, 
+#           paste0(&quot;WHO_COVID19HospitalReadiness_Chartbook.xlsx&quot;), 
+#           sheet = &quot;Indicator estimate Data&quot;, 
+#           append = TRUE)</code></pre>
 <hr />
 <p>END OF MARKDOWN FILE</p>
 </div>

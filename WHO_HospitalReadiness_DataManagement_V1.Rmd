@@ -41,10 +41,13 @@ This code:
 3. Creates indicator estimate data for dashboards and chartbook (purple tab in the chartbook). 
 
 <span style="color: blue;">
-__REQUIRED country-specific changes.__     
-1. Directories and local macro in __A. SETTING__ per survey implementation information     
-2. Local macro in __E.1. Country speciic code local__ per country-specific questionnaire  
-3. Staff variables in __E.2. Construct analysis variables__ per section 2</span>     
+__THREE parts must be updated, based on the minmum country-specific adaptation.__    
+1. Directories and local macro in __A. SETTING__ per survey implementation information   
+2. Local macro in __E.1. Country speciic code local__ per section 1         
+3. Staff variables in __E.2. Construct analysis variables__ per section 2</span>   
+
+<span style="color: blue;">
+Depending on the extent of additional country-specific adaptation, further revise __E.2. Construct analysis variables__.</span>    
 
 (Last updated: `r time`)    
 
@@ -743,7 +746,13 @@ dta<-dta%>%
 
 ```{r section4}
 #####* Section 4: Therapeutics
-    varlist<-dta%>%select(starts_with("q401_"))%>%colnames()
+dta<-dta%>%
+    rename_all(.funs = funs(sub("q401_", "xdrug__", .)))%>%     
+    rename_all(.funs = funs(sub("q402_", "xsupply__", .)))%>%
+    mutate_at(vars(starts_with("xdrug__"), starts_with("xsupply__")), 
+              ~replace(., .>=2 | is.na(.)==TRUE, 0))
+
+    varlist<-dta%>%select(starts_with("xdrug__"))%>%colnames()
 dta<-dta%>%
 	mutate(	
         	max=maxdrug,
@@ -753,7 +762,7 @@ dta<-dta%>%
     	xdrug_50 	=xdrug_score>=50
     )
 
-    varlist<-dta%>%select(starts_with("q402_"))%>%colnames()
+    varlist<-dta%>%select(starts_with("xsupply__"))%>%colnames()
 dta<-dta%>%
 	mutate(	
         	max=3,
@@ -763,11 +772,7 @@ dta<-dta%>%
     	xsupp_50 	=xsupp_score>=50
 )
 
-dta<-dta%>%
-    rename_all(.funs = funs(sub("q401_", "xdrug__", .)))%>%     
-    rename_all(.funs = funs(sub("q402_", "xsupply__", .)))%>%
-    mutate_at(vars(starts_with("xdrug__"), starts_with("xsupply__")), 
-              ~replace(., is.na(.)==TRUE, 0))
+
 ```
 
 ```{r section5}
@@ -775,43 +780,52 @@ dta<-dta%>%
 dta<-dta%>%
 	mutate(	
         xipcpp= q501==1, 
-        xsafe= q502==1)%>%
-    rename_at(.vars = vars(starts_with("q503_")), 
-              .funs = funs(sub("q503_", "xsafe__", .)))%>%	
-    mutate_at(vars(xipcpp, xsafe, starts_with("xsafe__")), 
+        xsafe= q502==1, 
+        xguideline= q504==1, 
+        xppe=q506==1)%>%
+    mutate_if(is.logical, as.numeric)%>%
+    mutate_at(vars(xipcpp, xsafe, xguideline, xppe), 
               ~replace(., is.na(.)==TRUE, 0))%>%
+    rename_all(.funs = funs(sub("q503_", "xsafe__", .)))%>%   
+    rename_all(.funs = funs(sub("q505_", "xguideline__", .)))%>%     	
+    mutate_at(vars(starts_with("xsafe__"), starts_with("xguideline__")), 
+              ~replace(., is.na(.)==TRUE, 0))
+
+    varlist<-dta%>%select(starts_with("xsafe__"))%>%colnames()
+
+dta<-dta%>%
     mutate(
             max=11,
-    		temp=rowSums(dta[colnames(select(dta, starts_with("xsafe__")))], na.rm=TRUE ) , 
+    		temp=rowSums(dta[ , varlist], na.rm=TRUE),         
     	xsafe_score	=100*(temp/max),
     	xsafe_100 		=xsafe_score>=100,
     	xsafe_50 		=xsafe_score>=50
-    )%>%
-    rename_at(.vars = vars(starts_with("q505_")), 
-              .funs = funs(sub("q505_", "xguideline__", .)))%>%	
-    mutate_at(vars(starts_with("xguideline__")), 
-              ~replace(., is.na(.)==TRUE, 0))%>%
+    )
+
+    varlist<-dta%>%select(starts_with("xguideline__"))%>%colnames()
+    
+dta<-dta%>%
     mutate(
-        xguideline= q504, 
+        
     		max=6,
-    		temp=rowSums(dta[colnames(select(dta, starts_with("xguideline__")))], na.rm=TRUE ) , 
+    		temp=rowSums(dta[colnames(select(dta, starts_with("xguideline__")))],
+    		             na.rm=TRUE ),  
     	xguideline_score	=100*(temp/max),
     	xguideline_100 		=xguideline_score>=100,
     	xguideline_50 		=xguideline_score>=50
-    )%>%
-    mutate_if(is.logical, as.numeric)
+    )
 
         temp1<-dta%>%select(starts_with("q507_"))%>%
             rename_all(.funs = funs(sub("q507_", "xppe_allsome__", .)))%>%
             mutate_all( funs(ifelse(. <=2 , 1, 
                                   ifelse(. >2, 0,  .))) )%>%
-            mutate_all(~replace(., is.na(.), 0)) 
+            mutate_all(~replace(., is.na(.)==TRUE, 0)) 
         
         temp2<-dta%>%select(starts_with("q507_"))%>%
             rename_all(.funs = funs(sub("q507_", "xppe_all__", .)))%>%
             mutate_all( funs(ifelse(. ==1 , 1, 
                                   ifelse(. >1, 0, .))) )%>%
-            mutate_all(~replace(., is.na(.), 0)) 
+            mutate_all(~replace(., is.na(.)==TRUE, 0)) 
 
 dta<-cbind(dta, temp1, temp2)
 
@@ -831,16 +845,13 @@ dta<-dta%>%
     	xppe_all_50 		=xppe_all_score>=50, 
     	
     	xppedispose = q508==1 
-	)%>%
-    mutate_if(is.logical, as.numeric)
-
+	)
 
 dta<-dta%>%
-	rename_at(.vars = vars(starts_with("q509_")), 
-              .funs = funs(sub("q509_", "xipcitem__", .)))%>%	
+	rename_all(.funs = funs(sub("q509_", "xipcitem__", .)))%>%   
     mutate_at(vars(starts_with("xipcitem__")), 
-              ~replace(., is.na(.)==TRUE, 0))
-    
+              ~replace(., .>=2 | is.na(.)==TRUE, 0))
+
     varlist<-dta%>%select(starts_with("xipcitem__"))%>%colnames()
 
 dta<-dta%>%
@@ -862,7 +873,10 @@ dta<-dta%>%
 	    xspcm		=q601==1, 
 	    xspcmitem__001 = q602_001==1, 
 	    xspcmitem__002 = q602_002==1
-	)
+	)%>%
+    mutate_if(is.logical, as.numeric)%>%
+    mutate_at(vars(starts_with("xspcmitem__")), 
+              ~replace(., is.na(.)==TRUE, 0))
 	
 	varlist<-dta%>%select(starts_with("xspcmitem__"))%>%colnames()	
 
@@ -886,17 +900,26 @@ dta<-dta%>%
 	    xrdt_capacity 	= round(100*(q609/q610), 1)
 	)%>%
     mutate_if(is.logical, as.numeric)%>%
+    mutate_at(vars(xpcr , xrdt), 
+              ~replace(., is.na(.)==TRUE, 0))%>%
     mutate_at(vars(starts_with("xpcr_")), 
-              funs(ifelse(xpcr!=1, NA, .)))%>%
+              funs(ifelse(xpcr==0, NA, .)))%>%
     mutate_at(vars(starts_with("xrdt_")), 
-              funs(ifelse(xrdt!=1, NA, .)))%>%
+              funs(ifelse(xrdt==0, NA, .)))%>%
     mutate(
         xonsite= xpcr==1 | xrdt==1,
-	    xonsite_waste= q611==1,
-	    xonsite_ready= (xpcr_equip==1 | xrdt_equip==1) & xonsite_waste==1
+	    xonsite_waste= q611==1)
+
+    varlist<-dta%>%select(xpcr_equip, xrdt_equip)%>%colnames()	
+
+dta<-dta%>%
+	mutate(
+    		temp=rowSums(dta[ , varlist], na.rm=TRUE), 
+	    xonsite_equip= temp>=1, 
+        xonsite_ready= xonsite_equip==1 & xonsite_waste==1
     )%>%
     mutate_at(vars(starts_with("xonsite_")), 
-              funs(ifelse(xonsite!=1, NA, .)))%>%
+              funs(ifelse(xonsite==0, NA, .)) )%>%
     mutate(
 	    xoffsite			=q603_001!=1 & q603_002!=1 , #/*neither PCR nor RDT on-site*/
     	xoffsitetransport	=(q603_001!=1 & q603_002!=1) & q612==1,	
@@ -906,8 +929,10 @@ dta<-dta%>%
     	xoffsitetime_3	=q613<=3, #/*less than 3 days*/
     	xoffsitetime_7	=q613<=4 #/*less than 7 days*/
     )%>%
-    mutate_at(vars(starts_with("xoffsite_")), 
-              funs(ifelse(xoffsite!=1, NA, .)))
+    mutate_at(vars(xoffsite , xoffsitetransport), 
+              ~replace(., is.na(.)==TRUE, 0))%>%
+    mutate_at(vars(starts_with("xoffsitetime_")), 
+              funs(ifelse(xoffsite==0, NA, .)) )
 
     varlist<-dta%>%select(xspcmitem_100, xoffsitetime_3, xonsite_ready)%>%colnames()	
 
@@ -938,8 +963,8 @@ dta<-dta%>%
     	xequip_allfunction__003 = q701_003_002>=1 & (q701_003_001==q701_003_002),
     	xequip_allfunction__004 = q701_004_002>=1 & (q701_004_001==q701_004_002),
     	
-    	xequip_anymalfunctin__003 = q701_003_001>=1 & (q701_003_001!=q701_003_002),
-    	xequip_anymalfunctin__004 = q701_004_001>=1 & (q701_004_001!=q701_004_002)
+    	xequip_anymalfunction__003 = q701_003_001>=1 & (q701_003_001!=q701_003_002),
+    	xequip_anymalfunction__004 = q701_004_001>=1 & (q701_004_001!=q701_004_002)
     	
 	)%>%
     mutate_if(is.logical, as.numeric)%>%
@@ -993,15 +1018,18 @@ dta<-dta%>%
     mutate_at(vars(starts_with("xoxygen_")), 
               funs(as.numeric(.) ))%>% 
     mutate_at(vars(starts_with("xoxygen_")), 
-              ~replace(., is.na(.)==TRUE, 0))%>%
+              ~replace(., is.na(.)==TRUE, 0))
+
+varlist<-dta%>%select(starts_with("xoxygen_"))%>%colnames()
+dta<-dta%>%
     mutate(
-    	temp=rowSums(.[grep("xoxygen_", names(.))], na.rm = TRUE), 
-    	xoxygensource	= temp>=3
-    )%>%
-    mutate(
+    	    temp=rowSums(dta[ , varlist], na.rm=TRUE), 
+    	xoxygensource	= temp>=1, 
+    	
     	xoxygen_dist 		 = q705==1,
     	xoxygen_portcylinder = q706==1
-    )
+    )%>%
+    mutate_if(is.logical, as.numeric)
 ```
 
 ```{r section8}
@@ -1272,7 +1300,7 @@ dtasummary<-dtasummary%>%
     select(-starts_with("z"))%>%
     mutate_at(vars(starts_with("x")), funs(round((.*100), 0)))%>%
     mutate_at(vars(starts_with("xocc"), starts_with("xcovid_occ"), 
-                   xpcr_capacity, ends_with("_score")), 
+                   ends_with("_capacity"), ends_with("_score")), 
               funs(round((./100), 0)))%>%
     mutate(
         staff_pct_covid_md = round(100* (staff_num_covid_md / staff_num_total_md ), 1),
@@ -1291,6 +1319,9 @@ dtasummary<-dtasummary%>%
 #move up identification variables 
 setcolorder(dtasummary, c("country", "round", "month", "year", "group", "grouplabel"))
 colnames(dtasummary[ , 1:10])
+
+#deal with NaN
+dtasummary[sapply(dtasummary, is.nan)] <- NA
 ```
 
 ---
@@ -1300,12 +1331,15 @@ colnames(dtasummary[ , 1:10])
 write.csv(dtasummary, paste0("summary_COVID19HospitalReadiness_", country, "_R", round, ".csv"))
 ```
 
-```{r chartbookexport3, eval=FALSE, echo=FALSE}
+```{r chartbookexport3}
 dtasummary<-dtasummary%>%
     mutate(
         updatedate = as.Date(Sys.time(	), format='%d%b%Y'), 
-        updatetimes = Sys.time()
+        updatetime = Sys.time()
 	)
+
+# for cross check against Stata results 
+write.csv(dtasummary, paste0("summary_COVID19HospitalReadiness_", country, "_R", round, "_R.csv"))
 
 #write.xlsx(dta, 
 #           paste0("WHO_COVID19HospitalReadiness_Chartbook.xlsx"), 

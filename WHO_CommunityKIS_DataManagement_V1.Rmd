@@ -41,9 +41,11 @@ This code:
 3. Creates indicator estimate data for dashboards and chartbook (purple tab in the chartbook).   
 
 <span style="color: blue;">
-__REQUIRED country-specific changes.__     
+__REQUIRED country-specific changes, based on the minmum country-specific adaptation.__     
 1. Directories and local macro in __A. SETTING__ per survey implementation information     
-2. Local macro in __E.1. Country speciic code local__ per section 1 in the questionnaire</span>    
+2. Local macro in __E.1. Country speciic code local__ per section 1 in the questionnaire   
+
+<span style="color: blue;">Depending on the extent of additional country-specific adaptation, further revise __E.2. Construct analysis variables__.</span>    
 
 (Last updated: `r time`)    
 
@@ -777,7 +779,9 @@ dta<-dta%>%
 		xbar_covid_admin = ifelse(q303_012==1 | q303_013==1 | q303_014==1, 1, xbar_covid_admin), 
     	xbar_covid_qinput = ifelse(q303_015==1, 1, xbar_covid_qinput),  
 		xbar_covid_qexp = ifelse(q303_016==1, 1, xbar_covid_qexp)
-	)
+	)%>%
+    mutate_at(vars(starts_with("xbar_covid_")), 
+              ~replace(., is.na(.)==TRUE, 0))
 	
 		#***** Source of care /*COUNTRY-SPECIFIC MUST BE ADAPTED*/
 		varlist<-dta%>%select(q304_001, q304_002, q304_003, q304_004, 
@@ -791,7 +795,10 @@ dta<-dta%>%
     rename_all(.funs = funs(sub("q304_", "xsource__", .)))%>%
     
 		#***** Equity    
-    rename_all(.funs = funs(sub("q306_", "xmargin__", .)))
+    mutate(xmargin = q305==1)%>%
+    rename_all(.funs = funs(sub("q306_", "xmargin__", .)))%>%
+    mutate_at(vars(starts_with("xmargin__")), 
+              ~replace(., is.na(.)==TRUE, 0))
 		
 		
 ```
@@ -851,7 +858,7 @@ summary(dta$xvac_reason_noconcern)
 #####* Section 5: Community assets and vulnerabilities 
 dta<-dta%>%
     mutate(
-        xeconimpact_mod =q501==2 | q501==3 , 
+        xeconimpact_modsig =q501==2 | q501==3 , 
     	xeconimpact_sig =q501==3 ,
     	
     	xinit_ses_increased = q502==1, 
@@ -909,21 +916,21 @@ dta<-dta%>%
 
         temp3<-dta%>%select(starts_with("q607_"))%>%
             rename_all(.funs = funs(sub("q607_", "xsrvc_reduced__", .)))%>%
-            mutate_all( funs(ifelse(. <=2 , 1, 
-                                  ifelse(. >2, 0,  
-                                         ifelse(. ==5, NA,  .)))) )
+            mutate_all( funs(ifelse(. ==5, NA,
+                                    ifelse(. <=2 , 1, 
+                                        ifelse(. >=3 &  . <=4, 0, .)))) )
         
         temp4<-dta%>%select(starts_with("q607_"))%>%
             rename_all(.funs = funs(sub("q607_", "xsrvc_increased__", .)))%>%
-            mutate_all( funs(ifelse(. ==3 , 1, 
-                                  ifelse(. !=3, 0,  
-                                         ifelse(. ==5, NA,  .)))) ) 
+            mutate_all( funs(ifelse(. ==5, NA,
+                                    ifelse(. ==3 , 1, 
+                                        ifelse(. <=2 | .==4, 0, .)))) )
         
         temp5<-dta%>%select(starts_with("q607_"))%>%
             rename_all(.funs = funs(sub("q607_", "xsrvc_nochange__", .)))%>%
-            mutate_all( funs(ifelse(. ==4 , 1, 
-                                  ifelse(. !=4, 0,  
-                                         ifelse(. ==5, NA,  .)))) )
+            mutate_all( funs(ifelse(. ==5, NA,
+                                    ifelse(. ==4 , 1, 
+                                        ifelse(. <=3 , 0, .)))) )
         
 dta<-cbind(dta, temp1, temp2, temp3, temp4, temp5)     
 ```
@@ -962,19 +969,36 @@ dtatemp<-dta%>%
     )%>%
     select(-ends_with("_num"))
 
-dtatempx<-dtatemp%>%select(country, round, month, year, starts_with("z"), starts_with("obs"), starts_with("x"))
+dtatempx<-dtatemp%>%select(country, round, month, year, starts_with("z"),
+                           starts_with("x"))
+
+dtatempy<-dtatemp%>%select(country, round, month, year, starts_with("z"),
+                           starts_with("obs"))
 ```
 
 ```{r calculation}
 # Among all facilities 
-dtasummaryall<-dtatempx%>%
+dtasummaryx<-dtatempx%>%
     group_by(country, round, month, year)%>%
     summarize_all(funs(mean(., na.rm = TRUE)))%>%
     ungroup()%>%
     mutate(group="All", grouplabel="")
 
+dtasummaryy<-dtatempy%>%
+    group_by(country, round, month, year)%>%
+    summarize_all(funs(sum(., na.rm = TRUE)))%>%
+    ungroup()%>%
+    mutate(group="All", grouplabel="")
+
+
+dtasummaryall<-left_join(dtasummaryx, dtasummaryy, 
+                      by = c("country", "round", "month", "year", 
+                             "group", "grouplabel"))%>%
+    select(-starts_with("z"))
+
+
 # By residential area
-dtasummarylocation<-dtatempx%>%
+dtasummaryx<-dtatempx%>%
     group_by(country, round, month, year, zurban)%>%
     summarize_all(funs(mean(., na.rm = TRUE)))%>%
     ungroup()%>%
@@ -984,8 +1008,23 @@ dtasummarylocation<-dtatempx%>%
 		grouplabel= ifelse(zurban==0, "1.1 Rural" , grouplabel),
 		grouplabel= ifelse(zurban==1, "1.2 Urban" , grouplabel) )
 
-# By facility type
-dtasummarychw<-dtatempx%>%
+dtasummaryy<-dtatempy%>%
+    group_by(country, round, month, year, zurban)%>%
+    summarize_all(funs(sum(., na.rm = TRUE)))%>%
+    ungroup()%>%
+    mutate(
+        group="Location", 
+		grouplabel="",
+		grouplabel= ifelse(zurban==0, "1.1 Rural" , grouplabel),
+		grouplabel= ifelse(zurban==1, "1.2 Urban" , grouplabel) )
+
+dtasummarylocation<-left_join(dtasummaryx, dtasummaryy, 
+                      by = c("country", "round", "month", "year", 
+                             "group", "grouplabel"))%>%
+    select(-starts_with("z"))
+
+# By respondent type
+dtasummaryx<-dtatempx%>%
     group_by(country, round, month, year, zchw)%>%
     summarize_all(funs(mean(., na.rm = TRUE)))%>%
     ungroup()%>%
@@ -995,6 +1034,20 @@ dtasummarychw<-dtatempx%>%
 		grouplabel= ifelse(zchw==0, "2.1 non CHWs" , grouplabel),
 		grouplabel= ifelse(zchw==1, "2.2 CHWs" , grouplabel) )
 
+dtasummaryy<-dtatempy%>%
+    group_by(country, round, month, year, zchw)%>%
+    summarize_all(funs(sum(., na.rm = TRUE)))%>%
+    ungroup()%>%
+    mutate(
+        group="Level", 
+		grouplabel="",
+		grouplabel= ifelse(zchw==0, "2.1 non CHWs" , grouplabel),
+		grouplabel= ifelse(zchw==1, "2.2 CHWs" , grouplabel) )
+
+dtasummarychw<-left_join(dtasummaryx, dtasummaryy, 
+                      by = c("country", "round", "month", "year", 
+                             "group", "grouplabel"))%>%
+    select(-starts_with("z"))
 
 # Append all 
 dim(dtasummaryall)
@@ -1022,12 +1075,15 @@ colnames(dtasummary[ , 1:10])
 write.csv(dtasummary, paste0("summary_Community_", country, "_R", round, ".csv"))
 ```
 
-```{r chartbookexport3, eval=FALSE, echo=FALSE}
+```{r chartbookexport3}
 dtasummary<-dtasummary%>%
     mutate(
         updatedate = as.Date(Sys.time(	), format='%d%b%Y'), 
-        updatetimes = Sys.time()
+        updatetime = Sys.time()
 	)
+
+# for cross check against Stata results 
+write.csv(dtasummary, paste0("summary_Community_", country, "_R", round, "_R.csv"))
 
 #write.xlsx(dta, 
 #           paste0("WHO_Community_Chartbook.xlsx"), 

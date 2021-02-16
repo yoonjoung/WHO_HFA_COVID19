@@ -273,11 +273,12 @@ div.tocify {
 1. Imports and cleans Continuity of Essential Health Services (aka &quot;EHS&quot;) dataset from Lime Survey (i.e., green and blue tabs in the chartbook),<br />
 2. Creates field check tables for data quality monitoring, and<br />
 3. Creates indicator estimate data for dashboards and chartbook (purple tab in the chartbook).</p>
-<p><span style="color: blue;"> <strong>THREE parts must be updated per country-specific adaptation.</strong><br />
+<p><span style="color: blue;"> <strong>THREE parts must be updated, based on the minmum country-specific adaptation.</strong><br />
 1. Directories and local macro in <strong>A. SETTING</strong> per survey implementation information<br />
 2. Local macro in <strong>E.1. Country speciic code local</strong> per section 1<br />
 3. Staff variables in <strong>E.2. Construct analysis variables</strong> per section 2</span></p>
-<p>(Last updated: 2021-02-06 17:32:24)</p>
+<p><span style="color: blue;"> Depending on the extent of additional country-specific adaptation, further revise <strong>E.2. Construct analysis variables</strong>.</span></p>
+<p>(Last updated: 2021-02-15 18:34:14)</p>
 <hr />
 <div id="a.-setting" class="section level4">
 <h4>A. SETTING</h4>
@@ -315,7 +316,7 @@ dtaraw&lt;-read.csv(paste0(limesurveydir,&quot;LimeSurvey_CEHS_Example_R1.csv&qu
 
 obsraw&lt;-nrow(dtaraw)
 cols&lt;-ncol(dtaraw)</code></pre>
-<p>As of 2021-02-06 17:32:24, the downloaded raw data has 81 observations and 624 variables.</p>
+<p>As of 2021-02-15 18:34:14, the downloaded raw data has 81 observations and 624 variables.</p>
 <hr />
 </div>
 <div id="b.2.-exportsave-the-data-daily-in-csv-form-with-date" class="section level5">
@@ -720,7 +721,7 @@ dta[varlist][dta[varlist] == 2 ] &lt;- 0 #no</code></pre>
 </div>
 <div id="d.-create-field-check-tables" class="section level4">
 <h4>D. Create field check tables</h4>
-<p>As of 2021-02-06, the following are &quot;field check tables.&quot; In Stata program, xls file is created. In R, the results are directly presented in this markdown file.</p>
+<p>As of 2021-02-15, the following are &quot;field check tables.&quot; In Stata program, xls file is created. In R, the results are directly presented in this markdown file.</p>
 <pre class="r"><code>dtacheck&lt;-dta%&gt;%
     mutate(
         updatedate= as.character(as.Date(Sys.time(  ), format='%d%b%Y')), 
@@ -740,7 +741,7 @@ dta[varlist][dta[varlist] == 2 ] &lt;- 0 #no</code></pre>
 <p><strong>Assess interview characteristics among all interviews.</strong></p>
 <pre class="r"><code># Date of field check table update and the total number of interviews
 print(date)</code></pre>
-<p>[1] &quot;2021-02-06&quot;</p>
+<p>[1] &quot;2021-02-15&quot;</p>
 <pre class="r"><code># Date of interviews (submission date, final)
 table(dtacheck$date)</code></pre>
 <p>2020-12-14 2020-12-15 2020-12-16 2020-12-17 2020-12-18 2020-12-19 20 16 12 12 16 4</p>
@@ -1156,30 +1157,28 @@ dta&lt;-dta%&gt;%
         temp1&lt;-dta%&gt;%select(xopt_increase, starts_with(&quot;q410_&quot;))%&gt;%
             rename_all(.funs = funs(sub(&quot;q410_&quot;, &quot;xopt_increase_reason__&quot;, .)))%&gt;%
             mutate_at(vars(starts_with(&quot;xopt_increase_reason__&quot;)), 
-                      funs(ifelse(. !=1, 0, .)) )%&gt;%
-            mutate_at(vars(starts_with(&quot;xopt_increase_reason__&quot;)), 
-                      funs(ifelse(xopt_increase==0, NA, .)) )%&gt;%
+                      funs(ifelse(is.na(.)==TRUE, 0, .)) )%&gt;%
             select( - xopt_increase)
         
         temp2&lt;-dta%&gt;%select(xopt_decrease, starts_with(&quot;q411_&quot;))%&gt;%
             rename_all(.funs = funs(sub(&quot;q411_&quot;, &quot;xopt_decrease_reason__&quot;, .)))%&gt;%
             mutate_at(vars(starts_with(&quot;xopt_decrease_reason__&quot;)), 
-                      funs(ifelse(. !=1, 0, .)) )%&gt;%
-            mutate_at(vars(starts_with(&quot;xopt_decrease_reason__&quot;)), 
-                      funs(ifelse(xopt_decrease==0, NA, .)) )%&gt;%
+                      funs(ifelse(is.na(.)==TRUE, 0, .)) )%&gt;%
             select( - xopt_decrease)
         
 dta&lt;-cbind(dta, temp1, temp2)
 
 dta&lt;-dta%&gt;%
     mutate(
-        xopt_increase_reason_covidnow   = xopt_increase_reason__001==1 | xopt_increase_reason__002==1  , 
-        xopt_increase_reason_covidafter = xopt_increase_reason__003==1 | xopt_increase_reason__004==1 | xopt_increase_reason__005==1, 
+        xopt_increase_reason_covidnow   = xopt_increase==1 &amp; (xopt_increase_reason__001==1 | xopt_increase_reason__002==1 ) , 
+        xopt_increase_reason_covidafter = xopt_increase==1 &amp; (xopt_increase_reason__003==1 | xopt_increase_reason__004==1 | xopt_increase_reason__005==1), 
+        xopt_increase_reason_gbv        = xopt_increase==1 &amp; (xopt_increase_reason__006==1 ), 
     
-        xopt_decrease_reason_comdemand  = xopt_decrease_reason__001==1 | xopt_decrease_reason__002==1 | xopt_decrease_reason__005==1  ,
-        xopt_decrease_reason_enviro     = xopt_decrease_reason__003==1 | xopt_decrease_reason__004==1 ,
-        xopt_decrease_reason_intention  = xopt_decrease_reason__007==1 | xopt_decrease_reason__008==1 | xopt_decrease_reason__009==1 | xopt_decrease_reason__010==1 ,
-        xopt_decrease_reason_disruption = xopt_decrease_reason__011==1 | xopt_decrease_reason__012==1 
+        xopt_decrease_reason_comdemand  = xopt_decrease==1 &amp; (xopt_decrease_reason__001==1 | xopt_decrease_reason__002==1 | xopt_decrease_reason__005==1  ),
+        xopt_decrease_reason_enviro     = xopt_decrease==1 &amp; (xopt_decrease_reason__003==1 | xopt_decrease_reason__004==1 ),
+        xopt_decrease_reason_intention  = xopt_decrease==1 &amp; (xopt_decrease_reason__007==1 | xopt_decrease_reason__008==1 | xopt_decrease_reason__009==1 | xopt_decrease_reason__010==1 ),
+        xopt_decrease_reason_disruption = xopt_decrease==1 &amp; (xopt_decrease_reason__011==1 | xopt_decrease_reason__012==1) 
+        
     )%&gt;%
     mutate_if(is.logical, as.numeric)%&gt;%
     mutate_at(vars(starts_with(&quot;xopt_increase_reason&quot;), starts_with(&quot;xopt_decrease_reason&quot;)), 
@@ -1199,16 +1198,20 @@ dta&lt;-dta%&gt;%
               funs(ifelse(xer==0, NA, .)) )
 
         temp1&lt;-dta%&gt;%select(starts_with(&quot;q412_&quot;))%&gt;%
+            select(-q412_001)%&gt;%
             rename_all(.funs = funs(sub(&quot;q412_&quot;, &quot;xer_increase__&quot;, .)))%&gt;%
             mutate_at(vars(starts_with(&quot;xer_increase__&quot;)), 
-                      funs(ifelse(. ==1, 1, 
-                                  ifelse(. !=1, 0, .))) )
+                      funs(ifelse(. !=1, 0, 
+                                  ifelse(. ==1, 1, .))))%&gt;%
+            mutate_all(~replace(., is.na(.), 0)) 
         
         temp2&lt;-dta%&gt;%select(starts_with(&quot;q412_&quot;))%&gt;%
+            select(-q412_001)%&gt;%
             rename_all(.funs = funs(sub(&quot;q412_&quot;, &quot;xer_decrease__&quot;, .)))%&gt;%
             mutate_at(vars(starts_with(&quot;xer_decrease__&quot;)), 
-                      funs(ifelse(. ==2, 1, 
-                                  ifelse(. !=2, 0, .))) )
+                      funs(ifelse(. !=2, 0, 
+                                  ifelse(. ==2, 1, .))))%&gt;%
+            mutate_all(~replace(., is.na(.), 0)) 
 
 dta&lt;-cbind(dta, temp1, temp2)%&gt;%
     mutate_at(vars(starts_with(&quot;xer_&quot;)), 
@@ -1256,7 +1259,7 @@ dta&lt;-dta%&gt;%
         temp1&lt;-dta%&gt;%select(starts_with(&quot;q417_&quot;))%&gt;%
             rename_all(.funs = funs(sub(&quot;q417_&quot;, &quot;xout_decrease__&quot;, .)))%&gt;%
             mutate_all( funs(ifelse(. &lt;=2 , 1, 
-                                  ifelse(. &gt;3, 0, .))) )%&gt;%
+                                  ifelse(. &gt;=3, 0, .))) )%&gt;%
             mutate_all(~replace(., is.na(.), 0)) 
 
 dta&lt;-cbind(dta, temp1)
@@ -1305,14 +1308,18 @@ dta&lt;-dta%&gt;%
         
         xresto_imp_hiv = ifelse(q420_005&gt;=4 | is.na(q420_005)==TRUE, NA, xresto_imp_hiv),
         xresto_imppln_hiv = ifelse(q420_005&gt;=4 | is.na(q420_005)==TRUE, NA, xresto_imppln_hiv)
-        )%&gt;%
-    
-    rename_at(.vars = vars(starts_with(&quot;q421_&quot;)), 
-              .funs = funs(sub(&quot;q421_&quot;, &quot;xdisrupt__&quot;, .))  )%&gt;% 
-    mutate_at(vars(starts_with(&quot;xdisrupt__&quot;)),
-              funs(ifelse( . &gt;=4 &amp; . &lt;=5 , 1,
-                        ifelse( . &lt;=3, 0, 
-                            ifelse(is.na(.)==TRUE, 0, .))))  )%&gt;%
+        )
+
+        ###***** disruption  
+        temp1&lt;-dta%&gt;%select(starts_with(&quot;q421_&quot;))%&gt;%
+            rename_all(.funs = funs(sub(&quot;q421_&quot;, &quot;xdisrupt__&quot;, .)))%&gt;%
+            mutate_all(~replace(., is.na(.), 0))%&gt;% 
+            mutate_at(vars(starts_with(&quot;xdisrupt__&quot;)),
+                      funs(ifelse( . &lt;=3, 0,
+                                  ifelse( . ==4 | . ==5, 1, .))))
+            
+        
+dta&lt;-cbind(dta, temp1)%&gt;%
     rename(
         xdisrupt__hr = xdisrupt__001, 
         xdisrupt__finance = xdisrupt__002, 
@@ -1324,43 +1331,52 @@ dta&lt;-dta%&gt;%
 dta&lt;-dta%&gt;%
     mutate( 
         xipcpp= q501==1, 
-        xsafe= q502==1)%&gt;%
-    rename_at(.vars = vars(starts_with(&quot;q503_&quot;)), 
-              .funs = funs(sub(&quot;q503_&quot;, &quot;xsafe__&quot;, .)))%&gt;%  
-    mutate_at(vars(xipcpp, xsafe, starts_with(&quot;xsafe__&quot;)), 
+        xsafe= q502==1, 
+        xguideline= q504==1, 
+        xppe=q506==1)%&gt;%
+    mutate_if(is.logical, as.numeric)%&gt;%
+    mutate_at(vars(xipcpp, xsafe, xguideline, xppe), 
               ~replace(., is.na(.)==TRUE, 0))%&gt;%
+    rename_all(.funs = funs(sub(&quot;q503_&quot;, &quot;xsafe__&quot;, .)))%&gt;%   
+    rename_all(.funs = funs(sub(&quot;q505_&quot;, &quot;xguideline__&quot;, .)))%&gt;%        
+    mutate_at(vars(starts_with(&quot;xsafe__&quot;), starts_with(&quot;xguideline__&quot;)), 
+              ~replace(., is.na(.)==TRUE, 0))
+
+    varlist&lt;-dta%&gt;%select(starts_with(&quot;xsafe__&quot;))%&gt;%colnames()
+
+dta&lt;-dta%&gt;%
     mutate(
             max=11,
-            temp=rowSums(dta[colnames(select(dta, starts_with(&quot;xsafe__&quot;)))], na.rm=TRUE ) , 
+            temp=rowSums(dta[ , varlist], na.rm=TRUE),         
         xsafe_score =100*(temp/max),
         xsafe_100       =xsafe_score&gt;=100,
         xsafe_50        =xsafe_score&gt;=50
-    )%&gt;%
-    rename_at(.vars = vars(starts_with(&quot;q505_&quot;)), 
-              .funs = funs(sub(&quot;q505_&quot;, &quot;xguideline__&quot;, .)))%&gt;% 
-    mutate_at(vars(starts_with(&quot;xguideline__&quot;)), 
-              ~replace(., is.na(.)==TRUE, 0))%&gt;%
+    )
+
+    varlist&lt;-dta%&gt;%select(starts_with(&quot;xguideline__&quot;))%&gt;%colnames()
+    
+dta&lt;-dta%&gt;%
     mutate(
-        xguideline= q504, 
+        
             max=6,
-            temp=rowSums(dta[colnames(select(dta, starts_with(&quot;xguideline__&quot;)))], na.rm=TRUE ) , 
+            temp=rowSums(dta[colnames(select(dta, starts_with(&quot;xguideline__&quot;)))],
+                         na.rm=TRUE ),  
         xguideline_score    =100*(temp/max),
         xguideline_100      =xguideline_score&gt;=100,
         xguideline_50       =xguideline_score&gt;=50
-    )%&gt;%
-    mutate_if(is.logical, as.numeric)
+    )
 
         temp1&lt;-dta%&gt;%select(starts_with(&quot;q507_&quot;))%&gt;%
             rename_all(.funs = funs(sub(&quot;q507_&quot;, &quot;xppe_allsome__&quot;, .)))%&gt;%
             mutate_all( funs(ifelse(. &lt;=2 , 1, 
                                   ifelse(. &gt;2, 0,  .))) )%&gt;%
-            mutate_all(~replace(., is.na(.), 0)) 
+            mutate_all(~replace(., is.na(.)==TRUE, 0)) 
         
         temp2&lt;-dta%&gt;%select(starts_with(&quot;q507_&quot;))%&gt;%
             rename_all(.funs = funs(sub(&quot;q507_&quot;, &quot;xppe_all__&quot;, .)))%&gt;%
             mutate_all( funs(ifelse(. ==1 , 1, 
                                   ifelse(. &gt;1, 0, .))) )%&gt;%
-            mutate_all(~replace(., is.na(.), 0)) 
+            mutate_all(~replace(., is.na(.)==TRUE, 0)) 
 
 dta&lt;-cbind(dta, temp1, temp2)
 
@@ -1380,8 +1396,7 @@ dta&lt;-dta%&gt;%
         xppe_all_50         =xppe_all_score&gt;=50, 
         
         xppedispose = q508==1 
-    )%&gt;%
-    mutate_if(is.logical, as.numeric)</code></pre>
+    )</code></pre>
 <pre class="r"><code>#####* Section 6: COVID management in primary care setting 
 dta&lt;-dta%&gt;%
     mutate(
@@ -1403,7 +1418,8 @@ dta&lt;-dta%&gt;%
             temp1&lt;-dta%&gt;%select(xcvd_pt, starts_with(&quot;q607_&quot;))%&gt;%
                 rename_all(.funs = funs(sub(&quot;q607_&quot;, &quot;xcvd_pt__&quot;, .)))%&gt;%
                 mutate_at(vars(starts_with(&quot;xcvd_pt__&quot;)), 
-                          funs(ifelse(xcvd_pt==1 &amp; .==1, 1, .)) )%&gt;%
+                          funs(ifelse(xcvd_pt==1 &amp; .&gt;=2, 0,
+                                    ifelse(xcvd_pt==1 &amp; .==1, 1,.))) )%&gt;%
                 mutate_all(~replace(., is.na(.), 0))%&gt;%
                 select(-xcvd_pt)
 
@@ -1417,19 +1433,23 @@ dta&lt;-dta%&gt;%
         xcvd_pt_100     =xcvd_pt_score&gt;=100,
         xcvd_pt_50      =xcvd_pt_score&gt;=50 
     )%&gt;%
-    mutate_at(vars(xcvd_pt_score, xcvd_pt_100, xcvd_pt_50),
+    mutate_at(vars(xcvd_pt_score, xcvd_pt_100, xcvd_pt_50, starts_with(&quot;xcvd_pt__&quot;)),
               funs(ifelse(xcvd_pt==0, NA, .)) )%&gt;%
     mutate_if(is.logical, as.numeric)
 
 dta&lt;-dta%&gt;%
-    mutate(xcvd_pthbsi = q607_006==1 | q607_006==2) 
+    mutate(xcvd_pthbsi = (q607_006==1 | q607_006==2))%&gt;%
+    mutate_if(is.logical, as.numeric)%&gt;%
+    mutate_at(vars(xcvd_pthbsi), 
+              funs(ifelse(is.na(.)==TRUE, 0, .))) 
 
             temp1&lt;-dta%&gt;%select(xcvd_pthbsi, starts_with(&quot;q608_&quot;))%&gt;%
                 rename_all(.funs = funs(sub(&quot;q608_&quot;, &quot;xcvd_pthbsi__&quot;, .)))%&gt;%
                 mutate_at(vars(starts_with(&quot;xcvd_pthbsi__&quot;)), 
-                          funs(ifelse(xcvd_pthbsi==1 &amp; .==1, 1, .)) )%&gt;%
+                          funs(ifelse(xcvd_pthbsi==1 &amp; .&gt;=2, 0,
+                                    ifelse(xcvd_pthbsi==1 &amp; .==1, 1,.))) )%&gt;%
                 mutate_all(~replace(., is.na(.), 0))%&gt;%
-                select(-xcvd_pthbsi)
+                select(-xcvd_pthbsi)            
 
 dta&lt;-cbind(dta, temp1)
 
@@ -1440,7 +1460,7 @@ dta&lt;-dta%&gt;%
         xcvd_info = q610==1 ,
         
         xcvd_info_moh   = q610==1   &amp; q611_001==1,
-        xcvd_info_local = q610==1   &amp; q611_002==1,
+        xcvd_info_localgov  = q610==1   &amp; q611_002==1,
         xcvd_info_who   = q610==1   &amp; q611_003==1,
         xcvd_info_prof  = q610==1   &amp; q611_004==1,
         xcvd_info_other = q610==1   &amp; q611_005==1
@@ -1484,63 +1504,75 @@ dta&lt;-dta%&gt;%
     )</code></pre>
 <pre class="r"><code>            temp1&lt;-dta%&gt;%select(starts_with(&quot;q802_&quot;))%&gt;%
                 rename_all(.funs = funs(sub(&quot;q802_&quot;, &quot;xdiag_av_a&quot;, .)))%&gt;%
-                mutate_all(~replace(., . &lt;=2, 1))            
+                mutate_all(~replace(., . ==1 |.==2, 1))%&gt;%
+                mutate_all(~replace(., . ==3, 0))%&gt;%
+                mutate_all(~replace(., is.na(.), 0))
     
             temp2&lt;-dta%&gt;%select(starts_with(&quot;q803_&quot;))%&gt;%
                 rename_all(.funs = funs(sub(&quot;q803_&quot;, &quot;xdiag_av_h&quot;, .)))%&gt;%
-                mutate_all(~replace(., . &lt;=2, 1))   
+                mutate_all(~replace(., . ==1 |.==2, 1))%&gt;%
+                mutate_all(~replace(., . ==3, 0))%&gt;%
+                mutate_all(~replace(., is.na(.), 0))
             
             temp3&lt;-dta%&gt;%select(starts_with(&quot;q805_&quot;))%&gt;%
                 rename_all(.funs = funs(sub(&quot;q805_&quot;, &quot;ximage_av_&quot;, .)))%&gt;%
-                mutate_all(~replace(., . &lt;=2, 1))          
+                mutate_all(~replace(., . ==1 |.==2, 1))%&gt;%
+                mutate_all(~replace(., . ==3, 0))%&gt;%
+                mutate_all(~replace(., is.na(.), 0))        
             
             temp4&lt;-dta%&gt;%select(starts_with(&quot;q802_&quot;))%&gt;%
                 rename_all(.funs = funs(sub(&quot;q802_&quot;, &quot;xdiag_avfun_a&quot;, .)))%&gt;%
-                mutate_all(~replace(., . &lt;=1, 1))          
+                mutate_all(~replace(., . ==1, 1))%&gt;%
+                mutate_all(~replace(., . ==2 |.==3, 0))%&gt;%
+                mutate_all(~replace(., is.na(.), 0))
             
             temp5&lt;-dta%&gt;%select(starts_with(&quot;q803_&quot;))%&gt;%
                 rename_all(.funs = funs(sub(&quot;q803_&quot;, &quot;xdiag_avfun_h&quot;, .)))%&gt;%
-                mutate_all(~replace(., . &lt;=1, 1))          
+                mutate_all(~replace(., . ==1, 1))%&gt;%
+                mutate_all(~replace(., . ==2 |.==3, 0))%&gt;%
+                mutate_all(~replace(., is.na(.), 0))         
             
             temp6&lt;-dta%&gt;%select(starts_with(&quot;q805_&quot;))%&gt;%
                 rename_all(.funs = funs(sub(&quot;q805_&quot;, &quot;ximage_avfun_&quot;, .)))%&gt;%
-                mutate_all(~replace(., . &lt;=1, 1))          
+                mutate_all(~replace(., . ==1, 1))%&gt;%
+                mutate_all(~replace(., . ==2 |.==3, 0))%&gt;%
+                mutate_all(~replace(., is.na(.), 0))          
 
 dta&lt;-cbind(dta, temp1, temp2, temp3, temp4, temp5, temp6)
 
 dta&lt;-dta%&gt;%
+    mutate(
+        xdiag=q801==1, 
+        ximage=q804==1)%&gt;%
     mutate_if(is.logical, as.numeric)%&gt;%
-    mutate_at(vars(starts_with(&quot;xdiag_&quot;), starts_with(&quot;ximage_&quot;)), 
+    mutate_at(vars(xdiag, ximage), 
               ~replace(., is.na(.)==TRUE, 0))%&gt;%
-    mutate_at(vars(starts_with(&quot;xdiag_av_h&quot;), starts_with(&quot;xdiag_avfun_h&quot;),
-                   starts_with(&quot;ximage_av_&quot;), starts_with(&quot;ximage_avfun_&quot;)), 
-              funs(ifelse(zlevel_hospital!=1, NA, .) ) )%&gt;%
+
     mutate(
-        xdiag=q804==1)%&gt;%
-    mutate_at(vars(xdiag), 
-              ~replace(., is.na(.)==TRUE, 0))%&gt;%
-    mutate(
-        
             max=5,
-            temp=rowSums(dta[colnames(select(dta, starts_with(&quot;xdiag_avfun_a&quot;)))], na.rm=TRUE ) ,     
-        xdiagbasic_score    =100*(temp/max),
+            tempbasic=rowSums(dta[colnames(select(dta, starts_with(&quot;xdiag_avfun_a&quot;)))], na.rm=TRUE ) ,     
+        xdiagbasic_score    =100*(tempbasic/max),
         xdiagbasic_100  =xdiagbasic_score&gt;=100,
         xdiagbasic_50   =xdiagbasic_score&gt;=50,
             
             max=5, 
             max=ifelse(zlevel_hospital==1 , 10, max), 
-            temp=rowSums(dta[colnames(select(dta, starts_with(&quot;xdiag_avfun_&quot;)))], na.rm=TRUE ) ,     
-        xdiag_score =100*(temp/max),
+            temphosp=rowSums(dta[colnames(select(dta, starts_with(&quot;xdiag_avfun_h&quot;)))], na.rm=TRUE ) ,   
+            temprelevant=tempbasic,   
+            temprelevant=ifelse(zlevel_hospital==1 , tempbasic+ temphosp, temprelevant), 
+        xdiag_score =100*(temprelevant/max),
         xdiag_100   =xdiag_score&gt;=100,
         xdiag_50    =xdiag_score&gt;=50,
     
             max=4,
-            temp=rowSums(dta[colnames(select(dta, starts_with(&quot;ximage_avfun_&quot;)))], na.rm=TRUE ) ,     
-        ximage_score    =100*(temp/max),
+            tempimage=rowSums(dta[colnames(select(dta, starts_with(&quot;ximage_avfun_&quot;)))], na.rm=TRUE ) ,     
+        ximage_score    =100*(tempimage/max),
         ximage_100  =ximage_score&gt;=100,
         ximage_50   =ximage_score&gt;=50
     )%&gt;%
-    mutate_at(vars(starts_with(&quot;ximage&quot;)), 
+    mutate_if(is.logical, as.numeric)%&gt;%
+    mutate_at(vars(starts_with(&quot;xdiag_av_h&quot;), starts_with(&quot;xdiag_avfun_h&quot;),
+                   starts_with(&quot;ximage&quot;)), 
               funs(ifelse(zlevel_hospital!=1, NA, .) ) )</code></pre>
 <pre class="r"><code>#####* Section 9: vaccine
 dta&lt;-dta%&gt;%
@@ -1582,15 +1614,14 @@ dta&lt;-dta%&gt;%
         
         xvac_aefikit = q913==1, 
         xvac_aefireport = q914==1 
-        
     ) %&gt;%
     mutate_if(is.logical, as.numeric)%&gt;%
-    mutate_at(vars(starts_with(&quot;xvac_&quot;)), 
+    mutate_at(vars(starts_with(&quot;xvac_av&quot;), xvac_sharp, starts_with(&quot;xvac_aefi&quot;)), 
               ~replace(., is.na(.)==TRUE, 0))%&gt;%
     mutate_at(vars(starts_with(&quot;xvac_av&quot;), starts_with(&quot;yvac_av&quot;), 
                    xvac_sharp, starts_with(&quot;xvac_aefi&quot;)), 
               funs(ifelse(xvac!=1, NA, .)) )
-    
+
     #lab var xvac_av_fridge &quot;has fridge&quot;
     #lab var xvac_avfun_fridge &quot;has functioning fridge&quot;
     #lab var xvac_avfun_fridgetemp &quot;has functioning fridge with temp log&quot;
@@ -1819,7 +1850,7 @@ dtasummary&lt;-dtasummary%&gt;%
     select(-starts_with(&quot;z&quot;))%&gt;%
     mutate_at(vars(starts_with(&quot;x&quot;)), 
               funs(round((. * 100), 0)))%&gt;%
-    mutate_at(vars(ends_with(&quot;_score&quot;), ends_with(&quot;_num&quot;)), 
+    mutate_at(vars(xbedrate, ends_with(&quot;_score&quot;), ends_with(&quot;_num&quot;)), 
               funs(round((. / 100), 0)))%&gt;%
     mutate(
         staff_pct_covid_md = round(100* (staff_num_covid_md / staff_num_total_md ), 1),
@@ -1833,15 +1864,34 @@ dtasummary&lt;-dtasummary%&gt;%
         xsafe__triage = xsafe__004,  
         xsafe__isolation = xsafe__005        
     )%&gt;%
+    #drop categorial var
+    select(-xopt_change)%&gt;% 
     arrange(country, round, group, grouplabel)
+
 #move up identification variables 
 setcolorder(dtasummary, c(&quot;country&quot;, &quot;round&quot;, &quot;month&quot;, &quot;year&quot;, &quot;group&quot;, &quot;grouplabel&quot;))
-colnames(dtasummary[ , 1:10])</code></pre>
+colnames(dtasummary[ , 1:10])
+
+#deal with NaN
+dtasummary[sapply(dtasummary, is.nan)] &lt;- NA</code></pre>
 <hr />
 </div>
 <div id="f.2.-export-indicator-estimate-data-to-chart-book" class="section level5">
 <h5>F.2. Export indicator estimate data to chart book</h5>
 <pre class="r"><code>write.csv(dtasummary, paste0(&quot;summary_CEHS_&quot;, country, &quot;_R&quot;, round, &quot;.csv&quot;))</code></pre>
+<pre class="r"><code>dtasummary&lt;-dtasummary%&gt;%
+    mutate(
+        updatedate = as.Date(Sys.time(  ), format='%d%b%Y'), 
+        updatetime = Sys.time()
+    )
+
+# for cross check against Stata results 
+write.csv(dtasummary, paste0(&quot;summary_CEHS_&quot;, country, &quot;_R&quot;, round, &quot;_R.csv&quot;))
+
+#write.xlsx(dta, 
+#           paste0(&quot;WHO_CEHS_Chartbook.xlsx&quot;), 
+#           sheet = &quot;Indicator estimate Data&quot;, 
+#           append = TRUE)</code></pre>
 <hr />
 <p>END OF MARKDOWN FILE</p>
 </div>

@@ -285,7 +285,7 @@ export excel using "$chartbookdir\WHO_COVID19HospitalReadiness_Chartbook.xlsx", 
 		q114_* 
 		q202  q205_* q206   q207* q209 q210
 		q501  q502  q503_* q504  q505_* q506
-		q601 q603_* q604 q608* q611 q612 
+		q601 q602_* q603_* q604 q608* q611 q612 
 		q702* q703* q704* q705 q706
 		q801 q802 q805 q808 q812 q813 q814
 		; 
@@ -296,7 +296,7 @@ export excel using "$chartbookdir\WHO_COVID19HospitalReadiness_Chartbook.xlsx", 
 		q114_* 
 		q202  q205_* q206   q207* q209 q210
 		q501  q502  q503_* q504  q505_* q506
-		q601 q603_* q604 q608* q611 q612 
+		q601 q602_* q603_* q604 q608* q611 q612 
 		q702* q703* q704* q705 q706
 		q801 q802 q805 q808 q812 q813 q814 
 		{;	
@@ -366,7 +366,7 @@ export excel using "$chartbookdir\WHO_COVID19HospitalReadiness_Chartbook.xlsx", 
 		q114_* 
 		q202  q205_* q206   q207* q209 q210
 		q501  q502  q503_* q504  q505_* q506
-		q601 q603_* q604 q608* q611 q612 
+		q601 q602_* q603_* q604 q608* q611 q612 
 		q702* q703* q704* q705 q706
 		q801 q802 q805 q808 q812 q813 q814   
 		{;		
@@ -694,12 +694,12 @@ restore
 	* Section 4: Therapeutics
 	*****************************
 		
-	global itemlist "001 002 003 004 005 006 007 008 009 010 011 012" 
+	global itemlist "001 002 003 004 005 006 007 008 009 010 011 012 013 014" 
 	foreach item in $itemlist{	
 		gen xdrug__`item' = q401_`item' ==1
 		}		
 		
-		gen max=12
+		gen max=`maxdrug'
 		egen temp=rowtotal(xdrug__*) 
 	gen xdrug_score	=100*(temp/max)
 	gen xdrug_100 	=xdrug_score>=100
@@ -801,6 +801,7 @@ restore
 	foreach item in $itemlist{	
 		gen xspcmitem__`item' = q602_`item'==1
 		}							
+
 		
 		gen max=2
 		egen temp=	rowtotal(xspcmitem__*) 
@@ -812,25 +813,26 @@ restore
 	gen xpcr 			= q603_001==1
 	gen xpcr_equip		= q604==1
 	gen xpcr_capacity 	= round(100*(q606/q607), 1)
-			
+
 	foreach var of varlist xpcr_*	{
-		replace `var'=. if xpcr!=1
+		replace `var'=. if xpcr==0
 		}	
-				
+
 	gen xrdt 			= q603_002==1
 	gen xrdt_equip		= q608_001==1 & q608_002==1
 	gen xrdt_capacity 	= round(100*(q609/q610), 1)
 			
 	foreach var of varlist xrdt_*	{
-		replace `var'=. if xrdt!=1
+		replace `var'=. if xrdt==0
 		}	
 
 	gen xonsite= xpcr==1 | xrdt==1
 	gen xonsite_waste= q611==1
-	gen xonsite_ready= (xpcr_equip==1 | xrdt_equip==1) & xonsite_waste==1
+	gen xonsite_equip= (xpcr_equip==1 | xrdt_equip==1) 
+	gen xonsite_ready= xonsite_equip & xonsite_waste==1
 
 	foreach var of varlist xonsite_*	{
-		replace `var'=. if xonsite!=1 
+		replace `var'=. if xonsite==0
 		}	
 		
 	gen xoffsite			=(q603_001==0 & q603_002==0) /*test else where*/
@@ -842,9 +844,9 @@ restore
 	gen xoffsitetime_7 =q613<=4 /*less than 7 days*/ 
 	
 	foreach var of varlist xoffsitetime_*	{
-		replace `var'=. if xoffsite!=1
+		replace `var'=. if xoffsite==0
 		}
-		
+
 		tab xoffsitetime_3 xonsite_ready, m
 		
 		gen max=2
@@ -853,7 +855,7 @@ restore
 	gen xdiagcovid_100	= xdiagcovid_score >=100
 	gen xdiagcovid_50	= xdiagcovid_score >=50
 		drop max temp
-				
+
 	*****************************
 	* Section 7: Equipment 
 	*****************************
@@ -896,8 +898,6 @@ restore
 		egen temp=rowtotal(xequip_anymalfunction__003 xequip_anymalfunction__004)
 	gen xequip_anymalfunction=temp>=1
 		drop temp
-		
-		drop xequip_anymalfunction__*
 	
 	/*	
 	global itemlist "001 002 003 004 005"
@@ -910,7 +910,7 @@ restore
 		drop temp		
 	*/
 	
-	global itemlist "001 002 003 004 005 "
+	global itemlist "001 002 003 004 005"
 	foreach item in $itemlist{	
 		gen xequip_malfunction_reason__`item' = q702_`item'==1 | q703_`item'==1 
 		}
@@ -930,7 +930,7 @@ restore
 	
 	gen xoxygen_dist 		 = q705==1
 	gen xoxygen_portcylinder = q706==1
-		
+
 	*****************************
 	* Section 8: vaccine
 	*****************************
@@ -1047,7 +1047,7 @@ use COVID19HospitalReadiness_`country'_R`round'.dta, clear
 	collapse (count) obs* (mean) x* interviewlength (sum) staff_num_* ybed*  yequip* yvac*  [iweight=weight], by(country round month year  )
 		gen group="All"
 		gen grouplabel="All"
-		keep obs* country round month year  group* x* interviewlength y*
+		keep obs* country round month year  group* x* interviewlength y* staff_num_* 
 		save summary_COVID19HospitalReadiness_`country'_R`round'.dta, replace 
 		
 	use temp.dta, clear
@@ -1056,7 +1056,7 @@ use COVID19HospitalReadiness_`country'_R`round'.dta, clear
 		gen grouplabel=""
 			replace grouplabel="Rural" if zurban==0
 			replace grouplabel="Urban" if zurban==1
-		keep obs* country round month year  group* x* interviewlength y*
+		keep obs* country round month year  group* x* interviewlength y* staff_num_* 
 		
 		append using summary_COVID19HospitalReadiness_`country'_R`round'.dta, force
 		save summary_COVID19HospitalReadiness_`country'_R`round'.dta, replace 
@@ -1067,7 +1067,7 @@ use COVID19HospitalReadiness_`country'_R`round'.dta, clear
 		gen grouplabel=""
 			replace grouplabel="Primary/Secondary" if zlevel_hospital==0
 			replace grouplabel="Tertiary" if zlevel_hospital==1
-		keep obs* country round month year  group* x* interviewlength y*
+		keep obs* country round month year  group* x* interviewlength y* staff_num_* 
 			
 		append using summary_COVID19HospitalReadiness_`country'_R`round'.dta
 		save summary_COVID19HospitalReadiness_`country'_R`round'.dta, replace 
@@ -1088,9 +1088,12 @@ use COVID19HospitalReadiness_`country'_R`round'.dta, clear
 		replace `var'=round(`var'*100, 1)	
 		}
 			* But, convert back variables that were incorrectly converted (e.g., occupancy rates, score)	
-			foreach var of varlist xocc* xcovid_occ* xpcr_capacity *score staff_num_* {
+			foreach var of varlist xocc* xcovid_occ* *_capacity *_score {
 				replace `var'=round(`var'/100, 1)	
 				}		
+						
+			* Drop survey variables 
+			drop interviewlength				
 
 	***** generate staff infection rates useing the pooled data	
 	global itemlist "md nr othclinical clinical nonclinical all" 
@@ -1099,9 +1102,12 @@ use COVID19HospitalReadiness_`country'_R`round'.dta, clear
 		}	
 	
 	tab group round, m
+	
+	rename xsafe__004 xsafe__triage
+	rename xsafe__005 xsafe__isolation	
 
 	* organize order of the variables by section in the questionnaire  
-	order country round year month group grouplabel obs* 
+	order country round year month group grouplabel obs* staff*
 		
 	sort country round grouplabel
 	
@@ -1120,7 +1126,10 @@ use summary_COVID19HospitalReadiness_`country'_R`round'.dta, clear
 	replace updatetime="`time'"
 
 export excel using "$chartbookdir\WHO_COVID19HospitalReadiness_Chartbook.xlsx", sheet("Indicator estimate data") sheetreplace firstrow(variables) nolabel keepcellfmt
+
+* For YJ's shiny app and cross check against results from R
 export delimited using "C:\Users\YoonJoung Choi\Dropbox\0 iSquared\iSquared_WHO\ACTA\4.ShinyApp\0_Model\summary_COVID19HospitalReadiness_`country'_R`round'.csv", replace 
+export delimited using "C:\Users\YoonJoung Choi\Dropbox\0 iSquared\iSquared_WHO\ACTA\3.AnalysisPlan\summary_COVID19HospitalReadiness_`country'_R`round'_Stata.csv", replace 
 
 erase temp.dta
 

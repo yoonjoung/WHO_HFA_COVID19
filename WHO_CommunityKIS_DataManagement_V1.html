@@ -273,10 +273,11 @@ div.tocify {
 1. Imports and cleans COVID-19 community key informant (aka &quot;community&quot;) dataset from Lime Survey (i.e., green and blue tabs in the chartbook),<br />
 2. Creates field check tables for data quality monitoring, and<br />
 3. Creates indicator estimate data for dashboards and chartbook (purple tab in the chartbook).</p>
-<p><span style="color: blue;"> <strong>REQUIRED country-specific changes.</strong><br />
+<p><span style="color: blue;"> <strong>REQUIRED country-specific changes, based on the minmum country-specific adaptation.</strong><br />
 1. Directories and local macro in <strong>A. SETTING</strong> per survey implementation information<br />
-2. Local macro in <strong>E.1. Country speciic code local</strong> per section 1 in the questionnaire</span></p>
-<p>(Last updated: 2021-02-06 17:40:32)</p>
+2. Local macro in <strong>E.1. Country speciic code local</strong> per section 1 in the questionnaire</p>
+<p><span style="color: blue;">Depending on the extent of additional country-specific adaptation, further revise <strong>E.2. Construct analysis variables</strong>.</span></p>
+<p>(Last updated: 2021-02-14 13:48:19)</p>
 <hr />
 <div id="a.-setting" class="section level4">
 <h4>A. SETTING</h4>
@@ -314,7 +315,7 @@ dtaraw&lt;-read.csv(paste0(limesurveydir,&quot;LimeSurvey_Community_Example_R1.c
 obsraw&lt;-nrow(dtaraw)
 cols&lt;-ncol(dtaraw)
 dim(dtaraw)</code></pre>
-<p>As of 2021-02-06 17:40:32, the downloaded raw data has 45 observations and 216 variables.</p>
+<p>As of 2021-02-14 13:48:19, the downloaded raw data has 45 observations and 216 variables.</p>
 <hr />
 </div>
 <div id="b.2.-exportsave-the-data-daily-in-csv-form-with-date" class="section level5">
@@ -597,7 +598,7 @@ table(dta$q601)</code></pre>
 </div>
 <div id="d.-create-field-check-tables" class="section level4">
 <h4>D. Create field check tables</h4>
-<p>As of 2021-02-06, the following are &quot;field check tables.&quot; In Stata program, xls file is created. In R, the results are directly presented in this markdown file.</p>
+<p>As of 2021-02-14, the following are &quot;field check tables.&quot; In Stata program, xls file is created. In R, the results are directly presented in this markdown file.</p>
 <pre class="r"><code>dtacheck&lt;-dta%&gt;%
     mutate(
         updatedate= as.character(as.Date(Sys.time(  ), format='%d%b%Y')), 
@@ -616,7 +617,7 @@ table(dta$q601)</code></pre>
 <p><strong>Assess interview characteristics among all interviews.</strong></p>
 <pre class="r"><code># Date of field check table update and the total number of interviews
 print(date)</code></pre>
-<p>[1] &quot;2021-02-06&quot;</p>
+<p>[1] &quot;2021-02-14&quot;</p>
 <pre class="r"><code># Date of interviews (submission date, final)
 table(dtacheck$date)</code></pre>
 <p>2020-12-17 2020-12-18 4 40</p>
@@ -940,7 +941,9 @@ dta&lt;-dta%&gt;%
         xbar_covid_admin = ifelse(q303_012==1 | q303_013==1 | q303_014==1, 1, xbar_covid_admin), 
         xbar_covid_qinput = ifelse(q303_015==1, 1, xbar_covid_qinput),  
         xbar_covid_qexp = ifelse(q303_016==1, 1, xbar_covid_qexp)
-    )
+    )%&gt;%
+    mutate_at(vars(starts_with(&quot;xbar_covid_&quot;)), 
+              ~replace(., is.na(.)==TRUE, 0))
     
         #***** Source of care /*COUNTRY-SPECIFIC MUST BE ADAPTED*/
         varlist&lt;-dta%&gt;%select(q304_001, q304_002, q304_003, q304_004, 
@@ -954,7 +957,10 @@ dta&lt;-dta%&gt;%
     rename_all(.funs = funs(sub(&quot;q304_&quot;, &quot;xsource__&quot;, .)))%&gt;%
     
         #***** Equity    
-    rename_all(.funs = funs(sub(&quot;q306_&quot;, &quot;xmargin__&quot;, .)))</code></pre>
+    mutate(xmargin = q305==1)%&gt;%
+    rename_all(.funs = funs(sub(&quot;q306_&quot;, &quot;xmargin__&quot;, .)))%&gt;%
+    mutate_at(vars(starts_with(&quot;xmargin__&quot;)), 
+              ~replace(., is.na(.)==TRUE, 0))</code></pre>
 <pre class="r"><code>dta&lt;-dta%&gt;%
     mutate( 
         xconcern_most       = q401&lt;=1,
@@ -1003,7 +1009,7 @@ summary(dta$xvac_reason_noconcern)</code></pre>
 <pre class="r"><code>#####* Section 5: Community assets and vulnerabilities 
 dta&lt;-dta%&gt;%
     mutate(
-        xeconimpact_mod =q501==2 | q501==3 , 
+        xeconimpact_modsig =q501==2 | q501==3 , 
         xeconimpact_sig =q501==3 ,
         
         xinit_ses_increased = q502==1, 
@@ -1056,21 +1062,21 @@ dta&lt;-dta%&gt;%
 
         temp3&lt;-dta%&gt;%select(starts_with(&quot;q607_&quot;))%&gt;%
             rename_all(.funs = funs(sub(&quot;q607_&quot;, &quot;xsrvc_reduced__&quot;, .)))%&gt;%
-            mutate_all( funs(ifelse(. &lt;=2 , 1, 
-                                  ifelse(. &gt;2, 0,  
-                                         ifelse(. ==5, NA,  .)))) )
+            mutate_all( funs(ifelse(. ==5, NA,
+                                    ifelse(. &lt;=2 , 1, 
+                                        ifelse(. &gt;=3 &amp;  . &lt;=4, 0, .)))) )
         
         temp4&lt;-dta%&gt;%select(starts_with(&quot;q607_&quot;))%&gt;%
             rename_all(.funs = funs(sub(&quot;q607_&quot;, &quot;xsrvc_increased__&quot;, .)))%&gt;%
-            mutate_all( funs(ifelse(. ==3 , 1, 
-                                  ifelse(. !=3, 0,  
-                                         ifelse(. ==5, NA,  .)))) ) 
+            mutate_all( funs(ifelse(. ==5, NA,
+                                    ifelse(. ==3 , 1, 
+                                        ifelse(. &lt;=2 | .==4, 0, .)))) )
         
         temp5&lt;-dta%&gt;%select(starts_with(&quot;q607_&quot;))%&gt;%
             rename_all(.funs = funs(sub(&quot;q607_&quot;, &quot;xsrvc_nochange__&quot;, .)))%&gt;%
-            mutate_all( funs(ifelse(. ==4 , 1, 
-                                  ifelse(. !=4, 0,  
-                                         ifelse(. ==5, NA,  .)))) )
+            mutate_all( funs(ifelse(. ==5, NA,
+                                    ifelse(. ==4 , 1, 
+                                        ifelse(. &lt;=3 , 0, .)))) )
         
 dta&lt;-cbind(dta, temp1, temp2, temp3, temp4, temp5)     </code></pre>
 <hr />
@@ -1097,16 +1103,33 @@ dta&lt;-cbind(dta, temp1, temp2, temp3, temp4, temp5)     </code></pre>
     )%&gt;%
     select(-ends_with(&quot;_num&quot;))
 
-dtatempx&lt;-dtatemp%&gt;%select(country, round, month, year, starts_with(&quot;z&quot;), starts_with(&quot;obs&quot;), starts_with(&quot;x&quot;))</code></pre>
+dtatempx&lt;-dtatemp%&gt;%select(country, round, month, year, starts_with(&quot;z&quot;),
+                           starts_with(&quot;x&quot;))
+
+dtatempy&lt;-dtatemp%&gt;%select(country, round, month, year, starts_with(&quot;z&quot;),
+                           starts_with(&quot;obs&quot;))</code></pre>
 <pre class="r"><code># Among all facilities 
-dtasummaryall&lt;-dtatempx%&gt;%
+dtasummaryx&lt;-dtatempx%&gt;%
     group_by(country, round, month, year)%&gt;%
     summarize_all(funs(mean(., na.rm = TRUE)))%&gt;%
     ungroup()%&gt;%
     mutate(group=&quot;All&quot;, grouplabel=&quot;&quot;)
 
+dtasummaryy&lt;-dtatempy%&gt;%
+    group_by(country, round, month, year)%&gt;%
+    summarize_all(funs(sum(., na.rm = TRUE)))%&gt;%
+    ungroup()%&gt;%
+    mutate(group=&quot;All&quot;, grouplabel=&quot;&quot;)
+
+
+dtasummaryall&lt;-left_join(dtasummaryx, dtasummaryy, 
+                      by = c(&quot;country&quot;, &quot;round&quot;, &quot;month&quot;, &quot;year&quot;, 
+                             &quot;group&quot;, &quot;grouplabel&quot;))%&gt;%
+    select(-starts_with(&quot;z&quot;))
+
+
 # By residential area
-dtasummarylocation&lt;-dtatempx%&gt;%
+dtasummaryx&lt;-dtatempx%&gt;%
     group_by(country, round, month, year, zurban)%&gt;%
     summarize_all(funs(mean(., na.rm = TRUE)))%&gt;%
     ungroup()%&gt;%
@@ -1116,8 +1139,23 @@ dtasummarylocation&lt;-dtatempx%&gt;%
         grouplabel= ifelse(zurban==0, &quot;1.1 Rural&quot; , grouplabel),
         grouplabel= ifelse(zurban==1, &quot;1.2 Urban&quot; , grouplabel) )
 
-# By facility type
-dtasummarychw&lt;-dtatempx%&gt;%
+dtasummaryy&lt;-dtatempy%&gt;%
+    group_by(country, round, month, year, zurban)%&gt;%
+    summarize_all(funs(sum(., na.rm = TRUE)))%&gt;%
+    ungroup()%&gt;%
+    mutate(
+        group=&quot;Location&quot;, 
+        grouplabel=&quot;&quot;,
+        grouplabel= ifelse(zurban==0, &quot;1.1 Rural&quot; , grouplabel),
+        grouplabel= ifelse(zurban==1, &quot;1.2 Urban&quot; , grouplabel) )
+
+dtasummarylocation&lt;-left_join(dtasummaryx, dtasummaryy, 
+                      by = c(&quot;country&quot;, &quot;round&quot;, &quot;month&quot;, &quot;year&quot;, 
+                             &quot;group&quot;, &quot;grouplabel&quot;))%&gt;%
+    select(-starts_with(&quot;z&quot;))
+
+# By respondent type
+dtasummaryx&lt;-dtatempx%&gt;%
     group_by(country, round, month, year, zchw)%&gt;%
     summarize_all(funs(mean(., na.rm = TRUE)))%&gt;%
     ungroup()%&gt;%
@@ -1127,6 +1165,20 @@ dtasummarychw&lt;-dtatempx%&gt;%
         grouplabel= ifelse(zchw==0, &quot;2.1 non CHWs&quot; , grouplabel),
         grouplabel= ifelse(zchw==1, &quot;2.2 CHWs&quot; , grouplabel) )
 
+dtasummaryy&lt;-dtatempy%&gt;%
+    group_by(country, round, month, year, zchw)%&gt;%
+    summarize_all(funs(sum(., na.rm = TRUE)))%&gt;%
+    ungroup()%&gt;%
+    mutate(
+        group=&quot;Level&quot;, 
+        grouplabel=&quot;&quot;,
+        grouplabel= ifelse(zchw==0, &quot;2.1 non CHWs&quot; , grouplabel),
+        grouplabel= ifelse(zchw==1, &quot;2.2 CHWs&quot; , grouplabel) )
+
+dtasummarychw&lt;-left_join(dtasummaryx, dtasummaryy, 
+                      by = c(&quot;country&quot;, &quot;round&quot;, &quot;month&quot;, &quot;year&quot;, 
+                             &quot;group&quot;, &quot;grouplabel&quot;))%&gt;%
+    select(-starts_with(&quot;z&quot;))
 
 # Append all 
 dim(dtasummaryall)
@@ -1150,6 +1202,19 @@ colnames(dtasummary[ , 1:10])</code></pre>
 <div id="f.2.-export-indicator-estimate-data-to-chart-book" class="section level5">
 <h5>F.2. Export indicator estimate data to chart book</h5>
 <pre class="r"><code>write.csv(dtasummary, paste0(&quot;summary_Community_&quot;, country, &quot;_R&quot;, round, &quot;.csv&quot;))</code></pre>
+<pre class="r"><code>dtasummary&lt;-dtasummary%&gt;%
+    mutate(
+        updatedate = as.Date(Sys.time(  ), format='%d%b%Y'), 
+        updatetime = Sys.time()
+    )
+
+# for cross check against Stata results 
+write.csv(dtasummary, paste0(&quot;summary_Community_&quot;, country, &quot;_R&quot;, round, &quot;_R.csv&quot;))
+
+#write.xlsx(dta, 
+#           paste0(&quot;WHO_Community_Chartbook.xlsx&quot;), 
+#           sheet = &quot;Indicator estimate Data&quot;, 
+#           append = TRUE)</code></pre>
 <hr />
 <p>END OF MARKDOWN FILE</p>
 </div>

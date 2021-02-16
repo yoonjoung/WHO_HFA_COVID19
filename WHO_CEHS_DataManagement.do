@@ -922,7 +922,7 @@ restore
 		gen xopt_increase_reason__`item' = q410_`item'
 		recode xopt_increase_reason__`item'  .= 0
 		}
-		
+
 	global itemlist "001 002 003 004 005 006 007 008 009 010 011 012" 
 	foreach item in $itemlist{			
 		gen xopt_decrease_reason__`item' = q411_`item'
@@ -971,7 +971,7 @@ restore
 		replace xer_decrease__`item' = . if xer==0
 		*replace xer_decrease__`item' = . if q412_`item'==4		
 		}		
-	
+
 	***** IPT 
 	
 	gen xipt = q111==1
@@ -1016,7 +1016,7 @@ restore
 		foreach var of varlist xout_*{
 			replace `var'=. if xout==0
 			}
-	
+
 	***** missed appointment 
 	
 	gen xresto = q418==1 & q419==1	
@@ -1062,8 +1062,7 @@ restore
 		rename xdisrupt__002 xdisrupt__finance
 		rename xdisrupt__003 xdisrupt__ipc
 		rename xdisrupt__004 xdisrupt__medsupp
-		
-		
+				
 	sum xstrategy* 
 	sum xopt_increase xopt_increase_* xopt_increase_reason_* 
 	sum xopt_decrease xopt_decrease_* xopt_decrease_reason_*
@@ -1160,10 +1159,10 @@ restore
 	gen xcvd_pt_50 		=xcvd_pt_score>=50
 		drop max temp		
 
-		foreach var of varlist xcvd_pt_score xcvd_pt_100 xcvd_pt_50 {
+		foreach var of varlist xcvd_pt_score xcvd_pt_100 xcvd_pt_50 xcvd_pt__*{
 			replace `var'=. if xcvd_pt==0
 			}
-			
+		
 	gen xcvd_pthbsi = q607_006==1 | q607_006==2	/* ALWAYS or SOMETIMES*/
 	
 	global itemlist "001 002 003 004 005 006"   
@@ -1242,6 +1241,7 @@ restore
 	*****************************
 		
 	gen xdiag=q801==1
+	gen ximage=q804==1
 	
 	global itemlist "001 002 003 004 005" 
 	foreach item in $itemlist{	
@@ -1266,27 +1266,31 @@ restore
 		}		
 						
 		gen max=5
-		egen temp=rowtotal(xdiag_avfun_a*)
-	gen xdiagbasic_score	=100*(temp/max)
+		egen tempbasic=rowtotal(xdiag_avfun_a*)
+	gen xdiagbasic_score	=100*(tempbasic/max)
 	gen xdiagbasic_100 	=xdiagbasic_score>=100
 	gen xdiagbasic_50 	=xdiagbasic_score>=50
-		drop max temp	
+		*drop max temp
+		drop max 
 		
 		gen max=.
 			replace max=5  if zlevel_hospital!=1 
 			replace max=10 if zlevel_hospital==1 
-		egen temp=rowtotal(xdiag_avfun_a* xdiag_avfun_h*)
-	gen xdiag_score	=100*(temp/max)
+		egen temphosp=rowtotal(xdiag_avfun_h*)
+		gen temprelevant=.
+			replace temprelevant=tempbasic if zlevel_hospital!=1 
+			replace temprelevant=tempbasic + temphosp if zlevel_hospital==1 
+	gen xdiag_score	=100*(temprelevant/max)
 	gen xdiag_100 	=xdiag_score>=100
 	gen xdiag_50 	=xdiag_score>=50
-		drop max temp				
+		*drop max temp
+		drop max 			
 		
 	global itemlist "001 002 003 004" 
 	foreach item in $itemlist{	
 		gen ximage_av_`item' 	= q805_`item'<=2
 		replace ximage_av_`item'	=. if zlevel_hospital!=1  
 		}
-		
 
 	global itemlist "001 002 003 004" 
 	foreach item in $itemlist{	
@@ -1295,15 +1299,17 @@ restore
 		}		
 	
 		gen max=4  /* CHECK kenya code, it should be 4 there*/
-		egen temp=rowtotal(ximage_avfun_*)
-	gen ximage_score	=100*(temp/max)
+		egen tempimage=rowtotal(ximage_avfun_*)
+	gen ximage_score	=100*(tempimage/max)
 	gen ximage_100 	=ximage_score>=100
 	gen ximage_50 	=ximage_score>=50
-		drop max temp	
+		*drop max temp
+		drop max 	
 	
 	foreach var of varlist ximage*{	
 		replace `var' =. if zlevel_hospital!=1  
-		}		
+		}	
+	
 	*****************************
 	* Section 9: vaccine
 	*****************************
@@ -1515,6 +1521,12 @@ use CEHS_`country'_R`round'.dta, clear
 			foreach var of varlist xbedrate	*_score *_num {
 				replace `var'=round(`var'/100, 1)
 				}
+			
+			* Drop categorial variables 
+			drop xopt_change 
+			
+			* Drop survey variables 
+			drop xresult interviewlength
 	
 	***** generate staff infection rates useing the pooled data	
 	global itemlist "md nr othclinical clinical nonclinical all" 
@@ -1528,7 +1540,7 @@ use CEHS_`country'_R`round'.dta, clear
 	rename xsafe__005 xsafe__isolation
 	
 	***** organize order of the variables by section in the questionnaire  
-	order country round year month group grouplabel obs obs_* staff_num* staff_pct* 
+	order country round year month group grouplabel obs obs_* obshmis* staff_num* staff_pct* 
 		
 	sort country round grouplabel
 	
@@ -1547,7 +1559,10 @@ use summary_CEHS_`country'_R`round'.dta, clear
 	replace updatetime="`time'"
 	
 export excel using "$chartbookdir\WHO_CEHS_Chartbook.xlsx", sheet("Indicator estimate data") sheetreplace firstrow(variables) nolabel keepcellfmt
+
+* For YJ's shiny app and cross check against results from R
 export delimited using "C:\Users\YoonJoung Choi\Dropbox\0 iSquared\iSquared_WHO\ACTA\4.ShinyApp\0_Model\summary_CEHS_`country'_R`round'.csv", replace 
+export delimited using "C:\Users\YoonJoung Choi\Dropbox\0 iSquared\iSquared_WHO\ACTA\3.AnalysisPlan\summary_CEHS_`country'_R`round'_Stata.csv", replace 
 
 erase temp.dta
 

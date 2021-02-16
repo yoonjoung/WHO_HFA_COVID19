@@ -747,6 +747,8 @@ restore
 			replace xbar_covid_qexp =1 	if q303_`item'==1
 			}	
 			
+
+			
 	***** Source of care 
 	
 	global itemlist "001 002 003 004 005 006 007 008 009 010 011"
@@ -818,10 +820,10 @@ restore
 	*****************************
 	* Section 5: Community assets and vulnerabilities 
 	*****************************	
-	gen xeconimpact_mod =q501==2 | q501==3  
+	gen xeconimpact_modsig =q501==2 | q501==3  
 	gen xeconimpact_sig =q501==3  
 	
-	tab xeconimpact_mod xeconimpact_sig
+	tab xeconimpact_modsig xeconimpact_sig
 	
 	gen xinit_ses_increased = q502==1 
 	gen xinit_ses_nochange = q502==2 
@@ -859,7 +861,7 @@ restore
 	gen byte xsupport_most		=q605<=1
 	gen byte xsupport_somemost	=q605<=2
 	
-	global itemlist "001 002 003 004 005 006 007"
+	global itemlist "001 002 003 004 005 006 007 008"
 	foreach item in $itemlist{	
 		gen xsupportneed__`item' 		= q606_`item'==1
 		}
@@ -874,12 +876,13 @@ restore
 	foreach item in $itemlist{	
 		gen xsrvc_nochange__`item' 		= q607_`item'==4
 		}		
+	*exclude facilities that do not provide this service in calculation*	
 	foreach item in $itemlist{	
-		replace xsrvc_reduced__`item' 		=. if q607_`item'==5
+		replace xsrvc_reduced__`item' 		=. if q607_`item'==5 
 		replace xsrvc_increased__`item' 	=. if q607_`item'==5
 		replace xsrvc_nochange__`item' 		=. if q607_`item'==5
 		}		
-			
+	
 	sort id
 	save Community_`country'_R`round'.dta, replace 		
 
@@ -887,7 +890,7 @@ restore
 	
 *****E.3. Export clean Respondent-level data to chart book 
 
-	export excel using "$chartbookdir\KEN_Community_Chartbook.xlsx", sheet("Respondent-level cleaned data") sheetreplace firstrow(variables) nolabel
+	export excel using "$chartbookdir\WHO_Community_Chartbook.xlsx", sheet("Respondent-level cleaned data") sheetreplace firstrow(variables) nolabel
 	
 **************************************************************
 * F. Create indicator estimate data 
@@ -961,7 +964,10 @@ use summary_Community_`country'_R`round'.dta, clear
 	replace updatetime="`time'"
 	
 export excel using "$chartbookdir\WHO_Community_Chartbook.xlsx", sheet("Indicator estimate data") sheetreplace firstrow(variables) nolabel keepcellfmt
+
+* For YJ's shiny app and cross check against results from R
 export delimited using "C:\Users\YoonJoung Choi\Dropbox\0 iSquared\iSquared_WHO\ACTA\4.ShinyApp\0_Model\summary_Commmunity_`country'_R`round'.csv", replace 
+export delimited using "C:\Users\YoonJoung Choi\Dropbox\0 iSquared\iSquared_WHO\ACTA\3.AnalysisPlan\summary_Community_`country'_R`round'_Stata.csv", replace 
 
 erase temp.dta
 
