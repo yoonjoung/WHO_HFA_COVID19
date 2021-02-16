@@ -44,13 +44,13 @@ numlabel, add
 **************************************************************
 
 *** Directory for this do file and a subfolder for "daily exported CSV file from LimeSurvey"  
-*cd "C:\Users\ctaylor\World Health Organization\BANICA, Sorin - HSA unit\3 Country implementation & learning\1 HFAs for COVID-19\Kenya\Community"
-cd "C:\Users\YoonJoung Choi\World Health Organization\BANICA, Sorin - HSA unit\3 Country implementation & learning\1 HFAs for COVID-19\Kenya\Community"
+cd "C:\Users\ctaylor\World Health Organization\BANICA, Sorin - HSA unit\3 Country implementation & learning\1 HFAs for COVID-19\Kenya\tools\Community"
+*cd "C:\Users\YoonJoung Choi\World Health Organization\BANICA, Sorin - HSA unit\3 Country implementation & learning\1 HFAs for COVID-19\Kenya\Community"
 dir
 
 *** Define a directory for the chartbook, if different from the main directory 
-*global chartbookdir "C:\Users\ctaylor\World Health Organization\BANICA, Sorin - HSA unit\3 Country implementation & learning\1 HFAs for COVID-19\Kenya\Community"
-global chartbookdir "C:\Users\YoonJoung Choi\World Health Organization\BANICA, Sorin - HSA unit\3 Country implementation & learning\1 HFAs for COVID-19\Kenya\Community"
+global chartbookdir "C:\Users\ctaylor\World Health Organization\BANICA, Sorin - HSA unit\3 Country implementation & learning\1 HFAs for COVID-19\Kenya\tools\Community"
+*global chartbookdir "C:\Users\YoonJoung Choi\World Health Organization\BANICA, Sorin - HSA unit\3 Country implementation & learning\1 HFAs for COVID-19\Kenya\Community"
 
 *** Define local macro for the survey 
 local country	 		 Kenya /*country name*/	
@@ -586,15 +586,16 @@ restore
 	* Section 2: need and use 
 	*****************************
 
+	/*variable name change 1/19/2021 : changed some to somemost, created new some (only some)*/
 	global itemlist "001 002 003 004 005 006 007 008 009 010"
 	foreach item in $itemlist{	
-		gen xunmetsome__`item' 	= q201_`item'>=2 & q201_`item'!=.
-		}	
-	foreach item in $itemlist{	
-		gen xunmetmost__`item' 	= q201_`item'>=3 & q201_`item'!=.
+		gen xunmetsomemost__`item' 	= q201_`item'>=2 & q201_`item'!=.
 		}			
-		
-	foreach item in xunmetsome xunmetmost{	
+	foreach item in $itemlist{	
+		gen xunmetmost__`item' 	= q201_`item'==3 
+		}	
+	
+	foreach item in xunmetsomemost xunmetmost{	
 		egen `item'_num=rowtotal(`item'__*) 
 		gen `item' = `item'_num>=1 
 
@@ -610,6 +611,16 @@ restore
 		egen `item'_hivtb_num=rowtotal(`item'__010) 
 		gen `item'_hivtb = `item'_hivtb_num>=1 	
 	}
+	
+	gen xunmetsome = xunmetsomemost - xunmetmost
+	
+	foreach item in urgent chronic rmch hivtb{	
+		gen xunmetsome_`item' = xunmetsomemost_`item' - xunmetmost_`item'
+		}
+	
+	drop *_num
+	sum xunmet*
+	
 	
 	*****************************
 	* Section 3: barriers 
@@ -820,15 +831,19 @@ restore
 	
 	gen byte xconcern_most 		= q401<=1
 	gen byte xconcern_mostsome 	= q401<=2
+	gen byte xconcern_some 		= q401==2
 	
 	gen byte xvac_adult_most 	= q402<=1
 	gen byte xvac_adult_mostsome= q402<=2
+	gen byte xvac_adult_some= q402==2	
 	
 	gen byte xvac_child_most 	= q403<=1
 	gen byte xvac_child_mostsome= q403<=2
+	gen byte xvac_child_some= q403==2
 	
 	gen byte xvac_most 		= xvac_adult_most==1 & xvac_child_most==1 /*most adults AND children*/	
 	gen byte xvac_mostsome	= xvac_adult_mostsome==1 | xvac_child_mostsome==1 /*most/some adults OR children*/
+	gen byte xvac_some		= xvac_most!=1 & xvac_mostsome==1 /*some adults OR children*/
 	
 	global itemlist "001 002 003 004 005 006 007"
 	foreach item in $itemlist{	
@@ -904,8 +919,15 @@ restore
 	
 	gen byte xstigma	=q606>=2 & q606!=.
 	
+	gen byte xstigma_never	=q606==1
+	gen byte xstigma_sometimes	=q606==2
+	gen byte xstigma_often	=q606==3
+	
 	gen byte xsupport_most		=q607<=1
 	gen byte xsupport_somemost	=q607<=2
+	gen byte xsupport_some	=q607==2
+	
+	gen byte xsupportneed	=q607==2 | q607==3
 	
 	global itemlist "001 002 003 004 005 006 007"
 	foreach item in $itemlist{	
@@ -922,6 +944,31 @@ restore
 	foreach item in $itemlist{	
 		gen xsrvc_nochange__`item' 		= q609_`item'==4
 		}		
+
+	/*check level of NA 1/18/2021*/
+	/*
+	foreach item in $itemlist{	
+		gen xsrvc_na__`item' 		= q609_`item'==5
+		}			
+		
+	. sum xsrvc_na*
+
+		Variable |        Obs        Mean    Std. Dev.       Min        Max
+	-------------+---------------------------------------------------------
+	xsrvc_na~001 |         51    .0196078     .140028          0          1
+	xsrvc_na~002 |         51    .0588235    .2376354          0          1
+	xsrvc_na~003 |         51    .1372549    .3475404          0          1
+	xsrvc_na~004 |         51    .0392157    .1960392          0          1
+	xsrvc_na~005 |         51    .0392157    .1960392          0          1
+
+	*/	
+	
+	/*fix denominators. giving missing if NA: updated 1/18/2021*/	
+	foreach item in $itemlist{	
+		replace xsrvc_reduced__`item' 		=. if q609_`item'==5
+		replace xsrvc_increased__`item' 	=. if q609_`item'==5
+		replace xsrvc_nochange__`item' 	=. if q609_`item'==5
+		}				
 	
 	/*
 	foreach var of varlist xknowledge xtrain* xrisk* xstigma xsupport* xsrvc* {
@@ -960,6 +1007,9 @@ restore
 		}
 		
 	sort ïid
+		
+	gen interviewlength=interviewtime/60
+	
 	save Community_`country'_R`round'.dta, replace 		
 
 	export delimited using Community_`country'_R`round'.csv, replace 
@@ -981,34 +1031,34 @@ use Community_`country'_R`round'.dta, clear
 	gen obs_vacreason=1 if xvac_most!=1
 	
 	save temp.dta, replace 
-	
+		
 *****F.1. Calculate estimates 
 
 	use temp.dta, clear
-	collapse (count) obs* (mean) x* , by(country round month year  )
+	collapse (count) obs* (mean) x* interviewlength, by(country round month year  )
 		gen group="All"
 		gen grouplabel="All"
-		keep obs* country round month year  group* x* 
+		keep obs* country round month year  group* x* interviewlength
 		save summary_Community_`country'_R`round'.dta, replace 
 
 	use temp.dta, clear
-	collapse (count) obs* (mean) x* , by(country round month year   zurban)
+	collapse (count) obs* (mean) x* interviewlength, by(country round month year   zurban)
 		gen group="Location"
 		gen grouplabel=""
 			replace grouplabel="1.1 Rural" if zurban==0
 			replace grouplabel="1.2 Urban" if zurban==1
-		keep obs* country round month year  group* x* 
+		keep obs* country round month year  group* x* interviewlength
 		
 		append using summary_Community_`country'_R`round'.dta, force
 		save summary_Community_`country'_R`round'.dta, replace 		
 		
 	use temp.dta, clear
-	collapse (count) obs* (mean) x* , by(country round month year   zchw)
+	collapse (count) obs* (mean) x* interviewlength , by(country round month year   zchw)
 		gen group="Occupation"
 		gen grouplabel=""
 			replace grouplabel="2.1 non CHWs" if zchw==0
 			replace grouplabel="2.2 CHWs" if zchw==1
-		keep obs* country round month year  group* x* 
+		keep obs* country round month year  group* x* interviewlength
 		
 		append using summary_Community_`country'_R`round'.dta, force
 		save summary_Community_`country'_R`round'.dta, replace 
@@ -1023,9 +1073,7 @@ use Community_`country'_R`round'.dta, clear
 					replace `var'=round(`var'/100, .1)
 					}
 		*/
-		drop *_num
-	
-	
+			
 	tab grouplabel round, m
 	
 	* organize order of the variables by section in the questionnaire  
@@ -1036,7 +1084,7 @@ use Community_`country'_R`round'.dta, clear
 save summary_Community_`country'_R`round'.dta, replace 
 
 export delimited using summary_Community_`country'_R`round'.csv, replace 
-export delimited using "C:\Users\YoonJoung Choi\Dropbox\0 iSquared\iSquared_WHO\ACTA\4.ShinyApp\Kenya\summary_Community_`country'_R`round'.csv", replace 
+*export delimited using "C:\Users\YoonJoung Choi\Dropbox\0 iSquared\iSquared_WHO\ACTA\4.ShinyApp\Kenya\summary_Community_`country'_R`round'.csv", replace 
 
 
 *****F.2. Export indicator estimate data to chartbook AND dashboard
@@ -1050,6 +1098,7 @@ use summary_Community_`country'_R`round'.dta, clear
 	replace updatetime="`time'"
 	
 export excel using "$chartbookdir\KEN_Community_Chartbook.xlsx", sheet("Indicator estimate data") sheetreplace firstrow(variables) nolabel keepcellfmt
+*export delimited using "C:\Users\YoonJoung Choi\Dropbox\0 iSquared\iSquared_WHO\ACTA\4.ShinyApp\Kenya\summary_Community_`country'_R`round'.csv", replace 
 
 erase temp.dta
 

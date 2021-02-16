@@ -45,13 +45,13 @@ numlabel, add
 **************************************************************
 
 *** Directory for this do file and a subfolder for "daily exported CSV file from LimeSurvey"  
-*cd "C:\Users\YoonJoung Choi\World Health Organization\BANICA, Sorin - HSA unit\3 Country implementation & learning\1 HFAs for COVID-19\Kenya\Case-Mgmt"
-cd "C:\Users\ctaylor\World Health Organization\BANICA, Sorin - HSA unit\3 Country implementation & learning\1 HFAs for COVID-19\Kenya\Case-Mgmt"
+cd "C:\Users\YoonJoung Choi\World Health Organization\BANICA, Sorin - HSA unit\3 Country implementation & learning\1 HFAs for COVID-19\Kenya\tools\Case-Mgmt"
+*cd "C:\Users\ctaylor\World Health Organization\BANICA, Sorin - HSA unit\3 Country implementation & learning\1 HFAs for COVID-19\Kenya\tools\Case-Mgmt"
 dir
 
 *** Define a directory for the chartbook, if different from the main directory 
-*global chartbookdir "C:\Users\YoonJoung Choi\World Health Organization\BANICA, Sorin - HSA unit\3 Country implementation & learning\1 HFAs for COVID-19\Kenya\Case-Mgmt"
-global chartbookdir "C:\Users\ctaylor\World Health Organization\BANICA, Sorin - HSA unit\3 Country implementation & learning\1 HFAs for COVID-19\Kenya\Case-Mgmt"
+global chartbookdir "C:\Users\YoonJoung Choi\World Health Organization\BANICA, Sorin - HSA unit\3 Country implementation & learning\1 HFAs for COVID-19\Kenya\tools\Case-Mgmt"
+*global chartbookdir "C:\Users\ctaylor\World Health Organization\BANICA, Sorin - HSA unit\3 Country implementation & learning\1 HFAs for COVID-19\Kenya\tools\Case-Mgmt"
 
 *** Define local macro for the survey 
 local country	 		 Kenya /*country name*/	
@@ -97,7 +97,10 @@ import delimited "04012021_results-survey447349_codes.csv", case(preserve) clear
 	rename *, lower	
 	
 ***** CT - Sorin added variables for the time it takes to complete questions.  We don't need here so delete
-	drop *time
+	
+	drop q*time /*timestamp var*/
+	drop grouptime* 
+	gen interviewlength=interviewtime/60
 	
 ***** KECT - ID variable comes in weird, so changing name
 	rename ïid id
@@ -140,8 +143,7 @@ import delimited "04012021_results-survey447349_codes.csv", case(preserve) clear
 *****C.2. Change var names to drop odd elements "y" "sq" - because of Lime survey's naming convention 
 	
 	//*KE YC edit begins*//
-	drop grouptime* 
-	
+		
 	*rename (*y) (*) /*when y is at the end */  /* CT - no variables with *y were found*/
 	*rename (*y*) (**) /*when y is in the middle */
 	*rename (*sqsq*) (*sq*) /*when sq is repeated - no need to */
@@ -229,6 +231,10 @@ import delimited "04012021_results-survey447349_codes.csv", case(preserve) clear
 		}	
 	d q7*	
 	
+	/*CORRECTION on 2/10/2021*/
+	gen q702_006 = q702other!="" & q702other!="0"/*CORRECTION on 2/10/2021*/
+	rename q703_other q703_006 /*CORRECTION on 2/10/2021*/
+			
 	*****************************		
 	* Section 8: Vaccine 
 	*****************************
@@ -609,6 +615,8 @@ restore
 	gen ybed_cap_covid 			= q301
 	gen ybed_cap_covid_severe 	= q302
 	gen ybed_cap_covid_critical = q303
+	gen ybed_cap_covid_mod      = ybed_cap_covid - (ybed_cap_covid_critical + ybed_cap_covid_severe)
+	gen ybed_cap_noncovid		= ybed - ybed_cap_covid /*YC added for dashboard 1/18/2021*/
 	
 	gen ybed_covid_night   = (q304 + q305)/2
 	gen ybed_covid_month = q305b /* KECT - added monthly average COVID occupancy */
@@ -764,7 +772,7 @@ restore
 	gen xspcmitem_100 		=xspcmitem_score>=100
 	gen xspcmitem_50 		=xspcmitem_score>=50
 		drop max temp	
-		
+
 	gen xtest			=q603!=1 /*test else where*/
 	gen xtesttransport	=q604==1	
 	
@@ -818,7 +826,14 @@ restore
 	gen xequip_anyfunction_score	=100*(temp/max)
 	gen xequip_anyfunction_100		=xequip_anyfunction_score>=100
 	gen xequip_anyfunction_50		=xequip_anyfunction_score>=50
-		drop max temp				
+		drop max temp		
+	
+	gen xequip_novent_anyfunction = 	xequip_anyfunction__003==0 & xequip_anyfunction__004==0
+	gen xequip_bothvent_anyfunction = 	xequip_anyfunction__003==1 & xequip_anyfunction__004==1
+	gen xequip_onlyinvvent_anyfunction = 	xequip_anyfunction__003==1 & xequip_anyfunction__004==0
+	gen xequip_onlyninvvent_anyfunction = 	xequip_anyfunction__003==0 & xequip_anyfunction__004==1
+	
+	tab xequip_bothvent_anyfunction xequip_novent_anyfunction
 				
 	global itemlist "001 002 003 004"
 	foreach item in $itemlist{	
@@ -830,7 +845,14 @@ restore
 	gen xequip_allfunction_score	=100*(temp/max)
 	gen xequip_allfunction_100		=xequip_allfunction_score>=100
 	gen xequip_allfunction_50		=xequip_allfunction_score>=50
-		drop max temp				
+		drop max temp			
+		
+	gen xequip_novent_allfunction = 	xequip_allfunction__003==0 & xequip_allfunction__004==0
+	gen xequip_bothvent_allfunction = 	xequip_allfunction__003==1 & xequip_allfunction__004==1
+	gen xequip_onlyinvvent_allfunction = 	xequip_allfunction__003==1 & xequip_allfunction__004==0
+	gen xequip_onlyninvvent_allfunction = 	xequip_allfunction__003==0 & xequip_allfunction__004==1
+	
+	tab xequip_bothvent_allfunction xequip_novent_allfunction
 	
 	global itemlist "003 004"
 	foreach item in $itemlist{	
@@ -841,7 +863,6 @@ restore
 	gen xequip_anymalfunction=temp>=1
 		drop temp
 		
-		drop xequip_anymalfunction__*
 	
 	/*	
 	global itemlist "001 002 003 004 005"
@@ -853,8 +874,8 @@ restore
 	gen xequip_allmalfunction=temp==5
 		drop temp		
 	*/
-	
-	global itemlist "001 002 003 004 005 "
+		
+	global itemlist "001 002 003 004 005 006"
 	foreach item in $itemlist{	
 		gen xequip_malfunction_reason__`item' = q702_`item'==1 | q703_`item'==1 
 		}
@@ -862,6 +883,79 @@ restore
 		foreach var of varlist xequip_malfunction_reason__*{
 			replace `var'=. if xequip_anymalfunction!=1
 			}
+		
+			/*further investigation per Nzisa's question on 2/10/2021*/  
+			tab xequip_anymalfunction__003  xequip_anymalfunction__004, m
+			
+			sum q702_* if xequip_anymalfunction__003==1 /*reasons for malfunctioning 003: invasive ventilator*/
+			sum q703_* if xequip_anymalfunction__004==1 /*reasons for malfunctioning 004: non-invasive ventilator*/
+			sum q703_* q703_* if xequip_anymalfunction__003==1 & xequip_anymalfunction__004==1  
+			
+			tab q702other if xequip_anymalfunction__003==1 /*OTHER reasons for malfunctioning 003: invasive ventilator*/
+	okok					
+			
+			/*
+			.                         tab xequip_anymalfunction__003  xequip_anymalfunction__00
+			> 4, m
+
+			xequip_any | xequip_anymalfunction
+			malfunctio |         __004
+				n__003 |         0          1 |     Total
+			-----------+----------------------+----------
+					 0 |        65          2 |        67 
+					 1 |         6          1 |         7 
+			-----------+----------------------+----------
+				 Total |        71          3 |        74 
+
+			.                         sum q702_* if xequip_anymalfunction__003==1 /*reasons for
+			>  malfunctioning 003: invasive ventilator*/
+
+				Variable |        Obs        Mean    Std. Dev.       Min        Max
+			-------------+---------------------------------------------------------
+				q702_001 |          6          .5    .5477226          0          1
+				q702_002 |          6    .1666667    .4082483          0          1
+				q702_003 |          6           0           0          0          0
+				q702_004 |          6           0           0          0          0
+				q702_005 |          6    .1666667    .4082483          0          1
+			-------------+---------------------------------------------------------
+				q702_006 |          7    .8571429    .3779645          0          1
+
+			.                         sum q703_* if xequip_anymalfunction__004==1 /*reasons for
+			>  malfunctioning 004: non-invasive ventilator*/
+
+				Variable |        Obs        Mean    Std. Dev.       Min        Max
+			-------------+---------------------------------------------------------
+				q703_001 |          3           1           0          1          1
+				q703_002 |          3           0           0          0          0
+				q703_003 |          3           0           0          0          0
+				q703_004 |          3           0           0          0          0
+				q703_005 |          3           0           0          0          0
+			-------------+---------------------------------------------------------
+				q703_006 |          3           0           0          0          0
+
+			.                         sum q703_* q703_* if xequip_anymalfunction__003==1 & xequ
+			> ip_anymalfunction__004==1  
+
+				Variable |        Obs        Mean    Std. Dev.       Min        Max
+			-------------+---------------------------------------------------------
+				q703_001 |          1           1           .          1          1
+				q703_002 |          1           0           .          0          0
+				q703_003 |          1           0           .          0          0
+				q703_004 |          1           0           .          0          0
+				q703_005 |          1           0           .          0          0
+			-------------+---------------------------------------------------------
+				q703_006 |          1           0           .          0          0
+				q703_001 |          1           1           .          1          1
+				q703_002 |          1           0           .          0          0
+				q703_003 |          1           0           .          0          0
+				q703_004 |          1           0           .          0          0
+			-------------+---------------------------------------------------------
+				q703_005 |          1           0           .          0          0
+				q703_006 |          1           0           .          0          0
+
+			*/
+			
+		drop xequip_anymalfunction__*
 	
 	gen xoxygen_concentrator= q704_001==1 
 	gen xoxygen_bulk 		= q704_002==1 
@@ -998,41 +1092,41 @@ use COVID19HospitalReadiness_`country'_R`round'.dta, clear
 *****F.1. Calculate estimates  /*KEYC - revise to include yequip once section 7 is cleared*/
 
 	use temp.dta, clear
-	collapse (count) obs* (mean) x* (sum) ybed* ypt*  yequip* yvac*  [iweight=weight], by(country round month year  )
+	collapse (count) obs* (mean) x* interviewlength (sum) ybed* ypt*  yequip* yvac*  [iweight=weight], by(country round month year  )
 		gen group="All"
 		gen grouplabel="All"
-		keep obs* country round month year  group* x* y*
+		keep obs* country round month year  group* x* interviewlength y*
 		save summary_COVID19HospitalReadiness_`country'_R`round'.dta, replace 
 		
 	use temp.dta, clear
-	collapse (count) obs* (mean) x* (sum) ybed* ypt*  yequip* yvac*  [iweight=weight], by(country round month year   zurban)
+	collapse (count) obs* (mean) x* interviewlength (sum) ybed* ypt*  yequip* yvac*  [iweight=weight], by(country round month year   zurban)
 		gen group="Location"
 		gen grouplabel=""
 			replace grouplabel="Rural" if zurban==0
 			replace grouplabel="Urban" if zurban==1
-		keep obs* country round month year  group* x* y*
+		keep obs* country round month year  group* x* interviewlength y*
 		
 		append using summary_COVID19HospitalReadiness_`country'_R`round'.dta, force
 		save summary_COVID19HospitalReadiness_`country'_R`round'.dta, replace 
 
 	use temp.dta, clear
-	collapse (count) obs* (mean) x* (sum) ybed* ypt*  yequip* yvac*  [iweight=weight], by(country round month year   zlevel56)
+	collapse (count) obs* (mean) x* interviewlength (sum) ybed* ypt*  yequip* yvac*  [iweight=weight], by(country round month year   zlevel56)
 		gen group="Level"
 		gen grouplabel=""
 			replace grouplabel="Level 2-4" if zlevel56==0
 			replace grouplabel="Level 5-6" if zlevel56==1
-		keep obs* country round month year  group* x* y*
+		keep obs* country round month year  group* x* interviewlength y*
 			
 		append using summary_COVID19HospitalReadiness_`country'_R`round'.dta
 		save summary_COVID19HospitalReadiness_`country'_R`round'.dta, replace 
 		
 	use temp.dta, clear
-	collapse (count) obs* (mean) x* (sum) ybed* ypt*  yequip* yvac*  [iweight=weight], by(country round month year   zpub)
+	collapse (count) obs* (mean) x* interviewlength (sum) ybed* ypt*  yequip* yvac*  [iweight=weight], by(country round month year   zpub)
 		gen group="Sector"
 		gen grouplabel=""
 			replace grouplabel="Non-public" if zpub==0
 			replace grouplabel="Public" if zpub==1
-		keep obs* country round month year  group* x* y*
+		keep obs* country round month year  group* x* interviewlength y*
 		
 		append using summary_COVID19HospitalReadiness_`country'_R`round'.dta		
 		save summary_COVID19HospitalReadiness_`country'_R`round'.dta, replace 

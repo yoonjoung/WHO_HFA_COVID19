@@ -32,9 +32,14 @@ numlabel, add
 **************************************************************
 
 *** Directory for the country 
-*cd "C:\Users\YoonJoung Choi\World Health Organization\BANICA, Sorin - HSA unit\3 Country implementation & learning\1 HFAs for COVID-19\Kenya"
-cd "C:\Users\ctaylor\World Health Organization\BANICA, Sorin - HSA unit\3 Country implementation & learning\1 HFAs for COVID-19\Kenya"
+*cd "C:\Users\Yoonjoung Choi\World Health Organization\BANICA, Sorin - HSA unit\3 Country implementation & learning\1 HFAs for COVID-19\Kenya"
+cd "C:\Users\ctaylor\OneDrive - World Health Organization\HSA unit\3 Country implementation & learning\1 HFAs for COVID-19\Kenya"
 dir
+
+*** Define a directory for the chartbook, if different from the main directory 
+global chartbookdir "C:\Users\ctaylor\OneDrive - World Health Organization\HSA unit\3 Country implementation & learning\1 HFAs for COVID-19\Kenya\Tools\CommonFacilitySections"
+*global chartbookdir "C:\Users\YoonJoung Choi\World Health Organization\BANICA, Sorin - HSA unit\3 Country implementation & learning\1 HFAs for COVID-19\Kenya\CEHS"
+
 
 *** Define local macro for the survey 
 local country	 		 Kenya /*country name*/	
@@ -49,7 +54,7 @@ global date=subinstr("`c_today'", " ", "",.)
 * B. MERGE  
 **************************************************************
 	
-use "CEHS/CEHS_`country'_R`round'.dta", clear
+use "Tools/CEHS/CEHS_`country'_R`round'.dta", clear
 		gen xresult = q1104==1
 		gen module_CEHS = 1
 		
@@ -63,7 +68,7 @@ use "CEHS/CEHS_`country'_R`round'.dta", clear
 	sort facilitycode
 	save temp.dta, replace
 	
-use "Case-Mgmt/COVID19HospitalReadiness_`country'_R`round'.dta", clear
+use "Tools/Case-Mgmt/COVID19HospitalReadiness_`country'_R`round'.dta", clear
 		gen xresult = q904==1	
 		gen module_CaseManagement = 1
 		
@@ -93,21 +98,24 @@ use "Case-Mgmt/COVID19HospitalReadiness_`country'_R`round'.dta", clear
 		replace zlevel_3cat="Level 5-6" if zlevel=="Level5" | zlevel=="Level6"
 		
 		tab zlevel module, m
+			
+			* TABLE 2 for the KENYA report 
 			tab zlevel , 
 			tab zlevel module_CEHS, 
 			tab zlevel module_CaseManagement, 
-		tab module _merge, m
+		
 		drop _merge
-				
-save "CommonFacilitySections/CommonFacilitySections_`country'_R`round'.dta", replace 
-export delimited using "CommonFacilitySections/CommonFacilitySections_`country'_R`round'.csv", replace 
-okok
+				*ok
+save "Tools/CommonFacilitySections/CommonFacilitySections_`country'_R`round'.dta", replace 
+export delimited using "Tools/CommonFacilitySections/CommonFacilitySections_`country'_R`round'.csv", replace 
+*okok
 *export excel using "$chartbookdir\KEN_CEHS_Chartbook.xlsx", sheet("Facility-level cleaned data") sheetreplace firstrow(variables) nolabel
 			
 **************************************************************
 * C. Create indicator estimate data 
 **************************************************************
-cd "C:\Users\YoonJoung Choi\World Health Organization\BANICA, Sorin - HSA unit\3 Country implementation & learning\1 HFAs for COVID-19\Kenya\CommonFacilitySections"
+*cd "C:\Users\YoonJoung Choi\World Health Organization\BANICA, Sorin - HSA unit\3 Country implementation & learning\1 HFAs for COVID-19\Kenya\CommonFacilitySections"
+cd "C:\Users\ctaylor\World Health Organization\BANICA, Sorin - HSA unit\3 Country implementation & learning\1 HFAs for COVID-19\Kenya\CommonFacilitySections"
 
 use CommonFacilitySections_`country'_R`round'.dta, clear
 	
@@ -184,7 +192,7 @@ use summary_CommonFacilitySections_`country'_R`round'.dta, clear
 	gen updatetime=""
 	replace updatetime="`time'"
 	
-*export excel using "$chartbookdir\KEN_CEHS_Chartbook.xlsx", sheet("Indicator estimate data") sheetreplace firstrow(variables) nolabel keepcellfmt
+export excel using "$chartbookdir\KEN_Common_chartbook.xlsx", sheet("Indicator estimate data") sheetreplace firstrow(variables) nolabel keepcellfmt
 *export delimited using "C:\Users\YoonJoung Choi\Dropbox\0 iSquared\iSquared_WHO\ACTA\4.ShinyApp\Kenya\summary_CommonFacilitySections_`country'_R`round'.csv", replace 
 
 erase temp.dta

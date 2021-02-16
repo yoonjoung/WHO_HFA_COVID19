@@ -45,13 +45,13 @@ numlabel, add
 **************************************************************
 
 *** Directory for this do file and a subfolder for "daily exported CSV file from LimeSurvey"  
-cd "C:\Users\ctaylor\World Health Organization\BANICA, Sorin - HSA unit\3 Country implementation & learning\1 HFAs for COVID-19\Kenya\CEHS"
-*cd "C:\Users\YoonJoung Choi\World Health Organization\BANICA, Sorin - HSA unit\3 Country implementation & learning\1 HFAs for COVID-19\Kenya\CEHS"
+*cd "C:\Users\ctaylor\OneDrive - World Health Organization\HSA unit\3 Country implementation & learning\1 HFAs for COVID-19\Kenya\Tools\CEHS"
+cd "C:\Users\YoonJoung Choi\World Health Organization\BANICA, Sorin - HSA unit\3 Country implementation & learning\1 HFAs for COVID-19\Kenya\Tools\CEHS"
 dir
 
 *** Define a directory for the chartbook, if different from the main directory 
-global chartbookdir "C:\Users\ctaylor\World Health Organization\BANICA, Sorin - HSA unit\3 Country implementation & learning\1 HFAs for COVID-19\Kenya\CEHS"
-*global chartbookdir "C:\Users\YoonJoung Choi\World Health Organization\BANICA, Sorin - HSA unit\3 Country implementation & learning\1 HFAs for COVID-19\Kenya\CEHS"
+*global chartbookdir "C:\Users\ctaylor\OneDrive - World Health Organization\HSA unit\3 Country implementation & learning\1 HFAs for COVID-19\Kenya\Tools\CEHS"
+global chartbookdir "C:\Users\YoonJoung Choi\World Health Organization\BANICA, Sorin - HSA unit\3 Country implementation & learning\1 HFAs for COVID-19\Kenya\Tools\CEHS"
 
 *** Define local macro for the survey 
 local country	 		 Kenya /*country name*/	
@@ -76,18 +76,23 @@ global date=subinstr("`c_today'", " ", "",.)
 *import delimited 17122020_results-survey769747_codes.csv, case(preserve) clear 
 *import delimited 19122020_results-survey769747_codes.csv, case(preserve) clear 
 import delimited 04012021_results-survey769747_codes.csv, case(preserve) clear 
+*import delimited using "https://who.my-survey.host/index.php/plugins/direct?plugin=CountryOverview&docType=1&sid=769747&language=en&function=createExport", case(preserve) clear 
+
 
 	drop if toke=="" /* KE specific, drop first two rows likely testing data*/ 
 	
 	codebook token Q101
 		list Q1* if Q101==. | token=="" /*empty row*/	
 	
+
+	/*
 	/*mask ID information*/
 	foreach var of varlist Q1BSQ001comment Q107 Q108 Q109 Q110other Q1102 Q1103 {
 		replace `var'=""
 		}	
-	
+	*/
 	export excel using "$chartbookdir\KEN_CEHS_Chartbook.xlsx", sheet("Facility-level raw data") sheetreplace firstrow(variables) nolabel
+	*export excel using "$chartbookdir\KEN_CEHS_Chartbook_test.xlsx", sheet("Facility-level raw data") sheetreplace firstrow(variables) nolabel
 
 ***** Change var names to lowercase
  
@@ -121,6 +126,21 @@ import delimited 04012021_results-survey769747_codes.csv, case(preserve) clear
 	duplicates report q101,
 
 	drop duplicate submitdatelatest
+	
+	save data, replace
+	
+******Some facilities have the wrong levels assign to bring in master list and replace numbers
+
+import excel "Complete List of facilities and contacts.xlsx", case(preserve) sheet("Interviewed (No duplicates)") firstrow clear	
+
+rename FacilityIDsurvey q101
+keep q101 Facilitytype Facilitynamesurvey
+drop if missing(q101)
+
+merge 1:1 q101 using data	
+
+drop if _merge == 1
+drop _merge
 
 **************************************************************
 * C. Destring and recoding 
@@ -133,8 +153,11 @@ import delimited 04012021_results-survey769747_codes.csv, case(preserve) clear
 *****C.2. Change var names to drop odd elements "y" "sq" - because of Lime survey's naming convention 
 
 	//*KEYC edit begins*//
+	//*KECT edit new - automated CSV download doens't have the time variables*//
 	drop q*time /*timestamp var*/
 	drop grouptime* 
+	gen interviewlength=interviewtime/60
+	//KECT edit new ends*//
 	
 	drop q303h /*questions that Kenya dropped*/
 	drop q401h 
@@ -304,6 +327,25 @@ import delimited 04012021_results-survey769747_codes.csv, case(preserve) clear
 		}			
 	
 	sum q110*
+	
+	*****************************			
+	* Updated facilty number
+	*****************************
+	
+	foreach var of varlist facilitytype {		
+		replace `var' = usubinstr(`var', "Level", "", 1) 
+		destring `var', replace 
+		}			
+	
+	tab facilitytype q105
+	
+	replace facilitytype = facilitytype-1
+	
+	tab facilitytype q105, missing
+	
+	replace q105=facilitytype if !missing(facilitytype) 
+	
+	tab facilitytype q105, missing
 				
 *****C.4. Recode yes/no & yes/no/NA
 
@@ -369,7 +411,7 @@ import delimited 04012021_results-survey769747_codes.csv, case(preserve) clear
 		4"4.Level5: Secondary level hospital and above"
 		5"5.Level6: Tertiary level" ; 
 	lab values q105 q105;
-	
+		
 	lab define q106 
 		1"1.Government"
 		2"2.Private"
@@ -738,6 +780,7 @@ restore
 		replace zlevel	="Level4" if q105==3
 		replace zlevel	="Level5" if q105==4
 		replace zlevel	="Level6" if q105==5
+		
 	
 	gen zlevel_hospital		=q105>=`minhigh' & q105<=`maxhigh'
 	gen zlevel_primhospital	=q105==`primaryhospital'
@@ -813,6 +856,13 @@ restore
 	gen xtraining_50 	=xtraining_score>=50
 		drop max temp
 
+		gen max=3
+		egen temp=rowtotal(xtraining__007 xtraining__008 xtraining__009)
+	gen xsupport_score	=100*(temp/max)
+	gen xsupport_100	=xsupport_score>=100
+	gen xsupport_50 	=xsupport_score>=50
+		drop max temp	
+		
 		gen max=`maxtrainingsupport'
 		egen temp=rowtotal(xtraining__*)
 	gen xtrainingsupport_score	=100*(temp/max)
@@ -882,7 +932,11 @@ restore
 	*****************************
 	* Section 4: service delivery & utlization  
 	*****************************
-			
+		
+	/*KECT new edit - request for tracing if facility received guidelines*/
+		gen xguideline_EHS=q405==1
+	/*KECT end new edit*/	
+				
 		egen temp=rowtotal(q402 q403 q406*)
 	gen xstrategy= temp>=1
 		drop temp	
@@ -1333,7 +1387,7 @@ restore
 		*replace xdiag_avfun_h`item' = . if xhospital!=1  /*In Kenya, asked in all facilities*/ 
 		}		
 						
-		gen max=5
+		gen max=4
 		egen temp=rowtotal(xdiag_avfun_a*)
 	gen xdiagbasic_score	=100*(temp/max)
 	gen xdiagbasic_100 	=xdiagbasic_score>=100
@@ -1341,14 +1395,14 @@ restore
 		drop max temp	
 		
 		gen max=.
-			replace max=10 /*In Kenya, asked in all facilities*/ 
-			*replace max=5 if zlevel_hospital!=1 
-			*replace max=10 if zlevel_hospital==1 
+			replace max=9 /*In Kenya, asked in all facilities*/ 
+			*replace max=4 if zlevel_hospital!=1 
+			*replace max=9 if zlevel_hospital==1 
 		egen temp=rowtotal(xdiag_avfun_a* xdiag_avfun_h*)
 	gen xdiag_score	=100*(temp/max)
 	gen xdiag_100 	=xdiag_score>=100
 	gen xdiag_50 	=xdiag_score>=50
-		drop max temp				
+		drop max temp	
 		
 	global itemlist "001 002 003 004" /*In Kenya, four items asked */
 	foreach item in $itemlist{	
@@ -1422,7 +1476,16 @@ restore
 	*****************************
 	* Annex
 	*****************************
+/*KECT EDIT - ADD KHIS DATA*/
+	drop qa1_002* qa1_003* qa1_004* qa1_005*
 
+	merge 1:1 q101 using KHIS_for_chartbooks
+	
+*drop extra facilities
+	drop if _merge==2
+	drop _merge
+	
+	
 	global itemlist "001 002 003 004"
 	foreach item in $itemlist{	
 		gen vol_opt_now_`item' 	= qa1_002_`item'
@@ -1432,7 +1495,8 @@ restore
 	foreach item in $itemlist{	
 		gen vol_opt_last_`item' 	= qa1_002_`item'
 		}		
-		
+
+	
 	global itemlist "001 002 003 004"
 	foreach item in $itemlist{	
 		gen vol_ipt_now_`item' 	= qa1_003_`item'
@@ -1442,6 +1506,8 @@ restore
 	foreach item in $itemlist{	
 		gen vol_ipt_last_`item' 	= qa1_003_`item'
 		}		
+		
+	
 
 	global itemlist "001 002 003 004"
 	foreach item in $itemlist{	
@@ -1463,8 +1529,10 @@ restore
 	foreach item in $itemlist{	
 		gen vol_dpt_last_`item' 	= qa1_005_`item'
 		}			
+			
 	
 	sort facilitycode
+	
 	save CEHS_`country'_R`round'.dta, replace 		
 
 *****E.3. Merge with sampling weight 
@@ -1518,41 +1586,41 @@ use CEHS_`country'_R`round'.dta, clear
 *****F.1. Calculate estimates 
 
 	use temp.dta, clear
-	collapse (count) obs obs_* (mean) x* (sum) staff_num* yvac* vol* (count) obshmis* [iweight=weight], by(country round month year  )
+	collapse (count) obs obs_* (mean) x* interviewlength  (sum) staff_num* yvac* vol* (count) obshmis* [iweight=weight], by(country round month year  )
 		gen group="All"
 		gen grouplabel="All"
-		keep obs* country round month year  group* x* staff* yvac* vol*
+		keep obs* country round month year  group* x* interviewlength staff* yvac* vol* 
 		save summary_CEHS_`country'_R`round'.dta, replace 
 		
 	use temp.dta, clear
-	collapse (count) obs obs_* (mean) x* (sum) staff_num* yvac* vol* (count) obshmis* [iweight=weight], by(country round month year   zurban)
+	collapse (count) obs obs_* (mean) x* interviewlength  (sum) staff_num* yvac* vol* (count) obshmis* [iweight=weight], by(country round month year   zurban)
 		gen group="Location"
 		gen grouplabel=""
 			replace grouplabel="Rural" if zurban==0
 			replace grouplabel="Urban" if zurban==1
-		keep obs* country round month year  group* x* staff* yvac* vol*
+		keep obs* country round month year  group* x* interviewlength staff* yvac* vol* 
 		
 		append using summary_CEHS_`country'_R`round'.dta, force
 		save summary_CEHS_`country'_R`round'.dta, replace 
 
 	use temp.dta, clear
-	collapse (count) obs obs_* (mean) x* (sum) staff_num* yvac* vol* (count) obshmis* [iweight=weight], by(country round month year   zlevel_hospital)
+	collapse (count) obs obs_* (mean) x* interviewlength  (sum) staff_num* yvac* vol* (count) obshmis* [iweight=weight], by(country round month year   zlevel_hospital)
 		gen group="Level"
 		gen grouplabel=""
 			replace grouplabel="Level 2-3" if zlevel_hospital==0
 			replace grouplabel="Level 4-6" if zlevel_hospital==1
-		keep obs* country round month year  group* x* staff* yvac* vol*
+		keep obs* country round month year  group* x* interviewlength staff* yvac* vol* 
 			
 		append using summary_CEHS_`country'_R`round'.dta
 		save summary_CEHS_`country'_R`round'.dta, replace 
 		
 	use temp.dta, clear
-	collapse (count) obs obs_* (mean) x* (sum) staff_num* yvac* vol* (count) obshmis* [iweight=weight], by(country round month year   zpub)
+	collapse (count) obs obs_* (mean) x* interviewlength  (sum) staff_num* yvac* vol* (count) obshmis* [iweight=weight], by(country round month year   zpub)
 		gen group="Sector"
 		gen grouplabel=""
 			replace grouplabel="Non-public" if zpub==0
 			replace grouplabel="Public" if zpub==1
-		keep obs* country round month year  group* x* staff* yvac* vol*
+		keep obs* country round month year  group* x* interviewlength staff* yvac* vol* 
 		
 		append using summary_CEHS_`country'_R`round'.dta		
 		save summary_CEHS_`country'_R`round'.dta, replace 
@@ -1573,6 +1641,27 @@ use CEHS_`country'_R`round'.dta, clear
 	foreach item in $itemlist{	
 		gen staff_pct_covid_`item' = round(100* (staff_num_covid_`item' / staff_num_total_`item' ), 0.1)
 		}	
+		
+	* generate volume changes using pooled data
+	
+	gen perchange_opt_july=(vol_opt_now_001-vol_opt_last_005)/vol_opt_last_005
+	gen perchange_opt_aug=(vol_opt_now_002-vol_opt_last_006)/vol_opt_last_006
+	gen perchange_opt_sept=(vol_opt_now_003-vol_opt_last_007)/vol_opt_last_007
+	gen perchange_opt_oct=(vol_opt_now_004-vol_opt_last_008)/vol_opt_last_008
+	gen perchange_ipt_july=(vol_ipt_now_001-vol_ipt_last_005)/vol_ipt_last_005
+	gen perchange_ipt_aug=(vol_ipt_now_002-vol_ipt_last_006)/vol_ipt_last_006
+	gen perchange_ipt_sept=(vol_ipt_now_003-vol_ipt_last_007)/vol_ipt_last_007
+	gen perchange_ipt_oct=(vol_ipt_now_004-vol_ipt_last_008)/vol_ipt_last_008	
+	gen perchange_del_july=(vol_del_now_001-vol_del_last_005)/vol_del_last_005
+	gen perchange_del_aug=(vol_del_now_002-vol_del_last_006)/vol_del_last_006
+	gen perchange_del_sept=(vol_del_now_003-vol_del_last_007)/vol_del_last_007
+	gen perchange_del_oct=(vol_del_now_004-vol_del_last_008)/vol_del_last_008	
+	gen perchange_dpt_july=(vol_dpt_now_001-vol_dpt_last_005)/vol_dpt_last_005
+	gen perchange_dpt_aug=(vol_dpt_now_002-vol_dpt_last_006)/vol_dpt_last_006
+	gen perchange_dpt_sept=(vol_dpt_now_003-vol_dpt_last_007)/vol_dpt_last_007
+	gen perchange_dpt_oct=(vol_dpt_now_004-vol_dpt_last_008)/vol_dpt_last_008	
+	
+	
 	
 	tab group round, m
 	
@@ -1583,7 +1672,7 @@ use CEHS_`country'_R`round'.dta, clear
 	order country round year month group grouplabel obs obs_* staff_num* staff_pct* 
 		
 	sort country round grouplabel
-	
+
 save summary_CEHS_`country'_R`round'.dta, replace 
 
 export delimited using summary_CEHS_`country'_R`round'.csv, replace 
@@ -1603,5 +1692,5 @@ export excel using "$chartbookdir\KEN_CEHS_Chartbook.xlsx", sheet("Indicator est
 
 erase temp.dta
 
-END OF DATA CLEANING AND MANAGEMENT 
+*END OF DATA CLEANING AND MANAGEMENT 
 
