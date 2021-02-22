@@ -887,7 +887,27 @@ restore
 	global itemlist "001 002 003 004 005 006 007 008 009 010 011 012 013 014 015 016 017 018" 
 	foreach item in $itemlist{	
 		gen xopt_nochange__`item' = q409_`item'==3
-		}		
+		}	
+
+	
+	global itemlist "001 002 003 004 005 006 007 008 009 010 011 012 013 014 015 016 017 018" 
+	foreach item in $itemlist{	
+
+		*assess "N/A" or missing 
+		gen xopt_changeNA__`item' = q409_`item'==4
+		gen xopt_changeMissing__`item' = q409_`item'==.
+		
+		*exclude "N/A" or missing from denominator 
+		replace xopt_increase__`item' = . if q409_`item'==4 | q409_`item'==.  
+		replace xopt_decrease__`item' = . if q409_`item'==4 | q409_`item'==. 
+		replace xopt_nochange__`item' = . if q409_`item'==4 | q409_`item'==. 
+		}			
+		
+		/*
+		sum q409_*	
+		sum xopt_changeNA__*
+		sum xopt_changeMissing__*
+		*/
 		
 	global itemlist "xopt" 
 	foreach item in $itemlist{	

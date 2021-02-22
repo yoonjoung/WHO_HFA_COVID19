@@ -950,31 +950,41 @@ dta<-dta%>%
     )%>%
     mutate_if(is.logical, as.numeric)%>%
     mutate_at(vars(starts_with("xstrategy"), starts_with("xcvd_")), 
-              ~replace(., is.na(.)==TRUE, 0))%>%
-    mutate_at(vars(starts_with("q409_")), 
-              funs(ifelse(is.na(.)==TRUE, 0, .)) )
+              ~replace(., is.na(.)==TRUE, 0))
 
 	    ###***** OPT
-    
+
         temp1<-dta%>%select(starts_with("q409_"))%>%
             rename_all(.funs = funs(sub("q409_", "xopt_increase__", .)))%>%
-            mutate_all( funs(ifelse(. ==1 , 1, 
-                                  ifelse(. !=1, 0,  .))) )%>%
-            mutate_all(~replace(., is.na(.), 0)) 
+            mutate_all( funs(ifelse(.==4, NA,
+                                ifelse(. ==1 , 1, 
+                                  ifelse(. !=1, 0, .)))) )
+        
         
         temp2<-dta%>%select(starts_with("q409_"))%>%
             rename_all(.funs = funs(sub("q409_", "xopt_decrease__", .)))%>%
-            mutate_all( funs(ifelse(. ==2 , 1, 
-                                  ifelse(. !=2, 0,  .))) )%>%
-            mutate_all(~replace(., is.na(.), 0)) 
+            mutate_all( funs(ifelse(.==4, NA,
+                                ifelse(. ==2 , 1, 
+                                  ifelse(. !=2, 0, .)))) )
         
         temp3<-dta%>%select(starts_with("q409_"))%>%
             rename_all(.funs = funs(sub("q409_", "xopt_nochange__", .)))%>%
-            mutate_all( funs(ifelse(. ==3 , 1, 
-                                  ifelse(. !=3, 0, .))) )%>%
-            mutate_all(~replace(., is.na(.), 0)) 
+            mutate_all( funs(ifelse(.==4, NA,
+                                ifelse(. ==3 , 1, 
+                                  ifelse(. !=3, 0, .)))) )
+        
+        temp4<-dta%>%select(starts_with("q409_"))%>%
+            rename_all(.funs = funs(sub("q409_", "xopt_changeNA__", .)))%>%
+            mutate_all( funs(ifelse(. ==4 , 1, 
+                                  ifelse(. !=4, 0, .))) )%>%
+            mutate_all( funs(ifelse(is.na(.)==TRUE , 0, .))) 
+        
+        temp5<-dta%>%select(starts_with("q409_"))%>%
+            rename_all(.funs = funs(sub("q409_", "xopt_changeMissing__", .)))%>%
+            mutate_all( funs(ifelse(is.na(.)==TRUE , 1, 
+                                      ifelse(is.na(.)==FALSE, 0, .))) ) 
 
-dta<-cbind(dta, temp1, temp2, temp3)
+dta<-cbind(dta, temp1, temp2, temp3, temp4, temp5)
 
 dta<-dta%>%
     mutate(
