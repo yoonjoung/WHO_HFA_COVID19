@@ -1318,7 +1318,7 @@ restore
 		replace ximage_avfun_`item' =. if zlevel_hospital!=1  
 		}		
 	
-		gen max=4  /* CHECK kenya code, it should be 4 there*/
+		gen max=4  
 		egen tempimage=rowtotal(ximage_avfun_*)
 	gen ximage_score	=100*(tempimage/max)
 	gen ximage_100 	=ximage_score>=100
