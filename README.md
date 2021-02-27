@@ -4,17 +4,17 @@ This repository has data cleaning/management/analysis programs. There are three 
 ### Version1 (initial publication: Feb 6, 2021) 
 
 * COVID-19 Hospital Case Management Capacity Survey/Module   
--- Questionnaire    
+-- Questionnaire (PDF)    
 -- WHO_COVID19HospitalReadiness_DataManagement.do   
 -- WHO_HospitalReadiness_DataManagement.Rmd (https://rpubs.com/YJ_Choi/WHO_COVID19HFA_HospCM)  
 
 * Continuity of Essential Health Services Survey/Module   
--- Questionnaire    
+-- Questionnaire (PDF)   
 -- WHO_CEHS_DataManagement.do   
 -- WHO_CEHS_DataManagement.Rmd (https://rpubs.com/YJ_Choi/WHO_COVID19HFA_CEHS)  
 
 * Community   
--- Questionnaire    
+-- Questionnaire (PDF)   
 -- WHO_Community_DataManagement.do   
 -- WHO_CommunityKIS_DataManagement.Rmd (https://rpubs.com/YJ_Choi/WHO_COVID19HFA_Com)  
 
