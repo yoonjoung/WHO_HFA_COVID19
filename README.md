@@ -9,7 +9,7 @@ This repository has data cleaning/management/analysis programs. There are three 
 -- WHO_HospitalReadiness_DataManagement.Rmd (https://rpubs.com/YJ_Choi/WHO_COVID19HFA_HospCM)  
 
 * Continuity of Essential Health Services Survey/Module   
--- Questionnaire (PDF)   
+-- Questionnaire (PDF): Continuity of EHS_20210206_Clean.pdf   
 -- WHO_CEHS_DataManagement.do   
 -- WHO_CEHS_DataManagement.Rmd (https://rpubs.com/YJ_Choi/WHO_COVID19HFA_CEHS)  
 
