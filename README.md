@@ -4,7 +4,7 @@ This repository has data cleaning/management/analysis programs. There are three 
 ### Version1 (initial publication: Feb 6, 2021) - in the main directory
 
 * COVID-19 Hospital Case Management Capacity Survey/Module   
--- Questionnaire (PDF)    
+-- Questionnaire (PDF): COVID health products_20210206_Clean.pdf    
 -- WHO_COVID19HospitalReadiness_DataManagement.do   
 -- WHO_HospitalReadiness_DataManagement.Rmd (https://rpubs.com/YJ_Choi/WHO_COVID19HFA_HospCM)  
 
