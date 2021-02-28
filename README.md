@@ -1,7 +1,7 @@
 # WHO_HFA_COVID19
 This repository has data cleaning/management/analysis programs. There are three survey modules, and each module has standard code in both Stata and R. In each country, the modules are adapted, and country-specific code files are in subfolders. 
 
-### Version1 (initial publication: Feb 6, 2021) 
+### Version1 (initial publication: Feb 6, 2021) - in the main directory
 
 * COVID-19 Hospital Case Management Capacity Survey/Module   
 -- Questionnaire (PDF)    
