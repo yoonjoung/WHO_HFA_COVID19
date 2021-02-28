@@ -946,7 +946,7 @@ dta<-dta%>%
     	
     	###*** Referral/transportation for COVID patients 
     	xcvd_ref		= q407==1	, 
-    	xcvd_reftrans	= q407==1 | q408==1	 	 
+    	xcvd_reftrans	= q407==1 & q408==1	 	 
     )%>%
     mutate_if(is.logical, as.numeric)%>%
     mutate_at(vars(starts_with("xstrategy"), starts_with("xcvd_")), 

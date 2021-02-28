@@ -831,12 +831,20 @@ restore
 	gen xaddfund_gov 			= q306_001==1 
  	gen xaddfund_other 			= q306_002==1 | q306_003==1 | q306_004==1 | q306_005==1 
 			
+			sum xaddfund*
+			tab xaddfund xaddfund_gov, m
+			tab xaddfund xaddfund_other, m
+
 	gen xfinance_salaryontime 	= q307==1
 	gen xfinance_ot 			= q308==1 
 	gen xfinance_otontime 		= q309==1 | q309==3
 		replace xfinance_otontime = . if xfinance_ot==0
 		
 	gen xfinance_ontime = xfinance_salaryontime ==1 & (xfinance_otontime==1 | xfinance_otontime==.)
+			
+			sum xfinance*
+			tab xfinance_ontime xfinance_salaryontime, m
+			tab xfinance_salaryontime xfinance_otontime, m
 			
 	gen xfinance_PBF = q310==1
 	
@@ -870,8 +878,10 @@ restore
 	***** Referral/transportation for COVID patients 
 	
 	gen xcvd_ref		= q407==1	 
-	gen xcvd_reftrans	= q407==1 | q408==1	 	 	
+	gen xcvd_reftrans	= q407==1 & q408==1	 	 	
 	
+		sum xcvd_ref*
+
 	***** OPT
 	
 	global itemlist "001 002 003 004 005 006 007 008 009 010 011 012 013 014 015 016 017 018" 
