@@ -14,7 +14,7 @@ This repository has data cleaning/management/analysis programs. There are three 
 -- WHO_CEHS_DataManagement.Rmd (https://rpubs.com/YJ_Choi/WHO_COVID19HFA_CEHS)  
 
 * Community   
--- Questionnaire (PDF)   
+-- Questionnaire (PDF): Community assessment tool_20210205_Clean.pdf   
 -- WHO_Community_DataManagement.do   
 -- WHO_CommunityKIS_DataManagement.Rmd (https://rpubs.com/YJ_Choi/WHO_COVID19HFA_Com)  
 
