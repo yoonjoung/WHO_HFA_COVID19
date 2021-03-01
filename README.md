@@ -6,20 +6,20 @@ This repository has data cleaning/management/analysis programs. There are three 
 * COVID-19 Hospital Case Management Capacity Survey/Module   
 -- Questionnaire (PDF): COVID health products_20210206_Clean.pdf    
 -- Mock-up data for testing with a country name, "EXAMPLE", and the round number 1: LimeSurvey_COVID19HospitalReadiness_EXAMPLE_R1.csv   
--- WHO_COVID19HospitalReadiness_DataManagement.do   
--- WHO_HospitalReadiness_DataManagement.Rmd (https://rpubs.com/YJ_Choi/WHO_COVID19HFA_HospCM)  
+-- Analysis code in Stata: WHO_COVID19HospitalReadiness_DataManagement.do   
+-- Analysis code in R: WHO_HospitalReadiness_DataManagement.Rmd (https://rpubs.com/YJ_Choi/WHO_COVID19HFA_HospCM)  
 
 * Continuity of Essential Health Services Survey/Module   
 -- Questionnaire (PDF): Continuity of EHS_20210206_Clean.pdf   
 -- Mock-up data for testing with a country name, "EXAMPLE", and the round number 1: LimeSurvey_CEHS_EXAMPLE_R1.csv   
--- WHO_CEHS_DataManagement.do   
--- WHO_CEHS_DataManagement.Rmd (https://rpubs.com/YJ_Choi/WHO_COVID19HFA_CEHS)  
+-- Analysis code in Stata: WHO_CEHS_DataManagement.do   
+-- Analysis code in R: WHO_CEHS_DataManagement.Rmd (https://rpubs.com/YJ_Choi/WHO_COVID19HFA_CEHS)  
 
 * Community   
 -- Questionnaire (PDF): Community assessment tool_20210205_Clean.pdf   
 -- Mock-up data for testing with a country name, "EXAMPLE", and the round number 1: LimeSurvey_Community_EXAMPLE_R1.csv   
--- WHO_Community_DataManagement.do   
--- WHO_CommunityKIS_DataManagement.Rmd (https://rpubs.com/YJ_Choi/WHO_COVID19HFA_Com)  
+-- Analysis code in Stata: WHO_Community_DataManagement.do   
+-- Analysis code in R: WHO_CommunityKIS_DataManagement.Rmd (https://rpubs.com/YJ_Choi/WHO_COVID19HFA_Com)  
 
 ### Version0_PreKenya (initial publication: Dec 15, 2020) 
 
