@@ -5,6 +5,7 @@ This repository has data cleaning/management/analysis programs. There are three 
 
 * COVID-19 Hospital Case Management Capacity Survey/Module   
 -- Questionnaire (PDF): COVID health products_20210206_Clean.pdf    
+-- Mock-up data for testing with a country name, "EXAMPLE", and the round number 1: LimeSurvey_COVID19HospitalReadiness_EXAMPLE_R1.csv   
 -- WHO_COVID19HospitalReadiness_DataManagement.do   
 -- WHO_HospitalReadiness_DataManagement.Rmd (https://rpubs.com/YJ_Choi/WHO_COVID19HFA_HospCM)  
 
@@ -16,6 +17,7 @@ This repository has data cleaning/management/analysis programs. There are three 
 
 * Community   
 -- Questionnaire (PDF): Community assessment tool_20210205_Clean.pdf   
+-- Mock-up data for testing with a country name, "EXAMPLE", and the round number 1: LimeSurvey_Community_EXAMPLE_R1.csv   
 -- WHO_Community_DataManagement.do   
 -- WHO_CommunityKIS_DataManagement.Rmd (https://rpubs.com/YJ_Choi/WHO_COVID19HFA_Com)  
 
