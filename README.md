@@ -10,6 +10,7 @@ This repository has data cleaning/management/analysis programs. There are three 
 
 * Continuity of Essential Health Services Survey/Module   
 -- Questionnaire (PDF): Continuity of EHS_20210206_Clean.pdf   
+-- Mock-up data for testing: LimeSurvey_CEHS_EXAMPLE_R1.csv
 -- WHO_CEHS_DataManagement.do   
 -- WHO_CEHS_DataManagement.Rmd (https://rpubs.com/YJ_Choi/WHO_COVID19HFA_CEHS)  
 
