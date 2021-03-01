@@ -1417,12 +1417,33 @@ restore
 		replace ximage_avfun_`item' =. if zlevel=="Level2" /*In Kenya, asked in all facilities, except the level 2*/ 
 		}		
 	
-		gen max=3
+		gen max=3 
 		egen temp=rowtotal(ximage_avfun_*)
 	gen ximage_score	=100*(temp/max)
 	gen ximage_100 	=ximage_score>=100
 	gen ximage_50 	=ximage_score>=50
 		drop max temp	
+		
+*results before 2/25/2021
+		sum ximage_avfun* ximage_score ximage_100 ximage_50 
+		drop ximage_score ximage_100 ximage_50 
+
+		gen max=4 /*in Kenya, FOUR items asked: YC edit 2/25/2021*/
+		egen temp=rowtotal(ximage_avfun_*)
+	gen ximage_score	=100*(temp/max)
+	gen ximage_100 	=ximage_score>=100
+	gen ximage_50 	=ximage_score>=50
+		drop max temp	
+		
+*partially revised results as of 2/25/2021
+		sum ximage_avfun* ximage_score ximage_100 ximage_50 
+		
+	foreach var of varlist ximage_score ximage_100 ximage_50{	
+		replace `var' =. if zlevel=="Level2" /*In Kenya, asked in all facilities, except the level 2*/ 
+		}	
+		
+*fully revised results as of 2/25/2021
+		sum ximage_avfun* ximage_score ximage_100 ximage_50 
 
 	////*KEYC edit ends *////
 	
