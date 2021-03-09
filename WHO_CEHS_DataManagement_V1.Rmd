@@ -899,6 +899,8 @@ dta<-dta%>%
               funs(ifelse(xuserfee!=1, NA, .)) )%>%
     mutate(
     	xaddfund = q305==1 | q305==2 | q305==3,
+    	xaddfund_covid = q305==1 | q305==3,
+    	xaddfund_ehs = q305==2 | q305==3,
     	xaddfund_gov 	= q306_001==1 , 
  	    xaddfund_other 	= q306_002==1 | q306_003==1 | q306_004==1 | q306_005==1 , 
     		
