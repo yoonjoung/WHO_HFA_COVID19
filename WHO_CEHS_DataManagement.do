@@ -828,6 +828,10 @@ restore
 			}
 
 	gen xaddfund = q305==1 | q305==2 | q305==3
+	
+	gen xaddfund_covid = q305==1 | q305==3 /*added on 3/9/2021*/
+	gen xaddfund_ehs   = q305==2 | q305==3 /*added on 3/9/2021*/	
+	
 	gen xaddfund_gov 			= q306_001==1 
  	gen xaddfund_other 			= q306_002==1 | q306_003==1 | q306_004==1 | q306_005==1 
 			
