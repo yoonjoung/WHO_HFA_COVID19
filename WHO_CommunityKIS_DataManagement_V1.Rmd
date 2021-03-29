@@ -33,7 +33,7 @@ suppressWarnings(suppressMessages(library(data.table)))
 ###Data cleaning, management, and analysis of COVID-19 commmunity assessment with key informant interviews 
 
 This provides steps and code for data cleaning, management, and analysis of __COVID-19 commuunity key informant__ assessment survey. [See here for the questionnare (link forthcoming)](). <span style="color: red;">
-(Standard module version as of 1/13/2021) </span>    
+(Standard module version as of 2/5/2021) </span>    
 
 This code:   
 1. Imports and cleans COVID-19 community key informant (aka "community") dataset from Lime Survey (i.e., green and blue tabs in the chartbook),   
