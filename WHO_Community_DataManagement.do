@@ -6,7 +6,7 @@ set more off
 numlabel, add
 
 *This code 
-*1) imports and cleans Continuity of EHS dataset from Lime Survey, 
+*1) imports and cleans Continuity of EHS dataset from Lime Survey, created based on the February 5, 2021 Q version
 *2) creates field check tables for data quality monitoring, and 
 *3) creates indicator estimate data for dashboards and chartbook. 
 

@@ -6,7 +6,7 @@ set more off
 numlabel, add
 
 *This code 
-*1) imports and cleans Continuity of EHS dataset from Lime Survey, 
+*1) imports and cleans Continuity of EHS dataset from Lime Survey, created based on the March 22, 2021 Q version
 *2) creates field check tables for data quality monitoring, and 
 *3) creates indicator estimate data for dashboards and chartbook. 
 
@@ -77,7 +77,7 @@ global date=subinstr("`c_today'", " ", "",.)
 **************************************************************
 
 *****B.1. Import raw data from LimeSurvey 
-import delimited using "https://who.my-survey.host/index.php/plugins/direct?plugin=CountryOverview&docType=1&sid=`surveyid'&language=en&function=createExport", case(preserve) clear
+import delimited using "https://extranet.who.int/dataformv3/index.php/plugins/direct?plugin=CountryOverview&docType=1&sid=341442&language=en&function=createExport", case(preserve) clear
 
 *****B.2. Export/save the data daily in CSV form with date 	
 export delimited using "$downloadcsvdir/LimeSurvey_CEHS_`country'_R`round'_$date.csv", replace 
@@ -90,12 +90,13 @@ import delimited "$downloadcsvdir/LimeSurvey_CEHS_EXAMPLE_R1.csv", case(preserve
 	*****CHECK: this is an empty row. There should be none	
 
 	****MASK idenitifiable information*/
-	foreach var of varlist Q1BSQ001comment Q102 Q103 Q108 Q109 Q1102 Q1103 {
+	foreach var of varlist Q1BSQ001comment Q102 Q103 Q108 Q109 Q1202 Q1203 {
 		replace `var'=""
 		}	
 		
 export excel using "$chartbookdir\WHO_CEHS_Chartbook.xlsx", sheet("Facility-level raw data") sheetreplace firstrow(variables) nolabel
-export excel using "$chartbookdirpartner\WHO_CEHS_Chartbook.xlsx", sheet("Facility-level raw data") sheetreplace firstrow(variables) nolabel
+export excel using "$chartbookdirpartner\WHO_CEHS_Chartbook.xlsx", sheet("Facility-level raw data") sheetreplace firstrow(variables) nolabel /*partner workshop*/
+export excel using "$chartbookdirpartner\SampleChartbook_ToPracticeDynamicDuo.xlsx", sheet("Facility-level raw data") sheetreplace firstrow(variables) nolabel /*partner workshop*/
 
 *****B.4. Drop duplicate cases 
 
@@ -292,7 +293,7 @@ export excel using "$chartbookdirpartner\WHO_CEHS_Chartbook.xlsx", sheet("Facili
 	sum q8*
 
 	*****************************		
-	* Section 9
+	* Section 9: General Vaccine Readiness
 	*****************************
 	sum q9*
 	codebook q907 q910 q911
@@ -304,18 +305,33 @@ export excel using "$chartbookdirpartner\WHO_CEHS_Chartbook.xlsx", sheet("Facili
 		
 	sum q9*
 
-	*****************************			
-	* Section 11: interview results
+	*****************************		
+	* Section 10: COVID-19 vaccine Readiness
 	*****************************
-	sum q110*
-	codebook q1101 q1104
 	
-	foreach var of varlist q1101 q1104 {		
+	sum q1001 - q1014
+	
+	/*
+	foreach var of varlist  {		
+		replace `var' = usubinstr(`var', "A", "", 1) 
+		destring `var', replace 
+		}			
+	*/
+	
+	d q1001 - q1014
+	
+	*****************************			
+	* Section 12: interview results
+	*****************************
+	sum q120*
+	codebook q1201 q1204
+	
+	foreach var of varlist q1201 q1204 {		
 		replace `var' = usubinstr(`var', "A", "", 1) 
 		destring `var', replace 
 		}			
 	
-	sum q110*
+	d q120*
 								
 *****C.4. Recode yes/no 
 
@@ -329,6 +345,7 @@ export excel using "$chartbookdirpartner\WHO_CEHS_Chartbook.xlsx", sheet("Facili
 		q701_* q702_* q703_* q704
 		q801 q804 
 		q901 q902  q905 q908 q912 q913 q914
+		q1003 q1005_001 - q1014
 		; 
 		#delimit cr
 	
@@ -342,6 +359,7 @@ export excel using "$chartbookdirpartner\WHO_CEHS_Chartbook.xlsx", sheet("Facili
 		q701_* q702_* q703_* q704
 		q801 q804 
 		q901 q902  q905 q908 q912 q913 q914
+		q1003 q1005_001 - q1014
 		{; 
 		#delimit cr		
 		recode `var' 2=0 /*no*/
@@ -454,7 +472,7 @@ export excel using "$chartbookdirpartner\WHO_CEHS_Chartbook.xlsx", sheet("Facili
 		1"1.Available, functional"
 		2"2.Available, but not functional"
 		3"3.Not available";
-	foreach var of varlist q802_* q803_* q805_* q903 q904  {;
+	foreach var of varlist q802_* q803_* q805_* q903 q904 q1001 q1002 {;
 	lab values `var' availfunc ;	
 	};			
 
@@ -472,7 +490,9 @@ export excel using "$chartbookdirpartner\WHO_CEHS_Chartbook.xlsx", sheet("Facili
 		3"3.None-no functional freezer" ;
 	lab values q911 icepackfreeze ;	
 	
-	lab define yesno 1"1.Yes" 0"0.No"; 	
+	lab define yesno 
+		1"1.Yes" 
+		0"0.No"; 	
 	foreach var of varlist 
 		q202  q205_* q206   q207* 
 		q301  q304   q306_* q307  q308  q310
@@ -482,6 +502,7 @@ export excel using "$chartbookdirpartner\WHO_CEHS_Chartbook.xlsx", sheet("Facili
 		q701_* q702_* q703_* q704
 		q801 q804 
 		q901 q902  q905 q908 q912 q913 q914
+		q1003 q1005_001 - q1014
 		{;		
 	labe values `var' yesno; 
 	};	
@@ -501,8 +522,16 @@ export excel using "$chartbookdirpartner\WHO_CEHS_Chartbook.xlsx", sheet("Facili
 	foreach var of varlist q607_* q608_* {;		
 	labe values `var' alwayssometimesnever; 
 	};	
-		
-	#delimit cr
+	
+	lab define yesyesbutno 
+		1"1. Yes, available" 
+		2"2. Yes, but unavailable" 
+		3"No"; 
+	foreach var of varlist q1004_* {;		
+	labe values `var' yesyesbutno; 
+	};		
+	
+	#delimit cr	
 
 **************************************************************
 * D. Create field check tables for data quality check  
@@ -524,7 +553,7 @@ preserve
 	tabout submitdate_string1 using "$chartbookdir\FieldCheckTable_CEHS_`country'_R`round'_$date.xls", append ///
 		cells(freq col) h2("Date of interviews (submission date, final)") f(0 1) clab(n %)
 			
-			gen xresult=q1104==1
+			gen xresult=q1204==1
 			
 			gen byte responserate= xresult==1
 			label define responselist 0 "Not complete" 1 "Complete"
@@ -554,7 +583,7 @@ preserve
 
 			capture drop missing
 			gen missing=0
-			foreach var of varlist q1104 {	
+			foreach var of varlist q1204 {	
 				replace missing=1 if `var'==.				
 				}		
 			lab values missing yesno		
@@ -749,7 +778,7 @@ restore
 
 	egen staff_num_total_md=rowtotal(q201_001_001)
 	egen staff_num_covid_md=rowtotal(q201_001_002)
-	
+
 	egen staff_num_total_nr=rowtotal(q201_002_001)
 	egen staff_num_covid_nr=rowtotal(q201_002_002)
 
@@ -764,7 +793,13 @@ restore
 	
 	egen staff_num_total_all=rowtotal(staff_num_total_clinical staff_num_total_nonclinical) 
 	egen staff_num_covid_all=rowtotal(staff_num_covid_clinical staff_num_covid_nonclinical) 
-		
+
+	gen xstaff_covax = q201a==1
+	gen staff_num_covaxany  = q201b
+	gen staff_num_covaxfull = q201c
+		replace staff_num_covaxany  =. if xstaff_covax!=1
+		replace staff_num_covaxfull =. if xstaff_covax!=1
+	
 	gen xabsence=q202==1
 	gen xabsence_medical=	q203_003==1 | q203_004==1 
 	gen xabsence_structure=	q203_005==1 | q203_006==1 | q203_007==1 
@@ -1347,7 +1382,7 @@ restore
 		}	
 	
 	*****************************
-	* Section 9: vaccine
+	* Section 9: General vaccine
 	*****************************
 	
 	gen xvac= q901==1 | q902==1
@@ -1395,7 +1430,51 @@ restore
 	lab var xvac_av_carrier "has carrier"
 	lab var xvac_avfun_carrier_all "has functioning carrier, all"
 	lab var xvac_avfun_carrier_all_full "has functioning carrier with icepacks, all"
-				
+
+	*****************************
+	* Section 10: COVID-19 vaccine
+	*****************************
+	
+	/*
+	*This part is HIDDEN cause these were created in the above section for the mock data 
+	*In real, however, only section 9 OR 10 will be implemented. 
+	*Open up this part, if section 10 is used. 
+	*Delete this whole Section 9 if section 8 is used. 
+	gen xvac_av_fridge 			= q1001==1 | q1001==2
+	gen xvac_avfun_fridge 		= q1001==1 
+	gen xvac_avfun_fridgetemp 	= q1001==1 & q1002==1	
+	*/
+	
+	gen xcovax=q1003==1
+	
+	global itemlist "001 002 003 004"
+	foreach item in $itemlist{	
+		gen xcovax_offer__`item' = q1004_`item'==1 | q1004_`item'==2
+		gen xcovax_offerav__`item' = q1004_`item'==1 
+		}
+		
+	global itemlist "001 002 003 004"
+	foreach item in $itemlist{	
+		gen xcovax_train__`item' = q1005_`item'==1
+		}		
+	
+	gen xcovax_syr		=q1006==1
+	gen xcovax_sharp	=q1007==1
+	gen xcovax_strtemp	=q1008==1
+	gen xcovax_strtemp_w=q1008==1 & q1009==1
+	
+	gen xcovax_infrtrn		=q1010==1
+		replace xcovax_infrtrn = . if (q1004_001==3 & q1004_002==3 & q1004_003==3) 
+	gen xcovax_infside		=q1011==1
+	gen xcovax_infaewhat	=q1012==1
+	
+	gen xcovax_aefikit 		= q1013==1
+	gen xcovax_aefireport 	= q1014==1	
+	
+	foreach var of varlist xcovax_*{
+		replace `var'=. if xcovax!=1
+		}		
+
 	*****************************
 	* Annex
 	*****************************
@@ -1480,7 +1559,8 @@ import excel "$chartbookdir\WHO_CEHS_Chartbook.xlsx", sheet("Weight") firstrow c
 
 	export excel using "$chartbookdir\WHO_CEHS_Chartbook.xlsx", sheet("Facility-level cleaned data") sheetreplace firstrow(variables) nolabel
 	export excel using "$chartbookdirpartner\WHO_CEHS_Chartbook.xlsx", sheet("Facility-level cleaned data") sheetreplace firstrow(variables) nolabel
-			
+	export excel using "$chartbookdirpartner\SampleChartbook_ToPracticeDynamicDuo.xlsx", sheet("Facility-level cleaned data") sheetreplace firstrow(variables) nolabel
+
 **************************************************************
 * F. Create indicator estimate data 
 **************************************************************
@@ -1502,7 +1582,7 @@ use CEHS_`country'_R`round'.dta, clear
 		gen obshmis_`item' =1 if (temp>0 & temp!=.)
 		}			
 	
-	gen xresult=q1104==1
+	gen xresult=q1204==1
 	
 	save temp.dta, replace 
 	
@@ -1571,6 +1651,10 @@ use CEHS_`country'_R`round'.dta, clear
 		gen staff_pct_covid_`item' = round(100* (staff_num_covid_`item' / staff_num_total_`item' ), 0.1)
 		}	
 	
+	***** generate COVID-19 vaccine among staff using the pooled data	
+		gen staff_pct_covaxany  = round(100*staff_num_covaxany  / staff_num_total_all, 1)
+		gen staff_pct_covaxfull = round(100*staff_num_covaxfull / staff_num_total_all, 1)
+		
 	tab group round, m
 	
 	rename xsafe__004 xsafe__triage
@@ -1597,6 +1681,7 @@ use summary_CEHS_`country'_R`round'.dta, clear
 	
 export excel using "$chartbookdir\WHO_CEHS_Chartbook.xlsx", sheet("Indicator estimate data") sheetreplace firstrow(variables) nolabel keepcellfmt
 export excel using "$chartbookdirpartner\WHO_CEHS_Chartbook.xlsx", sheet("Indicator estimate data") sheetreplace firstrow(variables) nolabel keepcellfmt
+export excel using "$chartbookdirpartner\SampleChartbook_ToPracticeDynamicDuo.xlsx", sheet("Indicator estimate data") sheetreplace firstrow(variables) nolabel keepcellfmt
 
 * For YJ's shiny app and cross check against results from R
 export delimited using "C:\Users\YoonJoung Choi\Dropbox\0 iSquared\iSquared_WHO\ACTA\4.ShinyApp\0_Model\summary_CEHS_`country'_R`round'.csv", replace 

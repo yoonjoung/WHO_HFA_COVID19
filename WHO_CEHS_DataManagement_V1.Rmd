@@ -33,7 +33,7 @@ suppressWarnings(suppressMessages(library(data.table)))
 ###Data cleaning, management, and analysis of continuity of essential health services    
 
 This provides steps and code for data cleaning, management, and analysis of __Continuity of Essential Health Services__ assessment survey. [See here for the questionnare (link forthcoming)](). <span style="color: red;">
-(Standard module version as of 2/6/2021) </span>   
+(Standard module version as of 3/22/2021) </span>   
 
 This code:   
 1. Imports and cleans Continuity of Essential Health Services (aka "EHS") dataset from Lime Survey (i.e., green and blue tabs in the chartbook),   
@@ -328,7 +328,7 @@ dta<-dta%>%
     
     str(dta[varlist]) 
     
-#####* Section 9
+#####* Section 9: General vaccine readiness 
     varlist<-dta%>%select(starts_with("q9"))%>%colnames()
     str(dta[varlist])
     
@@ -341,13 +341,15 @@ dta<-dta%>%
     
     str(dta[varlist]) 
 
-#####* Section 10: INFRASTRUCTURE
+#####* Section 10: COVID vaccine readiness 
     
-#####* Section 11
-    varlist<-dta%>%select(starts_with("q110"))%>%colnames()
+#####* Section 11: INFRASTRUCTURE
+    
+#####* Section 12
+    varlist<-dta%>%select(starts_with("q120"))%>%colnames()
     str(dta[varlist])
 
-    varlist<-dta%>%select(q1101, q1104)%>%colnames()
+    varlist<-dta%>%select(q1201, q1204)%>%colnames()
     str(dta[varlist])
     
     dta<-dta%>%
@@ -371,7 +373,9 @@ varlist<-dta%>%
 		q601, q602, q603, q605, q606, q609, q610, q614, q615, 
 		starts_with("q701"), starts_with("q702"), starts_with("q703"), q704, 
 		q801, q804, 
-		q901, q902, q905, q908, q912, q913, q914 
+		q901, q902, q905, q908, q912, q913, q914 , 
+		q1003, starts_with("q1005_"), q1006, q1007, q1008, q1009, 
+		    q1010, q1011, q1012, q1013, q1014
     )%>%
     colnames()
 
@@ -550,7 +554,7 @@ dtacheck<-dta%>%
     mutate(
         updatedate= as.character(as.Date(Sys.time(	), format='%d%b%Y')), 
         date=as.POSIXct(as.character(submitdate_string),format= "%m/%d/%Y"), 
-        xresult=q904==1, 
+        xresult=q1204==1, 
         responserate= xresult==1, #label define responselist 0 "Not complete" 1 "Complete"    
     
         time_all = round(mean(interviewlength, na.rm=TRUE), 1))%>%
@@ -591,7 +595,7 @@ print(paste(as.character(round(mean(dtacheck$time_incomplete, na.rm=TRUE))), "mi
 #0. Missing survery results (among all interviews)
 dtacheck<-dtacheck%>%
     mutate(
-        missing0 = is.na(q1104)==1
+        missing0 = is.na(q1204)==1
         )
 
 #1. Missing number of beds when facility provides inpatient services  
@@ -842,6 +846,12 @@ dta<-dta%>%
     mutate(
     	staff_num_total_all=rowSums(dta[ c("staff_num_total_clinical", "staff_num_total_nonclinical")], na.rm = TRUE),  
     	staff_num_covid_all=rowSums(dta[ c("staff_num_covid_clinical", "staff_num_covid_nonclinical")], na.rm = TRUE), 
+    	
+	    xstaff_covax = q201a==1, 
+	    staff_num_covaxany  = q201b, 
+	    staff_num_covaxfull = q201c, 
+		staff_num_covaxany  =replace(staff_num_covaxany, xstaff_covax!=1, NA), 
+		staff_num_covaxfull  =replace(staff_num_covaxfull, xstaff_covax!=1, NA), 	
         
     	xabsence=q202==1,
     	xabsence_medical=	q203_003==1 | q203_004==1 ,
@@ -1450,7 +1460,7 @@ dta<-dta%>%
 ```
 
 ```{r section9}
-#####* Section 9: vaccine
+#####* Section 9: general vaccine readiness
 dta<-dta%>%
 	mutate(	
     	xvac= q901==1 | q902==1, 
@@ -1511,6 +1521,61 @@ dta<-dta%>%
 	#lab var xvac_avfun_carrier_all_full "has functioning carrier with icepacks, all"
 ```
 
+```{r section10}
+#####* Section 10: COVID vaccine readiness
+dta<-dta%>%
+	mutate(	
+    	#*This part is HIDDEN cause these were created in the above section for the mock data 
+    	#*In real, however, only section 9 OR 10 will be implemented. 
+    	#*Open up this part, if section 10 is used. 
+    	#*Delete this whole Section 10 if section 9 is used. 
+        #	xvac_av_fridge 		  = q1001==1 | q1001==2, 
+        #	xvac_avfun_fridge 	  = q1001==1 ,
+        #	xvac_avfun_fridgetemp = q1001==1 & q1002==1, 	 
+	    
+	    xcovax=q1003==1)
+
+            temp1<-dta%>%select(starts_with("q1004_"))%>%
+                rename_all(.funs = funs(sub("q1004_", "xcovax_offer__", .)))%>%
+                mutate_all(~replace(., . ==1 |.==2, 1))%>%
+                mutate_all(~replace(., . ==3, 0))%>%
+                mutate_all(~replace(., is.na(.), 0))        
+            
+            temp2<-dta%>%select(starts_with("q1004_"))%>%
+                rename_all(.funs = funs(sub("q1004_", "xcovax_offerav__", .)))%>%
+                mutate_all(~replace(., . ==1, 1))%>%
+                mutate_all(~replace(., . ==2 |.==3, 0))%>%
+                mutate_all(~replace(., is.na(.), 0))     
+            
+            temp3<-dta%>%select(starts_with("q1005_"))%>%
+                rename_all(.funs = funs(sub("q1005_", "xcovax_train__", .)))%>%
+                mutate_all(~replace(., . ==1, 1))%>%
+                mutate_all(~replace(., . !=1, 0))%>%
+                mutate_all(~replace(., is.na(.), 0))       
+
+dta<-cbind(dta, temp1, temp2, temp3)%>%
+    mutate(
+	xcovax_syr		=q1006==1,
+	xcovax_sharp	=q1007==1,
+	xcovax_strtemp	=q1008==1,
+	xcovax_strtemp_w=q1008==1 & q1009==1,
+	
+	xcovax_infrtrn		=q1010==1,
+	xcovax_infrtrn = replace(xcovax_infrtrn, 
+	                         (q1004_001==3 & q1004_002==3 & q1004_003==3),
+	                         NA),  
+	xcovax_infside		=q1011==1,
+	xcovax_infaewhat	=q1012==1,
+	
+	xcovax_aefikit 		= q1013==1,
+	xcovax_aefireport 	= q1014==1	        
+    )%>%
+    mutate_if(is.logical, as.numeric)%>%
+    mutate_at(vars(starts_with("xcovax_")), 
+              funs(ifelse(xcovax!=1, NA, .) ) )
+
+```
+	
 ```{r annex}
 
             temp<-dta%>%select(starts_with("qa1_002_"))
@@ -1751,12 +1816,18 @@ dtasummary<-dtasummary%>%
     mutate_at(vars(xbedrate, ends_with("_score"), ends_with("_num")), 
               funs(round((. / 100), 0)))%>%
     mutate(
+        #***** generate staff infection rates useing the pooled data	
         staff_pct_covid_md = round(100* (staff_num_covid_md / staff_num_total_md ), 1),
         staff_pct_covid_nr = round(100* (staff_num_covid_nr / staff_num_total_nr ), 1),
         staff_pct_covid_othclinical = round(100* (staff_num_covid_othclinical / staff_num_total_othclinical ), 1),
         staff_pct_covid_clinical = round(100* (staff_num_covid_clinical / staff_num_total_clinical ), 1),
         staff_pct_covid_nonclinical = round(100* (staff_num_covid_nonclinical / staff_num_total_nonclinical ), 1),
-        staff_pct_covid_all = round(100* (staff_num_covid_all / staff_num_total_all ), 1)
+        staff_pct_covid_all = round(100* (staff_num_covid_all / staff_num_total_all ), 1), 
+        
+        #***** generate COVID-19 vaccine among staff using the pooled data	
+		staff_pct_covaxany  = round(100* (staff_num_covaxany  / staff_num_total_all), 0),
+		staff_pct_covaxfull = round(100* (staff_num_covaxfull / staff_num_total_all), 0)
+		
     )%>%
     rename(
 	    xsafe__triage = xsafe__004,  
@@ -1778,8 +1849,8 @@ dtasummary[sapply(dtasummary, is.nan)] <- NA
 
 #####F.2. Export indicator estimate data to chart book 
 ```{r summarydatacsv}
-write.csv(dtasummary, paste0("summary_CEHS_", country, "_R", round, ".csv"))
-
+write.csv(dtasummary, 
+          paste0("summary_CEHS_", country, "_R", round, ".csv"))
 
 ```
 
@@ -1791,7 +1862,9 @@ dtasummary<-dtasummary%>%
 	)
 
 # for cross check against Stata results 
-write.csv(dtasummary, paste0("summary_CEHS_", country, "_R", round, "_R.csv"))
+write.csv(dtasummary, 
+          paste0("summary_CEHS_", country, "_R", round, "_R.csv"), 
+          na="")
 
 #write.xlsx(dta, 
 #           paste0("WHO_CEHS_Chartbook.xlsx"), 
@@ -1802,30 +1875,3 @@ write.csv(dtasummary, paste0("summary_CEHS_", country, "_R", round, "_R.csv"))
 ---
 
 END OF MARKDOWN FILE 
-
-```{r, eval=FALSE, echo=FALSE}
-#compare this against outcome from Stata
-temp<-read.csv("summary_CEHS_COUNTRY NAME_R1.csv")%>%
-    filter(group=="All")
-
-    dim(temp)
-    colnames(temp)[colSums(is.na(temp)) > 0]
-    
-
-table(temp$xsafe_score)    
-```
-
-```{r, eval=FALSE, echo=FALSE}
-    select(temp, starts_with("x"))%>%ncol()
-    select(temp, -starts_with("x"))%>%ncol()
-    select(temp, -starts_with("x"))%>%colnames()
-    select(temp, -starts_with("x"))%>%str()
-```
-
-```{r, eval=FALSE, echo=FALSE}
-#compare this against outcome from Stata
-temp<-read.csv("CEHS_COUNTRY NAME_R1.csv")
-
-table(temp$xsafe_score)
-```
-

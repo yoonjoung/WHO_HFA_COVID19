@@ -33,7 +33,7 @@ suppressWarnings(suppressMessages(library(data.table)))
 ###Data cleaning, management, and analysis of COVID-19 hospital case managment capacity assessment 
 
 This provides steps and code for data cleaning, management, and analysis of __COVID-19 hospital case management capacity__ assessment survey. [See here for the questionnare (link forthcoming)](). <span style="color: red;">
-(Standard module version as of 2/6/2021) </span>     
+(Standard module version as of 3/5/2021) </span>     
 
 This code:   
 1. Imports and cleans COVID-19 hospital case management capacity (aka "hospital products") dataset from Lime Survey (i.e., green and blue tabs in the chartbook),   
@@ -299,11 +299,11 @@ dta<-dta%>%
     
     str(dta[varlist]) 
 
-#####* Section 9
-    varlist<-dta%>%select(starts_with("q9"))%>%colnames()
+#####* Section 10
+    varlist<-dta%>%select(starts_with("q10"))%>%colnames()
     str(dta[varlist])
     
-    varlist<-dta%>%select(q901, q904)%>%colnames()
+    varlist<-dta%>%select(q1001, q1004)%>%colnames()
     str(dta[varlist])
     
     dta<-dta%>%
@@ -427,7 +427,7 @@ dtacheck<-dta%>%
     mutate(
         updatedate= as.character(as.Date(Sys.time(	), format='%d%b%Y')), 
         date=as.POSIXct(as.character(submitdate_string),format= "%m/%d/%Y"), 
-        xresult=q904==1, 
+        xresult=q1004==1, 
         responserate= xresult==1, #label define responselist 0 "Not complete" 1 "Complete"    
     
         time_all = round(mean(interviewlength, na.rm=TRUE), 1))%>%
@@ -468,7 +468,7 @@ print(paste(as.character(round(mean(dtacheck$time_incomplete, na.rm=TRUE))), "mi
 #0. Missing survery results (among all interviews)
 dtacheck<-dtacheck%>%
     mutate(
-        missing0 = is.na(q904)==1
+        missing0 = is.na(q1004)==1
         )
 
 #1. Missing number of beds when facility provides inpatient services  
@@ -662,6 +662,12 @@ dta<-dta%>%
     	staff_num_total_all=rowSums(dta[ c("staff_num_total_clinical", "staff_num_total_nonclinical")], na.rm = TRUE),  
     	staff_num_covid_all=rowSums(dta[ c("staff_num_covid_clinical", "staff_num_covid_nonclinical")], na.rm = TRUE), 
         
+    	xstaff_covax = q201a==1, 
+	    staff_num_covaxany  = q201b, 
+	    staff_num_covaxfull = q201c, 
+		staff_num_covaxany  =replace(staff_num_covaxany, xstaff_covax!=1, NA), 
+		staff_num_covaxfull  =replace(staff_num_covaxfull, xstaff_covax!=1, NA), 	
+		
     	xabsence=q202==1,
     	xabsence_medical=	q203_003==1 | q203_004==1 ,
     	xabsence_structure=	q203_005==1 | q203_006==1 | q203_007==1 ,
@@ -1094,6 +1100,60 @@ dta<-dta%>%
 	#lab var xvac_avfun_carrier_all_full "has functioning carrier with icepacks, all"
 ```
 
+```{r section9}
+#####* Section 9: COVID vaccine readiness
+dta<-dta%>%
+	mutate(	
+    	#*This part is HIDDEN cause these were created in the above section for the mock data 
+    	#*In real, however, only section 8 OR 9 will be implemented. 
+    	#*Open up this part, if section 9 is used. 
+    	#*Delete this whole Section 9 if section 8 is used. 
+        #	xvac_av_fridge 		  = q901==1 | q901==2, 
+        #	xvac_avfun_fridge 	  = q901==1 ,
+        #	xvac_avfun_fridgetemp = q901==1 & q902==1, 	 
+	    
+	    xcovax=q903==1)
+
+            temp1<-dta%>%select(starts_with("q904_"))%>%
+                rename_all(.funs = funs(sub("q904_", "xcovax_offer__", .)))%>%
+                mutate_all(~replace(., . ==1 |.==2, 1))%>%
+                mutate_all(~replace(., . ==3, 0))%>%
+                mutate_all(~replace(., is.na(.), 0))        
+            
+            temp2<-dta%>%select(starts_with("q904_"))%>%
+                rename_all(.funs = funs(sub("q904_", "xcovax_offerav__", .)))%>%
+                mutate_all(~replace(., . ==1, 1))%>%
+                mutate_all(~replace(., . ==2 |.==3, 0))%>%
+                mutate_all(~replace(., is.na(.), 0))     
+            
+            temp3<-dta%>%select(starts_with("q905_"))%>%
+                rename_all(.funs = funs(sub("q905_", "xcovax_train__", .)))%>%
+                mutate_all(~replace(., . ==1, 1))%>%
+                mutate_all(~replace(., . !=1, 0))%>%
+                mutate_all(~replace(., is.na(.), 0))       
+
+dta<-cbind(dta, temp1, temp2, temp3)%>%
+    mutate(
+	xcovax_syr		=q906==1,
+	xcovax_sharp	=q907==1,
+	xcovax_strtemp	=q908==1,
+	xcovax_strtemp_w=q908==1 & q909==1,
+	
+	xcovax_infrtrn		=q910==1,
+	xcovax_infrtrn = replace(xcovax_infrtrn, 
+	                         (q904_001==3 & q904_002==3 & q904_003==3),
+	                         NA),  
+	xcovax_infside		=q911==1,
+	xcovax_infaewhat	=q912==1,
+	
+	xcovax_aefikit 		= q913==1,
+	xcovax_aefireport 	= q914==1	        
+    )%>%
+    mutate_if(is.logical, as.numeric)%>%
+    mutate_at(vars(starts_with("xcovax_")), 
+              funs(ifelse(xcovax!=1, NA, .) ) )
+
+```
 ---
 
 #####E.3. Merge with sampling weight 
@@ -1303,12 +1363,17 @@ dtasummary<-dtasummary%>%
                    ends_with("_capacity"), ends_with("_score")), 
               funs(round((./100), 0)))%>%
     mutate(
+        #***** generate staff infection rates useing the pooled data	
         staff_pct_covid_md = round(100* (staff_num_covid_md / staff_num_total_md ), 1),
         staff_pct_covid_nr = round(100* (staff_num_covid_nr / staff_num_total_nr ), 1),
         staff_pct_covid_othclinical = round(100* (staff_num_covid_othclinical / staff_num_total_othclinical ), 1),
         staff_pct_covid_clinical = round(100* (staff_num_covid_clinical / staff_num_total_clinical ), 1),
         staff_pct_covid_nonclinical = round(100* (staff_num_covid_nonclinical / staff_num_total_nonclinical ), 1),
-        staff_pct_covid_all = round(100* (staff_num_covid_all / staff_num_total_all ), 1)
+        staff_pct_covid_all = round(100* (staff_num_covid_all / staff_num_total_all ), 1), 
+        
+        #***** generate COVID-19 vaccine among staff using the pooled data	
+		staff_pct_covaxany  = round(100* (staff_num_covaxany  / staff_num_total_all), 0),
+		staff_pct_covaxfull = round(100* (staff_num_covaxfull / staff_num_total_all), 0)
     )%>%
     rename(
 	    xsafe__triage = xsafe__004,  
@@ -1328,7 +1393,8 @@ dtasummary[sapply(dtasummary, is.nan)] <- NA
 
 #####F.2. Export indicator estimate data to chart book 
 ```{r summarydatacsv}
-write.csv(dtasummary, paste0("summary_COVID19HospitalReadiness_", country, "_R", round, ".csv"))
+write.csv(dtasummary, 
+          paste0("summary_COVID19HospitalReadiness_", country, "_R", round, ".csv"))
 ```
 
 ```{r chartbookexport3}
@@ -1339,7 +1405,9 @@ dtasummary<-dtasummary%>%
 	)
 
 # for cross check against Stata results 
-write.csv(dtasummary, paste0("summary_COVID19HospitalReadiness_", country, "_R", round, "_R.csv"))
+write.csv(dtasummary, 
+          paste0("summary_COVID19HospitalReadiness_", country, "_R", round, "_R.csv"), 
+          na="")
 
 #write.xlsx(dta, 
 #           paste0("WHO_COVID19HospitalReadiness_Chartbook.xlsx"), 
