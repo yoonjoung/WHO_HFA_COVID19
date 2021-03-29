@@ -4,7 +4,7 @@ This repository has data cleaning/management/analysis programs. There are three 
 ### Version1_2021 03 28 (initial publication: March 28, 2021) - in the main directory
 
 * COVID-19 Hospital Case Management Capacity Survey/Module   
--- Questionnaire (PDF): COVID health products_20210305_Clean.pdf    
+-- Questionnaire (PDF): #COVID health products_20210305_Clean.pdf#    
 -- Mock-up data for testing with a country name, "EXAMPLE", and the round number 1: LimeSurvey_COVID19HospitalReadiness_EXAMPLE_R1.csv   
 -- Analysis code in Stata: WHO_HospitalReadiness_DataManagement.do   
 -- Analysis code in R: WHO_HospitalReadiness_DataManagement.Rmd (https://rpubs.com/YJ_Choi/WHO_COVID19HFA_HospCM) 
