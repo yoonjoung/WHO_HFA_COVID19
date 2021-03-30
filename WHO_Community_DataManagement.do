@@ -64,7 +64,7 @@ local round 			 1 /*round*/
 local year 			 	 2020 /*year of the mid point in data collection*/	
 local month 			 12 /*month of the mid point in data collection*/				
 
-local surveyid 			 451568 /*LimeSurvey survey ID*/
+local surveyid 			 777777 /*LimeSurvey survey ID*/
 
 *** local macro for analysis: no change needed  
 local today=c(current_date)
@@ -76,13 +76,13 @@ global date=subinstr("`c_today'", " ", "",.)
 **************************************************************
 	
 *****B.1. Import raw data from LimeSurvey 
-import delimited using "https://who.my-survey.host/index.php/plugins/direct?plugin=CountryOverview&docType=1&sid=`surveyid'&language=en&function=createExport", case(preserve) clear
+*import delimited using "https://who.my-survey.host/index.php/plugins/direct?plugin=CountryOverview&docType=1&sid=`surveyid'&language=en&function=createExport", case(preserve) clear
+import delimited "$downloadcsvdir/LimeSurvey_Community_EXAMPLE_R1.csv", case(preserve) clear  /*THIS LINE ONLY FOR PRACTICE*/
 
 *****B.2. Export/save the data daily in CSV form with date 
 export delimited using "$downloadcsvdir/LimeSurvey_Community_`country'_R`round'_$date.csv", replace 
 
 *****B.3. Export the data to chartbook  	
-import delimited "$downloadcsvdir/LimeSurvey_Community_EXAMPLE_R1.csv", case(preserve) clear  /*THIS LINE ONLY FOR PRACTICE*/
 	
 	codebook token Q105
 	list Q1* if Q105==. | token=="" 

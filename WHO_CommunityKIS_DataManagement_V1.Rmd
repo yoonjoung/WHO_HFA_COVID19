@@ -67,7 +67,7 @@ round<-1                #round
 year<-2020              #year of the mid point in data collection	
 month<-12               #month of the mid point in data collection	
 
-surveyid<-451568        #LimeSurvey survey ID
+surveyid<-777777        #LimeSurvey survey ID
 
 # local macro for analysis: no change needed  
 ```
@@ -76,7 +76,7 @@ surveyid<-451568        #LimeSurvey survey ID
 
 ####B. Import and drop duplicate cases
 #####B.1. Import raw data from LimeSurvey 
-```{r importraw}
+```{r importraw, eval=FALSE}
 #Import directly from LimeSurvey
 dtaraw<-read.csv(paste0("https://who.my-survey.host/index.php/plugins/direct?plugin=CountryOverview&docType=1&sid=",surveyid,"&language=en&function=createExport"))
 
