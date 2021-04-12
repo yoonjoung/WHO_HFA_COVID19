@@ -33,7 +33,7 @@ suppressWarnings(suppressMessages(library(data.table)))
 ###Data cleaning, management, and analysis of COVID-19 hospital case managment capacity assessment 
 
 This provides steps and code for data cleaning, management, and analysis of __COVID-19 hospital case management capacity__ assessment survey. [See here for the questionnare (link forthcoming)](). <span style="color: red;">
-(Standard module version as of 3/5/2021) </span>     
+(Standard module version as of 4/12/2021) </span>     
 
 This code:   
 1. Imports and cleans COVID-19 hospital case management capacity (aka "hospital products") dataset from Lime Survey (i.e., green and blue tabs in the chartbook),   
