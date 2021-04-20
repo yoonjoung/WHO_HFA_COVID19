@@ -6,20 +6,20 @@ This repository has data cleaning/management/analysis programs. There are three 
 * COVID-19 Hospital Case Management Capacity Survey/Module   
 -- Questionnaire (PDF): __COVID health products_20210412_Clean.pdf__    
 -- Mock-up data for testing with a country name, "EXAMPLE", and the round number 1: LimeSurvey_COVID19HospitalReadiness_EXAMPLE_R1.csv   
--- Analysis code in Stata: WHO_HospitalReadiness_DataManagement.do   
--- Analysis code in R: WHO_HospitalReadiness_DataManagement.Rmd (https://rpubs.com/YJ_Choi/WHO_COVID19HFA_HospCM) 
+-- Analysis code in Stata: WHO_HospitalReadiness_DataManagement.do __(updated on 4/20/2021)__  
+-- Analysis code in R: WHO_HospitalReadiness_DataManagement.Rmd (https://rpubs.com/YJ_Choi/WHO_COVID19HFA_HospCM) __(updated on 4/20/2021)__
 
 * Continuity of Essential Health Services Survey/Module   
 -- Questionnaire (PDF): __Continuity of EHS_20210322_Clean.pdf__   
 -- Mock-up data for testing with a country name, "EXAMPLE", and the round number 1: LimeSurvey_CEHS_EXAMPLE_R1.csv   
--- Analysis code in Stata: WHO_CEHS_DataManagement.do   
--- Analysis code in R: WHO_CEHS_DataManagement.Rmd (https://rpubs.com/YJ_Choi/WHO_COVID19HFA_CEHS)  
+-- Analysis code in Stata: WHO_CEHS_DataManagement.do __(updated on 4/20/2021)__   
+-- Analysis code in R: WHO_CEHS_DataManagement.Rmd (https://rpubs.com/YJ_Choi/WHO_COVID19HFA_CEHS) __(updated on 4/20/2021)__ 
 
 * Community   
 -- Questionnaire (PDF): __Community assessment tool_20210205_Clean.pdf__   
 -- Mock-up data for testing with a country name, "EXAMPLE", and the round number 1: LimeSurvey_Community_EXAMPLE_R1.csv   
--- Analysis code in Stata: WHO_Community_DataManagement.do   
--- Analysis code in R: WHO_CommunityKIS_DataManagement.Rmd (https://rpubs.com/YJ_Choi/WHO_COVID19HFA_Com)  
+-- Analysis code in Stata: WHO_Community_DataManagement.do __(updated on 4/20/2021)__   
+-- Analysis code in R: WHO_CommunityKIS_DataManagement.Rmd (https://rpubs.com/YJ_Choi/WHO_COVID19HFA_Com) __(updated on 4/20/2021)__   
 
 ### Version1_2021 02 06 (initial publication: Feb 6, 2021)
 
