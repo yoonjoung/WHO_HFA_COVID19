@@ -138,15 +138,21 @@ export excel using "$chartbookdirpartner\WHO_Community_Chartbook.xlsx", sheet("F
 	rename *, lower
 
 *****C.1.a. Assess timestamp data 
-	
-	*drop detailed timstamp data but keep interviewtime (interview length in seconds)
+		
+	***** drop detailed timstamp data but keep interviewtime (interview length in seconds)
 	drop q*time 
 	drop grouptime* 
+	
+	*REVISION: 4/20/2021
+	*interviewtime is availabl in dataset only when directly downloaded from the server, not via export plug-in used in this code
+	*thus below C.1.a is suppressed
+	/*
 	codebook interviewtime 
 	gen long interviewlength=round(interviewtime/60, 1) 
 		lab var interviewlength "interview length in minutes"
 		sum interviewlength
-		
+	*/
+	
 *****C.2. Change var names to drop unnecessary elements e.g., "sq" - because of Lime survey's naming convention 
 	
 	d *sq*
@@ -405,6 +411,9 @@ preserve
 	tabout q113 using "$chartbookdir\FieldCheckTable_Community_`country'_R`round'_$date.xls", append ///
 		cells(freq col) h2("Number of completed interviews by respondent occupation") f(0 1) clab(n %)		
 
+	*REVISION: 4/20/2021		
+	*suppress fieldcheck tables containing interviewlength
+	/*	
 			bysort xresult: sum interviewlength
 			egen time_complete = mean(interviewlength) if xresult==1
 			egen time_incomplete = mean(interviewlength) if xresult==0
@@ -415,7 +424,8 @@ preserve
 		cells(freq col) h2("Average interview length (minutes), among completed interviews") f(0 1) clab(n %)		
 	tabout time_incomplete using "$chartbookdir\FieldCheckTable_Community_`country'_R`round'_$date.xls", append ///
 		cells(freq col) h2("Average interview length (minutes), among incomplete interviews") f(0 1) clab(n %)	
-
+	*/
+	
 * Missing responses 
 
 			capture drop missing

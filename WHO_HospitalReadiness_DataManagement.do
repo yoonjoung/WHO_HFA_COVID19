@@ -140,14 +140,20 @@ export excel using "$chartbookdirpartner\WHO_COVID19HospitalReadiness_Chartbook.
 
 *****C.1.a. Assess & keep timestamp data 
 	
-	*drop detailed timstamp data but keep interviewtime (interview length in seconds)
+	*****drop detailed timstamp data but keep interviewtime (interview length in seconds)
 	capture drop q*time 
 	capture drop grouptime* 
+	
+	*REVISION: 4/20/2021
+	*interviewtime is availabl in dataset only when directly downloaded from the server, not via export plug-in used in this code
+	*thus below C.1.a is suppressed
+	/*	
 	codebook interviewtime 
 	gen long interviewlength=round(interviewtime/60, 1) 
 		lab var interviewlength "interview length in minutes"
 		sum interviewlength
-		
+	*/
+	
 *****C.2. Change var names to drop odd elements "y" "sq" - because of Lime survey's naming convention 
 	
 	d *sq*
@@ -451,6 +457,9 @@ preserve
 	tabout q105 using "$chartbookdir\FieldCheckTable_COVID19Hospital_`country'_R`round'_$date.xls", append ///
 		cells(freq col) h2("number of interviews by hospital type") f(0 1) clab(n %) mi		
 
+	*REVISION: 4/20/2021		
+	*suppress fieldcheck tables containing interviewlength
+	/*			
 			bysort xresult: sum interviewlength
 			egen time_complete = mean(interviewlength) if xresult==1
 			egen time_incomplete = mean(interviewlength) if xresult==0
@@ -461,7 +470,8 @@ preserve
 		cells(freq col) h2("Average interview length (minutes), among completed interviews") f(0 1) clab(n %)		
 	tabout time_incomplete using "$chartbookdir\FieldCheckTable_COVID19Hospital_`country'_R`round'_$date.xls", append ///
 		cells(freq col) h2("Average interview length (minutes), among incomplete interviews") f(0 1) clab(n %)	
-
+	*/
+	
 * Missing responses 
 
 			capture drop missing
@@ -1123,46 +1133,53 @@ use COVID19HospitalReadiness_`country'_R`round'.dta, clear
 	gen obs_onsite=1 	if xpcr==1 | xrdt==1
 	gen obs_offsite=1 	if xoffsite==1
 	
+	/*
+	gen xresult=q1004==1
+	tab xresult, m
+	keep if xresult==1
+	drop xresult	
+	*/
+	
 	save temp.dta, replace 
 
 *****F.1. Calculate estimates  
 
 	use temp.dta, clear
-	collapse (count) obs* (mean) x* interviewlength (sum) staff_num_* ybed*  yequip* yvac*  [iweight=weight], by(country round month year  )
+	collapse (count) obs* (mean) x*  (sum) staff_num_* ybed*  yequip* yvac*  [iweight=weight], by(country round month year  )
 		gen group="All"
 		gen grouplabel="All"
-		keep obs* country round month year  group* x* interviewlength y* staff_num_* 
+		keep obs* country round month year  group* x*  y* staff_num_* 
 		save summary_COVID19HospitalReadiness_`country'_R`round'.dta, replace 
 		
 	use temp.dta, clear
-	collapse (count) obs* (mean) x* interviewlength (sum) staff_num_* ybed*  yequip* yvac*  [iweight=weight], by(country round month year   zurban)
+	collapse (count) obs* (mean) x*  (sum) staff_num_* ybed*  yequip* yvac*  [iweight=weight], by(country round month year   zurban)
 		gen group="Location"
 		gen grouplabel=""
 			replace grouplabel="Rural" if zurban==0
 			replace grouplabel="Urban" if zurban==1
-		keep obs* country round month year  group* x* interviewlength y* staff_num_* 
+		keep obs* country round month year  group* x*  y* staff_num_* 
 		
 		append using summary_COVID19HospitalReadiness_`country'_R`round'.dta, force
 		save summary_COVID19HospitalReadiness_`country'_R`round'.dta, replace 
 
 	use temp.dta, clear
-	collapse (count) obs* (mean) x* interviewlength (sum) staff_num_* ybed*  yequip* yvac*  [iweight=weight], by(country round month year   zlevel_hospital)
+	collapse (count) obs* (mean) x*  (sum) staff_num_* ybed*  yequip* yvac*  [iweight=weight], by(country round month year   zlevel_hospital)
 		gen group="Level"
 		gen grouplabel=""
 			replace grouplabel="Primary/Secondary" if zlevel_hospital==0
 			replace grouplabel="Tertiary" if zlevel_hospital==1
-		keep obs* country round month year  group* x* interviewlength y* staff_num_* 
+		keep obs* country round month year  group* x*  y* staff_num_* 
 			
 		append using summary_COVID19HospitalReadiness_`country'_R`round'.dta
 		save summary_COVID19HospitalReadiness_`country'_R`round'.dta, replace 
 		
 	use temp.dta, clear
-	collapse (count) obs* (mean) x* interviewlength (sum) staff_num_* ybed*  yequip* yvac*  [iweight=weight], by(country round month year   zpub)
+	collapse (count) obs* (mean) x*  (sum) staff_num_* ybed*  yequip* yvac*  [iweight=weight], by(country round month year   zpub)
 		gen group="Sector"
 		gen grouplabel=""
 			replace grouplabel="Non-public" if zpub==0
 			replace grouplabel="Public" if zpub==1
-		keep obs* country round month year  group* x* interviewlength y* staff_num_* 
+		keep obs* country round month year  group* x*  y* staff_num_* 
 		
 		append using summary_COVID19HospitalReadiness_`country'_R`round'.dta		
 		save summary_COVID19HospitalReadiness_`country'_R`round'.dta, replace 
@@ -1175,9 +1192,6 @@ use COVID19HospitalReadiness_`country'_R`round'.dta, clear
 			foreach var of varlist xocc* xcovid_occ* *_capacity *_score {
 				replace `var'=round(`var'/100, 1)	
 				}		
-						
-			* Drop survey variables 
-			drop interviewlength				
 
 	***** generate staff infection rates using the pooled data	
 	global itemlist "md nr othclinical clinical nonclinical all" 

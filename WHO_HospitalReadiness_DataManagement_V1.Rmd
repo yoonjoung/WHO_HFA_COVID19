@@ -184,13 +184,23 @@ names(dta)<-tolower(names(dta))
 
 ---
 #####C.1.a Assess time stamp data	
-```{r timestamp}
+```{r timestamp, echo=FALSE, eval=FALSE}
 dta<-dta%>%
     rename(interviewtimee=interviewtime)%>%
     select(-ends_with("time"))%>%
     select(-starts_with("grouptime"))%>%
     rename(interviewtime=interviewtimee)%>%
     mutate(interviewlength=round(interviewtime/60, 1))
+```
+
+```{r timestamp_revised}
+#REVISED 4/20/2021
+#   interviewtime is availabl in dataset only when directly downloaded from the server, 
+#   not via export plug-in used in this code
+#   thus C.1.a is revised - see markdownfile for OLD and NEW code differences 
+dta<-dta%>%
+    select(-ends_with("time"))%>%
+    select(-starts_with("grouptime"))
 ```
 
 ---
@@ -422,7 +432,7 @@ The following is value labels.
 
 ####D. Create field check tables 
 As of `r date`, the following are "field check tables." In Stata program, xls file is created. In R, the results are directly presented in this markdown file.  
-```{r fieldcheck1}
+```{r fieldcheck1, echo=FALSE, eval=FALSE}
 dtacheck<-dta%>%
     mutate(
         updatedate= as.character(as.Date(Sys.time(	), format='%d%b%Y')), 
@@ -441,6 +451,19 @@ dtacheck<-dta%>%
     ungroup()
 ```
 
+```{r fieldcheck1_revised}
+#REVISED 4/20/2021
+#   since interviewlength is not created (see C.1.a) 
+#   do not calculate "time" variables  
+dtacheck<-dta%>%
+    mutate(
+        updatedate= as.character(as.Date(Sys.time(	), format='%d%b%Y')), 
+        date=as.POSIXct(as.character(submitdate_string),format= "%m/%d/%Y"), 
+        xresult=q1004==1, 
+        responserate= xresult==1 #label define responselist 0 "Not complete" 1 "Complete"    
+        )
+```
+
 __Assess interview characteristics among all interviews.__ 
 ```{r fieldcheck1results, results="asis"}
 # Date of field check table update and the total number of interviews
@@ -456,10 +479,10 @@ print(paste(as.character(round(mean(dtacheck$responserate, na.rm=TRUE)*100, 1)),
 table(dtacheck$q104)
 
 #Average interview length (minutes), among completed interviews
-print(paste(as.character(round(mean(dtacheck$time_complete, na.rm=TRUE))), "minutes"))
+#print(paste(as.character(round(mean(dtacheck$time_complete, na.rm=TRUE))), "minutes"))
 
 #Average interview length (minutes), among partly completed interviews
-print(paste(as.character(round(mean(dtacheck$time_incomplete, na.rm=TRUE))), "minutes"))
+#print(paste(as.character(round(mean(dtacheck$time_incomplete, na.rm=TRUE))), "minutes"))
 ```
 
 ```{r fieldcheck2}
