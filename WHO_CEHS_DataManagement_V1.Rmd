@@ -1701,22 +1701,60 @@ dtatemp<-dta%>%
     	obs_vac=ifelse( xvac==1, 1, obs_vac),
     	obs_primary=ifelse( zlevel_low==1, 1, obs_primary), 
         
-        
         obshmis_opt=rowSums(dta[colnames(select(dta, starts_with("vol_opt_")))], na.rm=TRUE )>0 , 
         obshmis_ipt=rowSums(dta[colnames(select(dta, starts_with("vol_ipt_")))], na.rm=TRUE )>0 , 
         obshmis_del=rowSums(dta[colnames(select(dta, starts_with("vol_del_")))], na.rm=TRUE )>0 , 
         obshmis_dpt=rowSums(dta[colnames(select(dta, starts_with("vol_dpt_")))], na.rm=TRUE )>0 
     )
 
-dtatempx<-dtatemp%>%select(country, round, month, year, starts_with("z"),
+dtatempx<-dtatemp%>%select(country, round, month, year, weight, starts_with("z"),
                            starts_with("x"))
 
 dtatempy<-dtatemp%>%
-    select(country, round, month, year, starts_with("z"), 
+    select(country, round, month, year, weight, starts_with("z"), 
            starts_with("obs"), starts_with("y"), starts_with("staff"),
            starts_with("vol"))%>%
     mutate_if(is.logical, as.numeric)
 
+```
+
+```{r calculationtest, echo=FALSE}
+table(dta$weight)
+summary(dta$weight)
+
+dtasummaryx1<-dtatempx%>%
+    mutate(weight=1)%>%
+    group_by(country, round, month, year)%>%
+    summarize_at(vars(starts_with("xcovax")),
+                 funs(mean(., na.rm = TRUE)))%>%
+    ungroup()%>%
+    mutate(group="All", grouplabel="")
+
+dtasummaryx2<-dtatempx%>%
+    group_by(country, round, month, year)%>%
+    summarize_at(vars(starts_with("xcovax")),
+                 funs(weighted.mean(., weight, na.rm = TRUE)))%>%
+    ungroup()%>%
+    mutate(group="All", grouplabel="")
+
+dtacheck<-rbind(dtasummaryx1, dtasummaryx2)
+
+dtasummaryy1<-dtatempy%>%
+    mutate(weight=1)%>%
+    group_by(country, round, month, year)%>%
+    summarize_at(vars(starts_with("y")),
+                 funs(sum(., na.rm = TRUE)))%>%
+    ungroup()%>%
+    mutate(group="All", grouplabel="")
+
+dtasummaryy2<-dtatempy%>%
+    group_by(country, round, month, year)%>%
+    summarize_at(vars(starts_with("y")),
+                 funs(sum(.*weight, na.rm = TRUE)))%>%
+    ungroup()%>%
+    mutate(group="All", grouplabel="")
+
+dtacheck<-rbind(dtasummaryy1, dtasummaryy2)
 ```
 
 ```{r calculation}
@@ -1724,7 +1762,7 @@ dtatempy<-dtatemp%>%
 dtasummaryx<-dtatempx%>%
     group_by(country, round, month, year)%>%
     summarize_at(vars(starts_with("x")),
-                 funs(mean(., na.rm = TRUE)))%>%
+                 funs(weighted.mean(., weight, na.rm = TRUE)))%>%
     ungroup()%>%
     mutate(group="All", grouplabel="")
 
@@ -1732,7 +1770,7 @@ dtasummaryy<-dtatempy%>%
     group_by(country, round, month, year)%>%
     summarize_at(vars(starts_with("obs"), starts_with("yvac"), 
                       starts_with("staff"), starts_with("vol")),
-                 funs(sum(., na.rm = TRUE)))%>%
+                 funs(sum(.*weight, na.rm = TRUE)))%>%
     ungroup()%>%
     mutate(group="All", grouplabel="")
 
@@ -1743,7 +1781,7 @@ dtasummaryall<-left_join(dtasummaryx, dtasummaryy,
 dtasummaryx<-dtatempx%>%
     group_by(country, round, month, year, zurban)%>%
     summarize_at(vars(starts_with("x")),
-                 funs(mean(., na.rm = TRUE)))%>%
+                 funs(weighted.mean(., weight, na.rm = TRUE)))%>%
     ungroup()%>%
     mutate(
         group="Location", 
@@ -1755,7 +1793,7 @@ dtasummaryy<-dtatempy%>%
     group_by(country, round, month, year, zurban)%>%
     summarize_at(vars(starts_with("obs"), starts_with("yvac"), 
                       starts_with("staff"), starts_with("vol")),
-                 funs(sum(., na.rm = TRUE)))%>%
+                 funs(sum(.*weight, na.rm = TRUE)))%>%
     ungroup()%>%
     mutate(
         group="Location", 
@@ -1771,7 +1809,7 @@ dtasummarylocation<-left_join(dtasummaryx, dtasummaryy,
 dtasummaryx<-dtatempx%>%
     group_by(country, round, month, year, zlevel_hospital)%>%
     summarize_at(vars(starts_with("x")),
-                 funs(mean(., na.rm = TRUE)))%>%
+                 funs(weighted.mean(., weight, na.rm = TRUE)))%>%
     ungroup()%>%
     mutate(
         group="Level", 
@@ -1783,7 +1821,7 @@ dtasummaryy<-dtatempy%>%
     group_by(country, round, month, year, zlevel_hospital)%>%
     summarize_at(vars(starts_with("obs"), starts_with("yvac"), 
                       starts_with("staff"), starts_with("vol")),
-                 funs(sum(., na.rm = TRUE)))%>%
+                 funs(sum(.*weight, na.rm = TRUE)))%>%
     ungroup()%>%
     mutate(
         group="Level", 
@@ -1799,7 +1837,7 @@ dtasummarylevel<-left_join(dtasummaryx, dtasummaryy,
 dtasummaryx<-dtatempx%>%
     group_by(country, round, month, year, zpub)%>%
     summarize_at(vars(starts_with("x")),
-                 funs(mean(., na.rm = TRUE)))%>%
+                 funs(weighted.mean(., weight, na.rm = TRUE)))%>%
     ungroup()%>%
     mutate(
         group="Sector", 
@@ -1811,7 +1849,7 @@ dtasummaryy<-dtatempy%>%
     group_by(country, round, month, year, zpub)%>%
     summarize_at(vars(starts_with("obs"), starts_with("yvac"), 
                       starts_with("staff"), starts_with("vol")),
-                 funs(sum(., na.rm = TRUE)))%>%
+                 funs(sum(.*weight, na.rm = TRUE)))%>%
     ungroup()%>%
     mutate(
         group="Sector", 
