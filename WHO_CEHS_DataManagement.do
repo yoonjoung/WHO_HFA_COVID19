@@ -1547,7 +1547,7 @@ import excel "$chartbookdir\WHO_CEHS_Chartbook.xlsx", sheet("Weight") firstrow c
 		tab _merge
 		*****CHECK HERE: all should be 3 (i.e., match) by the end of the data collection*/
 		drop _merge*
-		
+	sum weight	
 	sort id /*this is generated from Lime survey*/
 	save CEHS_`country'_R`round'.dta, replace 		
 	
@@ -1600,6 +1600,19 @@ use CEHS_`country'_R`round'.dta, clear
 	*/
 	
 	save temp.dta, replace 
+
+	/*
+	use temp.dta, clear
+		sum weight
+		collapse (count) obs obs_* (mean) xcovax*  (sum) staff_num* yvac* vol* (count) obshmis* [iweight=weight], by(country round month year  )
+		sum obs xcovax* yvac*
+		
+	use temp.dta, clear
+		replace weight=1
+		sum weight
+		collapse (count) obs obs_* (mean) xcovax*  (sum) staff_num* yvac* vol* (count) obshmis* [iweight=weight], by(country round month year  )		
+		sum obs xcovax* yvac*
+	*/
 	
 *****F.1. Calculate estimates 
 
@@ -1672,11 +1685,16 @@ use CEHS_`country'_R`round'.dta, clear
 	rename xsafe__004 xsafe__triage
 	rename xsafe__005 xsafe__isolation
 	
+	***** round the number of observations, in case sampling weight was used (edit 5/22/2021)
+	foreach var of varlist obs*{
+		replace `var' = round(`var', 1)
+		}
+		
 	***** organize order of the variables by section in the questionnaire  
 	order country round year month group grouplabel obs obs_* obshmis* staff_num* staff_pct* 
 		
 	sort country round group grouplabel
-	
+		
 save summary_CEHS_`country'_R`round'.dta, replace 
 
 export delimited using summary_CEHS_`country'_R`round'.csv, replace 

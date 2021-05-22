@@ -904,7 +904,7 @@ restore
 
 	export excel using "$chartbookdir\WHO_Community_Chartbook.xlsx", sheet("Respondent-level cleaned data") sheetreplace firstrow(variables) nolabel
 	export excel using "$chartbookdirpartner\WHO_Community_Chartbook.xlsx", sheet("Respondent-level cleaned data") sheetreplace firstrow(variables) nolabel
-	
+	okok
 **************************************************************
 * F. Create indicator estimate data 
 **************************************************************
@@ -957,11 +957,16 @@ use Community_`country'_R`round'.dta, clear
 			
 	tab grouplabel round, m
 	
+	***** round the number of observations, in case sampling weight was used (edit 5/22/2021)
+	foreach var of varlist obs*{
+		replace `var' = round(`var', 1)
+		}	
+		
 	***** organize order of the variables by section in the questionnaire  
 	order country round year month group grouplabel obs* 
 		
 	sort country round grouplabel
-	
+
 save summary_Community_`country'_R`round'.dta, replace 
 
 export delimited using summary_Community_`country'_R`round'.csv, replace 
