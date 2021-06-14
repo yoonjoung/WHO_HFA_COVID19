@@ -1402,6 +1402,9 @@ dtasummary<-dtasummary%>%
 	    xsafe__triage = xsafe__004,  
 	    xsafe__isolation = xsafe__005
     )%>%
+    #round number of observations, in case sampling weight was used (edit 5/22/2021)
+    mutate_at(vars(starts_with("obs")), 
+              funs(round((.), 0)))%>%
     arrange(country, round, group, grouplabel)
 
 #move up identification variables 

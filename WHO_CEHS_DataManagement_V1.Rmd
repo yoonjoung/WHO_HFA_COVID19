@@ -16,12 +16,11 @@ knitr::opts_chunk$set(echo=TRUE,
 date<-as.Date(Sys.time(	), format='%d%b%Y')
 time<-Sys.time()
 
-suppressMessages(library(dplyr))
+suppressWarnings(suppressMessages(library(dplyr)))
 suppressWarnings(suppressMessages(library(tidyverse)))
 suppressWarnings(suppressMessages(library(readxl)))
 suppressWarnings(suppressMessages(library(xlsx)))
-#suppressWarnings(suppressMessages(library(openxlsx)))
-#suppressMessages(library(Matrix))
+suppressWarnings(suppressMessages(library(openxlsx)))
 suppressWarnings(suppressMessages(library(stringr)))
 suppressWarnings(suppressMessages(library(stringi)))
 suppressWarnings(suppressMessages(library(lubridate)))
@@ -106,36 +105,12 @@ write.csv(dtaraw, paste0(limesurveydir,"LimeSurvey_CEHS_", country, "_R", round,
 
 #####B.3. Export the data to chartbook 
 Then, export the raw data into the chartbook (green tab: "Facility-level raw data") - as is.
-```{r chartbookexport1, eval=FALSE, echo=FALSE}
+```{r chartbookexport1, eval=FALSE}
 dtaraw<-dtaraw%>%mutate(test=Sys.time())
 
 wb <- loadWorkbook(paste0(chartbookdir, "WHO_CEHS_Chartbook.xlsx"))
 writeData(wb, sheet = "Facility-level raw data", dtaraw)
-saveWorkbook(wb,paste0(chartbookdir, "WHO_CEHS_Chartbook.xlsx"),overwrite = TRUE)
-
-# OR
-
-dtaraw<-dtaraw%>%mutate(test=Sys.time())
-
-wb <- loadWorkbook(paste0(chartbookdir, "WHO_CEHS_Chartbook.xlsx"))
-
-removeWorksheet(wb, "Facility-level raw data")
-addWorksheet(wb, "Facility-level raw data")
-writeData(wb, "Facility-level raw data", dtaraw)
-saveWorkbook(wb, 
-             paste0(chartbookdir, "WHO_CEHS_Chartbook.xlsx"), 
-             overwrite = TRUE)
-
-# OR
-
-#https://danganothererror.wordpress.com/2012/02/12/write-data-frame-to-excel-file/
-#This one doesn't work when the worksheet already exists. Ugh.... 
-dtaraw<-dtaraw%>%mutate(test=Sys.time())
-
-write.xlsx(dtaraw, 
-           paste0(chartbookdir, "WHO_CEHS_Chartbook.xlsx"), 
-           sheet = "Facility-level raw data", 
-           append = TRUE)
+saveWorkbook(wb, paste0(chartbookdir, "WHO_CEHS_Chartbook.xlsx"), overwrite = TRUE)
 ```
 
 ---
@@ -1671,13 +1646,12 @@ dim(dta)
 write.csv(dta, paste0("CEHS_", country, "_R", round, ".csv"))
 ```
 
-```{r chartbookexport2, eval=FALSE, echo=FALSE}
+```{r chartbookexport2, eval=FALSE}
 dta<-dta%>%mutate(test=Sys.time())
 
-#write.xlsx(dta, 
-#           paste0(chartbookdir, "WHO_CEHS_Chartbook.xlsx"), 
-#           sheet = "Facility-level cleaned data", 
-#           append = TRUE)
+wb <- loadWorkbook(paste0(chartbookdir, "WHO_CEHS_Chartbook.xlsx"))
+writeData(wb, sheet = "Facility-level cleaned data", dta)
+saveWorkbook(wb,paste0(chartbookdir, "WHO_CEHS_Chartbook.xlsx"),overwrite = TRUE)
 ```
 
 ---
@@ -1716,6 +1690,61 @@ dtatempy<-dtatemp%>%
            starts_with("vol"))%>%
     mutate_if(is.logical, as.numeric)
 
+```
+
+```{r calculationtest2, echo=FALSE}
+#check sampling weight
+table(dta$weight)
+summary(dta$weight)
+
+#Question: does the code run with a fake var name? YES
+dtasummaryx1<-dtatempx%>%
+    mutate(weight=1)%>%
+    group_by(country, round, month, year)%>%
+    summarize_at(vars(starts_with("nodata")),
+                 funs(mean(., na.rm = TRUE)))%>%
+    ungroup()%>%
+    mutate(group="All", grouplabel="")
+
+head(dtasummaryx1)
+
+dtasummaryx2<-dtatempx%>%
+    group_by(country, round, month, year)%>%
+    summarize_at(vars(starts_with("nodata")),
+                 funs(weighted.mean(., weight, na.rm = TRUE)))%>%
+    ungroup()%>%
+    mutate(group="All", grouplabel="")
+
+head(dtasummaryx1)
+```
+
+```{r calculationtest3, echo=FALSE, eval=FALSE}
+#check sampling weight
+table(dta$weight)
+summary(dta$weight)
+
+#Question: does it work with factor variables? NO
+dtasummaryx1<-dtatempx%>%
+    mutate(weight=1)%>%
+    group_by(country, round, month, year)%>%
+    #change to factor
+    mutate(xcovax=as.factor(xcovax))%>%
+    summarize_at(vars(starts_with("xcovax")),
+                 funs(mean(., na.rm = TRUE)))%>%
+    ungroup()%>%
+    mutate(group="All", grouplabel="unweighted")
+
+dtasummaryx2<-dtatempx%>%
+    group_by(country, round, month, year)%>%
+    #change to factor
+    mutate(xcovax=as.factor(xcovax))%>%
+    summarize_at(vars(starts_with("xcovax")),
+                 funs(weighted.mean(., weight, na.rm = TRUE)))%>%
+    ungroup()%>%
+    mutate(group="All", grouplabel="weighted")
+
+dtacheck<-rbind(dtasummaryx1, dtasummaryx2)
+head(dtacheck)
 ```
 
 ```{r calculationtest, echo=FALSE}
@@ -1894,6 +1923,9 @@ dtasummary<-dtasummary%>%
 	    xsafe__triage = xsafe__004,  
 	    xsafe__isolation = xsafe__005        
     )%>%
+    #round number of observations, in case sampling weight was used (edit 5/22/2021)
+    mutate_at(vars(starts_with("obs")), 
+              funs(round((.), 0)))%>%
     #drop categorial var
     select(-xopt_change)%>% 
     arrange(country, round, group, grouplabel)
@@ -1910,27 +1942,28 @@ dtasummary[sapply(dtasummary, is.nan)] <- NA
 
 #####F.2. Export indicator estimate data to chart book 
 ```{r summarydatacsv}
-write.csv(dtasummary, 
-          paste0("summary_CEHS_", country, "_R", round, ".csv"))
-
-```
-
-```{r chartbookexport3}
 dtasummary<-dtasummary%>%
     mutate(
         updatedate = as.Date(Sys.time(	), format='%d%b%Y'), 
         updatetime = Sys.time()
 	)
 
+write.csv(dtasummary, 
+          paste0("summary_CEHS_", country, "_R", round, ".csv"))
+
+```
+
+```{r chartbookexport3, eval=FALSE}
+wb <- loadWorkbook(paste0(chartbookdir, "WHO_CEHS_Chartbook.xlsx"))
+writeData(wb, sheet = "Indicator estimate data", dtasummary)
+saveWorkbook(wb,paste0(chartbookdir, "WHO_CEHS_Chartbook.xlsx"),overwrite = TRUE)
+```
+
+```{r crosscheck}
 # for cross check against Stata results 
 write.csv(dtasummary, 
           paste0("summary_CEHS_", country, "_R", round, "_R.csv"), 
           na="")
-
-#write.xlsx(dta, 
-#           paste0("WHO_CEHS_Chartbook.xlsx"), 
-#           sheet = "Indicator estimate Data", 
-#           append = TRUE)
 ```
 
 ---
