@@ -34,6 +34,7 @@ This repository has data cleaning/management/analysis programs. There are three 
 -- Mock-up data for testing with a country name, "EXAMPLE", and the round number 1: LimeSurvey_CEHS_EXAMPLE_R1.csv   
 -- Analysis code in Stata: WHO_CEHS_DataManagement.do   
 -- Analysis code in R: WHO_CEHS_DataManagement.Rmd 
+-- SampleChartbook_ToPracticeDynamicDuo.xlsx (Sample chartbook to practive, using CEHS as an example)
 
 * Community   
 -- Questionnaire (PDF): __Community assessment tool_20210205_Clean.pdf__   
