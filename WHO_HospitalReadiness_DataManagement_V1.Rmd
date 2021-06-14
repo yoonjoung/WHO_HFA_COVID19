@@ -1180,8 +1180,9 @@ dta<-cbind(dta, temp1, temp2, temp3)%>%
 ---
 
 #####E.3. Merge with sampling weight 
-This code chunk can be skipped if no sampling weight is used. 
-```{r weightmerge}
+Select Option A (if threre are sampling weights) or Option B (if there is no sampling weight).    
+__Option A__  
+```{r weightmerge_OptionA}
 # read sampling weight in the chartbook provided by the country. Makesure there are no duplicates 
 dtaweight<-read_excel(paste0(chartbookdir, "WHO_COVID19HospitalReadiness_Chartbook.xlsx"), sheet = "Weight")
 
@@ -1204,6 +1205,13 @@ dta<-left_join(dta, dtaweight, by = c("facilitycode"))%>%
 
 # confirm dimension 
 dim(dta)
+```
+
+__Option B__  
+```{r weightmerge_OptionB, eval=FALSE}
+# Give "sampling weights" 1 to all observations (edit 6/14/2021)
+dta<-dta%>%
+    mutate(weight=1)
 ```
 
 ---
