@@ -32,7 +32,7 @@ suppressWarnings(suppressMessages(library(data.table)))
 
 ###Data cleaning, management, and analysis of COVID-19 commmunity assessment with key informant interviews 
 
-This provides steps and code for data cleaning, management, and analysis of __COVID-19 commuunity key informant__ assessment survey. [See here for the questionnare (link forthcoming)](). <span style="color: red;">
+This provides steps and code for data cleaning, management, and analysis of __COVID-19 commuunity key informant__ assessment survey. [See here for the questionnare](https://www.who.int/teams/integrated-health-services/monitoring-health-services/frontline-service-readiness-assessments). <span style="color: red;">
 (Standard module version as of 2/5/2021) </span>    
 
 This code:   
@@ -77,11 +77,26 @@ surveyid<-777777        #LimeSurvey survey ID
 ####B. Import and drop duplicate cases
 #####B.1. Import raw data from LimeSurvey 
 ```{r importraw, eval=FALSE}
-#Import directly from LimeSurvey
+#Import directly from LimeSurvey - using the correct link, according to the country overview page (edit 6/23/2021)
 dtaraw<-read.csv(paste0("https://who.my-survey.host/index.php/plugins/direct?plugin=CountryOverview&docType=1&sid=",surveyid,"&language=en&function=createExport"))
 
 obsraw<-nrow(dtaraw)
 cols<-ncol(dtaraw)
+```
+
+Note: For the URL, we need to use part of the country overview page for the data server. For example, suppose the overview page link looks like this for a country named YYY:  
+https://extranet.who.int/dataformv3/index.php/plugins/direct?plugin=CountryOverview&country=YYY&password=XXXXXXXXX. 
+
+Replace part of the link before `plugins` with the part in the country-specific link. So, in this example, the code should be:
+
+```
+dtaraw<-read.csv(paste0("https://extranet.who.int/dataformv3/index.php/plugins/direct?plugin=CountryOverview&docType=1&sid=",surveyid,"&language=en&function=createExport"))
+```
+
+As opposed to the above:
+
+```
+dtaraw<-read.csv(paste0("https://who.my-survey.host/index.php/plugins/direct?plugin=CountryOverview&docType=1&sid=",surveyid,"&language=en&function=createExport"))
 ```
 
 ```{r importraw_mock}
