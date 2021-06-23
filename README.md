@@ -22,6 +22,9 @@ This repository has data cleaning/management/analysis programs. There are three 
 -- Analysis code in Stata: WHO_Community_DataManagement.do __(updated on 6/23/2021)__   
 -- Analysis code in R: WHO_CommunityKIS_DataManagement.Rmd (https://rpubs.com/YJ_Choi/WHO_COVID19HFA_Com) __(updated on 6/23/2021)__   
 
+* Sample chartbook, using CEHS as an example 
+-- SampleChartbook_ToPracticeDynamicDuo.xlsx
+
 ### Version1_2021 02 06 (initial publication: Feb 6, 2021)
 
 * COVID-19 Hospital Case Management Capacity Survey/Module   
