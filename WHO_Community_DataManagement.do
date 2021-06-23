@@ -77,6 +77,19 @@ global date=subinstr("`c_today'", " ", "",.)
 	
 *****B.1. Import raw data from LimeSurvey 
 *import delimited using "https://who.my-survey.host/index.php/plugins/direct?plugin=CountryOverview&docType=1&sid=`surveyid'&language=en&function=createExport", case(preserve) clear
+*import delimited using "https://extranet.who.int/dataformv3/index.php/plugins/direct?plugin=CountryOverview&docType=1&sid=`surveyid'&language=en&function=createExport", case(preserve) clear
+	/*
+	
+	NOTE
+	
+	For the URL, we need to use part of the country overview page for the data server. For example, suppose the overview page link looks like this for a country named YYY:
+	https://extranet.who.int/dataformv3/index.php/plugins/direct?plugin=CountryOverview&country=YYY&password=XXXXXXXXX.
+
+	Replace part of the link before plugins with the part in the country-specific link. So, the code should be: 
+
+	import delimited using "https://extranet.who.int/dataformv3/index.php/plugins/direct?plugin=CountryOverview&docType=1&sid=`surveyid'&language=en&function=createExport", case(preserve) clear
+
+	*/
 import delimited "$downloadcsvdir/LimeSurvey_Community_EXAMPLE_R1.csv", case(preserve) clear  /*THIS LINE ONLY FOR PRACTICE*/
 
 *****B.2. Export/save the data daily in CSV form with date 
@@ -904,7 +917,7 @@ restore
 
 	export excel using "$chartbookdir\WHO_Community_Chartbook.xlsx", sheet("Respondent-level cleaned data") sheetreplace firstrow(variables) nolabel
 	export excel using "$chartbookdirpartner\WHO_Community_Chartbook.xlsx", sheet("Respondent-level cleaned data") sheetreplace firstrow(variables) nolabel
-	okok
+	
 **************************************************************
 * F. Create indicator estimate data 
 **************************************************************
@@ -957,11 +970,14 @@ use Community_`country'_R`round'.dta, clear
 			
 	tab grouplabel round, m
 	
+	/*
 	***** round the number of observations, in case sampling weight was used (edit 5/22/2021)
+	* But this is not relevant for the community KIS design. 
 	foreach var of varlist obs*{
 		replace `var' = round(`var', 1)
 		}	
-		
+	*/
+	
 	***** organize order of the variables by section in the questionnaire  
 	order country round year month group grouplabel obs* 
 		

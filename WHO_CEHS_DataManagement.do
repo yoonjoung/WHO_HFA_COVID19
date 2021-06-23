@@ -78,6 +78,19 @@ global date=subinstr("`c_today'", " ", "",.)
 
 *****B.1. Import raw data from LimeSurvey 
 *import delimited using "https://who.my-survey.host/index.php/plugins/direct?plugin=CountryOverview&docType=1&sid=`surveyid'&language=en&function=createExport", case(preserve) clear
+*import delimited using "https://extranet.who.int/dataformv3/index.php/plugins/direct?plugin=CountryOverview&docType=1&sid=`surveyid'&language=en&function=createExport", case(preserve) clear
+	/*
+	
+	NOTE
+	
+	For the URL, we need to use part of the country overview page for the data server. For example, suppose the overview page link looks like this for a country named YYY:
+	https://extranet.who.int/dataformv3/index.php/plugins/direct?plugin=CountryOverview&country=YYY&password=XXXXXXXXX.
+
+	Replace part of the link before plugins with the part in the country-specific link. So, the code should be: 
+
+	import delimited using "https://extranet.who.int/dataformv3/index.php/plugins/direct?plugin=CountryOverview&docType=1&sid=`surveyid'&language=en&function=createExport", case(preserve) clear
+
+	*/
 import delimited "$downloadcsvdir/LimeSurvey_CEHS_EXAMPLE_R1.csv", case(preserve) clear  /*THIS LINE ONLY FOR PRACTICE*/
 
 *****B.2. Export/save the data daily in CSV form with date 	
