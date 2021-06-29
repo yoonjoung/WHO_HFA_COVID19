@@ -129,8 +129,8 @@ export excel using "$chartbookdirpartner\WHO_COVID19HospitalReadiness_Chartbook.
 	*****CHECK HERE: In the model data, there is one duplicate for practice purpose. 
 	
 	*****drop duplicates before the latest submission */
-	egen double submitdatelatest = max(submitdate) if duplicate==1
-						
+	egen double submitdatelatest = max(submitdate) if duplicate==1 , by(Q101) /*LATEST TIME WITHIN EACH DUPLICATE YC edit 6/29/2021*/											
+	
 		format %tcnn/dd/ccYY_hh:MM submitdatelatest
 		
 		list Q101 Q102 Q104 Q105 submitdate* if duplicate==1	

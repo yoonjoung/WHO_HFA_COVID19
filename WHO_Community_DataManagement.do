@@ -128,7 +128,7 @@ export excel using "$chartbookdirpartner\WHO_Community_Chartbook.xlsx", sheet("F
 	*****CHECK HERE: In the model data, there is one duplicate for practice purpose. 
 		
 	*****drop duplicates before the latest submission */
-	egen double submitdatelatest = max(submitdate) if duplicate==1
+	egen double submitdatelatest = max(submitdate) if duplicate==1, by(Q105) /*LATEST TIME WITHIN EACH DUPLICATE YC edit 6/29/2021*/
 						
 		format %tcnn/dd/ccYY_hh:MM submitdatelatest
 		
