@@ -57,7 +57,6 @@ global downloadcsvdir "C:\Users\YoonJoung Choi\World Health Organization\BANICA,
 *** Define a directory for the chartbook, if different from the main directory 
 *global chartbookdir "C:\Users\ctaylor\World Health Organization\BANICA, Sorin - HSA unit\2 Global goods & tools\2 HFAs\1 HFAs for COVID-19\4. Implementation support materials\4. Analysis and dashboards\"
 global chartbookdir "C:\Users\YoonJoung Choi\World Health Organization\BANICA, Sorin - HSA unit\2 Global goods & tools\2 HFAs\1 HFAs for COVID-19\4. Implementation support materials\4. Analysis and dashboards\"
-global chartbookdirpartner "C:\Users\YoonJoung Choi\World Health Organization\BANICA, Sorin - HSA unit\2 Global goods & tools\2 HFAs\1 HFAs for COVID-19\4. Implementation support materials\Expert-Partner webinar materials\"
 
 *** Define local macro for the survey 
 local country	 		 COUNTRYNAME /*country name*/	
@@ -109,7 +108,6 @@ import delimited "$downloadcsvdir/LimeSurvey_COVID19HospitalReadiness_EXAMPLE_R1
 		replace Q109 =. 	
 	
 export excel using "$chartbookdir\WHO_COVID19HospitalReadiness_Chartbook.xlsx", sheet("Facility-level raw data") sheetreplace firstrow(variables) nolabel
-export excel using "$chartbookdirpartner\WHO_COVID19HospitalReadiness_Chartbook.xlsx", sheet("Facility-level raw data") sheetreplace firstrow(variables) nolabel
 
 *****B.4. Drop duplicate cases 
 
@@ -1125,8 +1123,7 @@ import excel "$chartbookdir\WHO_COVID19HospitalReadiness_Chartbook.xlsx", sheet(
 	export delimited using COVID19HospitalReadiness_`country'_R`round'.csv, replace 
 
 	export excel using "$chartbookdir\WHO_COVID19HospitalReadiness_Chartbook.xlsx", sheet("Facility-level cleaned data") sheetreplace firstrow(variables) nolabel
-	export excel using "$chartbookdirpartner\WHO_COVID19HospitalReadiness_Chartbook.xlsx", sheet("Facility-level cleaned data") sheetreplace firstrow(variables) nolabel
-	
+		
 **************************************************************
 * F. Create indicator estimate data 
 **************************************************************
@@ -1139,6 +1136,7 @@ use COVID19HospitalReadiness_`country'_R`round'.dta, clear
 	gen obs_ipt=1 	if xipt==1
 	gen obs_icu=1 	if xicu==1
 	gen obs_vac=1 	if xvac==1
+	gen obs_covax=1 	if xcovax==1	
 	
 	gen obs_spcm=1 	if xspcm==1
 	gen obs_pcr=1 	if xpcr==1
@@ -1229,7 +1227,7 @@ use COVID19HospitalReadiness_`country'_R`round'.dta, clear
 	***** organize order of the variables by section in the questionnaire  
 	order country round year month group grouplabel obs* staff*
 		
-	sort country round grouplabel
+	sort country round group grouplabel
 	
 save summary_COVID19HospitalReadiness_`country'_R`round'.dta, replace 
 
@@ -1246,12 +1244,11 @@ use summary_COVID19HospitalReadiness_`country'_R`round'.dta, clear
 	replace updatetime="`time'"
 
 export excel using "$chartbookdir\WHO_COVID19HospitalReadiness_Chartbook.xlsx", sheet("Indicator estimate data") sheetreplace firstrow(variables) nolabel keepcellfmt
-export excel using "$chartbookdirpartner\WHO_COVID19HospitalReadiness_Chartbook.xlsx", sheet("Indicator estimate data") sheetreplace firstrow(variables) nolabel keepcellfmt
 
-
-* For YJ's shiny app and cross check against results from R
+/* For YJ's shiny app and cross check against results from R
 export delimited using "C:\Users\YoonJoung Choi\Dropbox\0 iSquared\iSquared_WHO\ACTA\4.ShinyApp\0_Model\summary_COVID19HospitalReadiness_`country'_R`round'.csv", replace 
 export delimited using "C:\Users\YoonJoung Choi\Dropbox\0 iSquared\iSquared_WHO\ACTA\3.AnalysisPlan\summary_COVID19HospitalReadiness_`country'_R`round'_Stata.csv", replace 
+*/
 
 erase temp.dta
 

@@ -1259,6 +1259,7 @@ dtatemp<-dta%>%
     	obs_ipt=NA,
     	obs_icu=NA, 
     	obs_vac=NA, 
+    	obs_covax=NA, 
     	
     	obs_spcm=NA, 
     	obs_pcr=NA, 
@@ -1269,6 +1270,7 @@ dtatemp<-dta%>%
     	obs_ipt=ifelse( xipt==1, 1, obs_ipt),
     	obs_icu=ifelse( xicu==1, 1, obs_icu),
     	obs_vac=ifelse( xvac==1, 1, obs_vac),
+    	obs_covax=ifelse( xcovax==1, 1, obs_covax),
     	
     	obs_spcm=ifelse( xspcm==1, 1, obs_spcm),
     	obs_pcr=ifelse( xpcr==1, 1, obs_pcr),

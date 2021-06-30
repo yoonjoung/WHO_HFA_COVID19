@@ -57,7 +57,6 @@ global downloadcsvdir "C:\Users\YoonJoung Choi\World Health Organization\BANICA,
 *** Define a directory for the chartbook, if different from the main directory 
 *global chartbookdir "C:\Users\ctaylor\World Health Organization\BANICA, Sorin - HSA unit\2 Global goods & tools\2 HFAs\1 HFAs for COVID-19\4. Implementation support materials\4. Analysis and dashboards\"
 global chartbookdir "C:\Users\YoonJoung Choi\World Health Organization\BANICA, Sorin - HSA unit\2 Global goods & tools\2 HFAs\1 HFAs for COVID-19\4. Implementation support materials\4. Analysis and dashboards\"
-global chartbookdirpartner "C:\Users\YoonJoung Choi\World Health Organization\BANICA, Sorin - HSA unit\2 Global goods & tools\2 HFAs\1 HFAs for COVID-19\4. Implementation support materials\Expert-Partner webinar materials\"
 
 *** Define local macro for the survey 
 local country	 		 COUNTRYNAME /*country name*/	
@@ -108,8 +107,6 @@ export delimited using "$downloadcsvdir/LimeSurvey_CEHS_`country'_R`round'_$date
 		}	
 		
 export excel using "$chartbookdir\WHO_CEHS_Chartbook.xlsx", sheet("Facility-level raw data") sheetreplace firstrow(variables) nolabel
-export excel using "$chartbookdirpartner\WHO_CEHS_Chartbook.xlsx", sheet("Facility-level raw data") sheetreplace firstrow(variables) nolabel /*partner workshop*/
-export excel using "$chartbookdirpartner\SampleChartbook_ToPracticeDynamicDuo.xlsx", sheet("Facility-level raw data") sheetreplace firstrow(variables) nolabel /*partner workshop*/
 
 *****B.4. Drop duplicate cases 
 
@@ -1580,9 +1577,7 @@ import excel "$chartbookdir\WHO_CEHS_Chartbook.xlsx", sheet("Weight") firstrow c
 	export delimited using CEHS_`country'_R`round'.csv, replace 
 
 	export excel using "$chartbookdir\WHO_CEHS_Chartbook.xlsx", sheet("Facility-level cleaned data") sheetreplace firstrow(variables) nolabel
-	export excel using "$chartbookdirpartner\WHO_CEHS_Chartbook.xlsx", sheet("Facility-level cleaned data") sheetreplace firstrow(variables) nolabel
-	export excel using "$chartbookdirpartner\SampleChartbook_ToPracticeDynamicDuo.xlsx", sheet("Facility-level cleaned data") sheetreplace firstrow(variables) nolabel
-
+	
 **************************************************************
 * F. Create indicator estimate data 
 **************************************************************
@@ -1595,8 +1590,10 @@ use CEHS_`country'_R`round'.dta, clear
 	gen obs_ipt=1 		if xipt==1
 	gen obs_er=1 		if xer==1
 	gen obs_vac=1 		if xvac==1
+	gen obs_covax=1 	if xcovax==1	
 	gen obs_primary=1 	if zlevel_low==1 /*COUNTRY SPECIFIC*/
-		
+	gen obs_hospital=1 	if zlevel_low==0 /*COUNTRY SPECIFIC*/
+	
 	global itemlist "opt ipt del dpt"
 	foreach item in $itemlist{	
 		capture drop temp
@@ -1722,12 +1719,11 @@ use summary_CEHS_`country'_R`round'.dta, clear
 	replace updatetime="`time'"
 	
 export excel using "$chartbookdir\WHO_CEHS_Chartbook.xlsx", sheet("Indicator estimate data") sheetreplace firstrow(variables) nolabel keepcellfmt
-export excel using "$chartbookdirpartner\WHO_CEHS_Chartbook.xlsx", sheet("Indicator estimate data") sheetreplace firstrow(variables) nolabel keepcellfmt
-export excel using "$chartbookdirpartner\SampleChartbook_ToPracticeDynamicDuo.xlsx", sheet("Indicator estimate data") sheetreplace firstrow(variables) nolabel keepcellfmt
 
-* For YJ's shiny app and cross check against results from R
+/* For YJ's shiny app and cross check against results from R
 export delimited using "C:\Users\YoonJoung Choi\Dropbox\0 iSquared\iSquared_WHO\ACTA\4.ShinyApp\0_Model\summary_CEHS_`country'_R`round'.csv", replace 
 export delimited using "C:\Users\YoonJoung Choi\Dropbox\0 iSquared\iSquared_WHO\ACTA\3.AnalysisPlan\summary_CEHS_`country'_R`round'_Stata.csv", replace 
+*/
 
 erase temp.dta
 

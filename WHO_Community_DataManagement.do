@@ -56,7 +56,6 @@ global downloadcsvdir "C:\Users\YoonJoung Choi\World Health Organization\BANICA,
 *** Define a directory for the chartbook, if different from the main directory 
 *global chartbookdir "C:\Users\ctaylor\World Health Organization\BANICA, Sorin - HSA unit\2 Global goods & tools\2 HFAs\1 HFAs for COVID-19\4. Implementation support materials\4. Analysis and dashboards\"
 global chartbookdir "C:\Users\YoonJoung Choi\World Health Organization\BANICA, Sorin - HSA unit\2 Global goods & tools\2 HFAs\1 HFAs for COVID-19\4. Implementation support materials\4. Analysis and dashboards\"
-global chartbookdirpartner "C:\Users\YoonJoung Choi\World Health Organization\BANICA, Sorin - HSA unit\2 Global goods & tools\2 HFAs\1 HFAs for COVID-19\4. Implementation support materials\Expert-Partner webinar materials\"
 
 *** Define local macro for the survey 
 local country	 		 COUNTRYNAME /*country name*/	
@@ -108,7 +107,6 @@ export delimited using "$downloadcsvdir/LimeSurvey_Community_`country'_R`round'_
 		replace Q106=. 
 
 export excel using "$chartbookdir\WHO_Community_Chartbook.xlsx", sheet("Facility-level raw data") sheetreplace firstrow(variables) nolabel
-export excel using "$chartbookdirpartner\WHO_Community_Chartbook.xlsx", sheet("Facility-level raw data") sheetreplace firstrow(variables) nolabel
 
 *****B.4. Drop duplicate cases 
 	
@@ -916,8 +914,7 @@ restore
 *****E.3. Export clean Respondent-level data to chart book 
 
 	export excel using "$chartbookdir\WHO_Community_Chartbook.xlsx", sheet("Respondent-level cleaned data") sheetreplace firstrow(variables) nolabel
-	export excel using "$chartbookdirpartner\WHO_Community_Chartbook.xlsx", sheet("Respondent-level cleaned data") sheetreplace firstrow(variables) nolabel
-	
+		
 **************************************************************
 * F. Create indicator estimate data 
 **************************************************************
@@ -981,7 +978,7 @@ use Community_`country'_R`round'.dta, clear
 	***** organize order of the variables by section in the questionnaire  
 	order country round year month group grouplabel obs* 
 		
-	sort country round grouplabel
+	sort country round group grouplabel
 
 save summary_Community_`country'_R`round'.dta, replace 
 
@@ -998,11 +995,11 @@ use summary_Community_`country'_R`round'.dta, clear
 	replace updatetime="`time'"
 	
 export excel using "$chartbookdir\WHO_Community_Chartbook.xlsx", sheet("Indicator estimate data") sheetreplace firstrow(variables) nolabel keepcellfmt
-export excel using "$chartbookdirpartner\WHO_Community_Chartbook.xlsx", sheet("Indicator estimate data") sheetreplace firstrow(variables) nolabel keepcellfmt
 
-* For YJ's shiny app and cross check against results from R
+/* For YJ's shiny app and cross check against results from R
 export delimited using "C:\Users\YoonJoung Choi\Dropbox\0 iSquared\iSquared_WHO\ACTA\4.ShinyApp\0_Model\summary_Commmunity_`country'_R`round'.csv", replace 
 export delimited using "C:\Users\YoonJoung Choi\Dropbox\0 iSquared\iSquared_WHO\ACTA\3.AnalysisPlan\summary_Community_`country'_R`round'_Stata.csv", replace 
+*/
 
 erase temp.dta
 

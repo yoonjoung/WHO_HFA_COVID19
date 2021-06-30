@@ -1691,13 +1691,17 @@ dtatemp<-dta%>%
     	obs_ipt=NA,
     	obs_er=NA, 	
     	obs_vac=NA, 
+    	obs_covax=NA, 
     	obs_primary=NA, 
+    	obs_hospital=NA, 
     	
     	obs_userfee=ifelse( xuserfee==1, 1, obs_userfee),
     	obs_ipt=ifelse( xipt==1, 1, obs_ipt),
     	obs_er=ifelse( xer==1, 1, obs_er),
     	obs_vac=ifelse( xvac==1, 1, obs_vac),
+    	obs_covax=ifelse( xcovax==1, 1, obs_covax),
     	obs_primary=ifelse( zlevel_low==1, 1, obs_primary), 
+    	obs_hospital=ifelse( zlevel_low==0, 1, obs_hospital), 
         
         obshmis_opt=rowSums(dta[colnames(select(dta, starts_with("vol_opt_")))], na.rm=TRUE )>0 , 
         obshmis_ipt=rowSums(dta[colnames(select(dta, starts_with("vol_ipt_")))], na.rm=TRUE )>0 , 
