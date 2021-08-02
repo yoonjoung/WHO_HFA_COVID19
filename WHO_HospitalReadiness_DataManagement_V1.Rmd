@@ -50,6 +50,8 @@ __FOUR parts must be updated, based on the minmum country-specific adaptation.__
 <span style="color: blue;">
 Depending on the extent of additional country-specific adaptation, further revise __E.2. Construct analysis variables__.</span>    
 
+<span style="color: red;">See Section __E.2-Addendum__ (added on August 2, 2021)<span> 
+
 (Last updated: `r time`)    
 
 ---
@@ -1193,6 +1195,131 @@ dta<-cbind(dta, temp1, temp2, temp3)%>%
               funs(ifelse(xcovax!=1, NA, .) ) )
 
 ```
+
+---
+
+#####E.2-Addendum. Rename indicators for easier data use 
+
+<span style="color: blue;">Rename indicators ending with sub-question numbers with more friendly names. These names are used in the dash board. __Thus, it is important to ensure the indicator names are correct, if questionnaire is adapted beyond minimum requirements.__ (Addendum on August 2, 2021)<span>  
+
+```{r rename_detailed_indicators}
+#dta%>%select(grep("__", names(dta)))%>%colnames() 
+
+dta<-dta%>%
+    rename(
+        xtraining__ipc	 = 	xtraining__001	, 
+        xtraining__ppe	 = 	xtraining__002	, 
+        xtraining__triage	 = 	xtraining__003	, 
+        xtraining__emerg	 = 	xtraining__004	, 
+        xtraining__remote	 = 	xtraining__005	, 
+        xtraining__mental	 = 	xtraining__006	, 
+        xtraining__ss_ipc	 = 	xtraining__007	, 
+        xtraining__ss_ppe	 = 	xtraining__008	, 
+        xtraining__ss_c19cm	 = 	xtraining__009	, 
+        
+        xdrug__chlorhex	 = 	xdrug__001	, 
+        xdrug__chlorine	 = 	xdrug__002	, 
+        xdrug__epinephrine	 = 	xdrug__003	, 
+        xdrug__ceftriaxone	 = 	xdrug__004	, 
+        xdrug__ampicillin	 = 	xdrug__005	, 
+        xdrug__azithromycin	 = 	xdrug__006	, 
+        xdrug__rocuronium	 = 	xdrug__007	, 
+        xdrug__haloperidol	 = 	xdrug__008	, 
+        xdrug__morphine	 = 	xdrug__009	, 
+        xdrug__paracetamol	 = 	xdrug__010	, 
+        xdrug__hydrocortisone	 = 	xdrug__011	, 
+        xdrug__heparin	 = 	xdrug__012	, 
+        xdrug__saline	 = 	xdrug__013	, 
+        xdrug__oxygen	 = 	xdrug__014	, 
+        
+        xsupply__syringes	 = 	xsupply__001	, 
+        xsupply__ivsets	 = 	xsupply__002	, 
+        xsupply__gauze	 = 	xsupply__003	, 
+        
+        xsafe__entrance_screening	 = 	xsafe__001	, 
+        xsafe__staff_entrance	 = 	xsafe__002	, 
+        xsafe__sep_room	 = 	xsafe__003	, 
+        xsafe__triage_c19	 = 	xsafe__004	, 
+        xsafe__isolatareas	 = 	xsafe__005	, 
+        xsafe__triage_guidelines	 = 	xsafe__006	, 
+        xsafe__distancing	 = 	xsafe__007	, 
+        xsafe__hygiene_instructions	 = 	xsafe__008	, 
+        xsafe__hygiene_stations	 = 	xsafe__009	, 
+        xsafe__ppe	 = 	xsafe__010	, 
+        xsafe__cleaning	 = 	xsafe__011	, 
+        
+        xguideline__screening	 = 	xguideline__001	, 
+        xguideline__c19_manage	 = 	xguideline__002	, 
+        xguideline__ppe	 = 	xguideline__003	, 
+        xguideline__c19_surveillance	 = 	xguideline__004	, 
+        xguideline__deadbody	 = 	xguideline__005	, 
+        xguideline__waste	 = 	xguideline__006	, 
+        
+        xppe_allsome__gown	 = 	xppe_allsome__001	, 
+        xppe_allsome__gloves	 = 	xppe_allsome__002	, 
+        xppe_allsome__goggles	 = 	xppe_allsome__003	, 
+        xppe_allsome__faceshield	 = 	xppe_allsome__004	, 
+        xppe_allsome__respirator	 = 	xppe_allsome__005	, 
+        xppe_allsome__mask	 = 	xppe_allsome__006	, 
+        
+        xppe_all__gown	 = 	xppe_all__001	, 
+        xppe_all__gloves	 = 	xppe_all__002	, 
+        xppe_all__goggles	 = 	xppe_all__003	, 
+        xppe_all__faceshield	 = 	xppe_all__004	, 
+        xppe_all__respirator	 = 	xppe_all__005	, 
+        xppe_all__mask	 = 	xppe_all__006	, 
+        			
+        xipcitem__soap	 = 	xipcitem__001	, 
+        xipcitem__sanitizer	 = 	xipcitem__002	, 
+        xipcitem__biobag	 = 	xipcitem__003	, 
+        xipcitem__boxes	 = 	xipcitem__004	, 
+        xipcitem__bodybags	 = 	xipcitem__005	, 
+        			
+        xspcmitem__transport	 = 	xspcmitem__001	, 
+        xspcmitem__swab	 = 	xspcmitem__002	, 
+        			
+        xoffsitetime_24hours	 = 	xoffsitetime_1	, 
+        xoffsitetime_2days	 = 	xoffsitetime_2	, 
+        xoffsitetime_3days	 = 	xoffsitetime_3	, 
+        xoffsitetime_7days	 = 	xoffsitetime_7	, 
+                
+        xequip_anyfunction__xray	 = 	xequip_anyfunction__001	, 
+        xequip_anyfunction__oximeters	 = 	xequip_anyfunction__002	, 
+        xequip_anyfunction__vicu	 = 	xequip_anyfunction__003	, 
+        xequip_anyfunction__vnoninv	 = 	xequip_anyfunction__004	, 
+        			
+        xequip_allfunction__xray	 = 	xequip_allfunction__001	, 
+        xequip_allfunction__oximeters	 = 	xequip_allfunction__002	, 
+        xequip_allfunction__vicu	 = 	xequip_allfunction__003	, 
+        xequip_allfunction__vnoninv	 = 	xequip_allfunction__004	, 
+        			
+        xequip_anymalfunction__vicu	 = 	xequip_anymalfunction__003	, 
+        xequip_anymalfunction__vnoninv	 = 	xequip_anymalfunction__004	, 
+
+		xequip_malfunction_reason__inst	 = 	xequip_malfunction_reason__001	, 
+		xequip_malfunction_reason__cons	 = 	xequip_malfunction_reason__002	, 
+		xequip_malfunction_reason__staff	 = 	xequip_malfunction_reason__003	, 
+		xequip_malfunction_reason__funds	 = 	xequip_malfunction_reason__004	, 
+		xequip_malfunction_reason__power	 = 	xequip_malfunction_reason__005	, 
+        			
+        xcovax_offer__pfizer	 = 	 xcovax_offer__001	, 
+        xcovax_offerav__pfizer	 = 	 xcovax_offerav__001	, 
+        xcovax_offer__moderna	 = 	 xcovax_offer__002	, 
+        xcovax_offerav__moderna	 = 	 xcovax_offerav__002	, 
+        xcovax_offer__astra	 = 	 xcovax_offer__003	, 
+        xcovax_offerav__astra	 = 	 xcovax_offerav__003	, 
+        xcovax_offer__jj	 = 	 xcovax_offer__004	, 
+        xcovax_offerav__jj	 = 	 xcovax_offerav__004	, 
+        xcovax_train__storage	 = 	 xcovax_train__001	, 
+        xcovax_train__admin	 = 	 xcovax_train__002	, 
+        xcovax_train__manage_adverse	 = 	 xcovax_train__003	, 
+        xcovax_train__report_adverse	 = 	 xcovax_train__004	
+        )
+
+#dta%>%select(grep("__", names(dta)))%>%colnames() 
+
+```
+
 ---
 
 #####E.3. Merge with sampling weight 
@@ -1423,10 +1550,6 @@ dtasummary<-dtasummary%>%
         #***** generate COVID-19 vaccine among staff using the pooled data	
 		staff_pct_covaxany  = round(100* (staff_num_covaxany  / staff_num_total_all), 0),
 		staff_pct_covaxfull = round(100* (staff_num_covaxfull / staff_num_total_all), 0)
-    )%>%
-    rename(
-	    xsafe__triage = xsafe__004,  
-	    xsafe__isolation = xsafe__005
     )%>%
     #round number of observations, in case sampling weight was used (edit 5/22/2021)
     mutate_at(vars(starts_with("obs")), 

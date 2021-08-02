@@ -1539,6 +1539,265 @@ restore
 		gen vol_dpt_last_`item' 	= qa1_005_`item'
 		}			
 	
+*****E.2-Addendum
+**		Rename indicators ending with sub-question numbers with more friendly names. 
+**		These names are used in the dash board. 
+**		Thus, it is important to ensure the indicator names are correct, if questionnaire is adapted beyond minimum requirements.
+**		(Addendum on August 2, 2021)
+	
+		rename	xtraining__001	        xtraining__ipc
+		rename	xtraining__002	        xtraining__ppe
+		rename	xtraining__003	        xtraining__triage
+		rename	xtraining__004	        xtraining__emerg
+		rename	xtraining__005	        xtraining__remote
+		rename	xtraining__006	        xtraining__mental
+		rename	xtraining__007	        xtraining__ss_ipc
+		rename	xtraining__008	        xtraining__ss_ppe
+		rename	xtraining__009	        xtraining__ss_c19cm
+			        
+		rename	xopt_increase__001	        xopt_increase__undiff
+		rename	xopt_increase__002	        xopt_increase__fp
+		rename	xopt_increase__003	        xopt_increase__anc
+		rename	xopt_increase__004	        xopt_increase__pnc
+		rename	xopt_increase__005	        xopt_increase__immun
+		rename	xopt_increase__006	        xopt_increase__sickchild
+		rename	xopt_increase__007	        xopt_increase__hiv
+		rename	xopt_increase__008	        xopt_increase__tb
+		rename	xopt_increase__009	        xopt_increase__std
+		rename	xopt_increase__010	        xopt_increase__malaria
+		rename	xopt_increase__011	        xopt_increase__cvd
+		rename	xopt_increase__012	        xopt_increase__crd
+		rename	xopt_increase__013	        xopt_increase__diabetes
+		rename	xopt_increase__014	        xopt_increase__cancer
+		rename	xopt_increase__015	        xopt_increase__mental
+		rename	xopt_increase__016	        xopt_increase__violence
+		rename	xopt_increase__017	        xopt_increase__ntd
+		rename	xopt_increase__018	        xopt_increase__rehab
+		rename	xopt_decrease__001	        xopt_decrease__undiff
+		rename	xopt_decrease__002	        xopt_decrease__fp
+		rename	xopt_decrease__003	        xopt_decrease__anc
+		rename	xopt_decrease__004	        xopt_decrease__pnc
+		rename	xopt_decrease__005	        xopt_decrease__immun
+		rename	xopt_decrease__006	        xopt_decrease__sickchild
+		rename	xopt_decrease__007	        xopt_decrease__hiv
+		rename	xopt_decrease__008	        xopt_decrease__tb
+		rename	xopt_decrease__009	        xopt_decrease__std
+		rename	xopt_decrease__010	        xopt_decrease__malaria
+		rename	xopt_decrease__011	        xopt_decrease__cvd
+		rename	xopt_decrease__012	        xopt_decrease__crd
+		rename	xopt_decrease__013	        xopt_decrease__diabetes
+		rename	xopt_decrease__014	        xopt_decrease__cancer
+		rename	xopt_decrease__015	        xopt_decrease__mental
+		rename	xopt_decrease__016	        xopt_decrease__violence
+		rename	xopt_decrease__017	        xopt_decrease__ntd
+		rename	xopt_decrease__018	        xopt_decrease__rehab
+		rename	xopt_nochange__001	        xopt_nochange__undiff
+		rename	xopt_nochange__002	        xopt_nochange__fp
+		rename	xopt_nochange__003	        xopt_nochange__anc
+		rename	xopt_nochange__004	        xopt_nochange__pnc
+		rename	xopt_nochange__005	        xopt_nochange__immun
+		rename	xopt_nochange__006	        xopt_nochange__sickchild
+		rename	xopt_nochange__007	        xopt_nochange__hiv
+		rename	xopt_nochange__008	        xopt_nochange__tb
+		rename	xopt_nochange__009	        xopt_nochange__std
+		rename	xopt_nochange__010	        xopt_nochange__malaria
+		rename	xopt_nochange__011	        xopt_nochange__cvd
+		rename	xopt_nochange__012	        xopt_nochange__crd
+		rename	xopt_nochange__013	        xopt_nochange__diabetes
+		rename	xopt_nochange__014	        xopt_nochange__cancer
+		rename	xopt_nochange__015	        xopt_nochange__mental
+		rename	xopt_nochange__016	        xopt_nochange__violence
+		rename	xopt_nochange__017	        xopt_nochange__ntd
+		rename	xopt_nochange__018	        xopt_nochange__rehab
+			        
+		rename	xopt_increase_reason__001	        xopt_increase_reason__more_ari
+		rename	xopt_increase_reason__002	        xopt_increase_reason__redirect
+		rename	xopt_increase_reason__003	        xopt_increase_reason__backlog
+		rename	xopt_increase_reason__004	        xopt_increase_reason__react
+		rename	xopt_increase_reason__005	        xopt_increase_reason__comms
+		rename	xopt_increase_reason__006	        xopt_increase_reason__gbv
+		rename	xopt_increase_reason__007	        xopt_increase_reason__other
+		rename	xopt_decrease_reason__001	        xopt_decrease_reason__changerecs
+		rename	xopt_decrease_reason__002	        xopt_decrease_reason__fear
+		rename	xopt_decrease_reason__003	        xopt_decrease_reason__lockdown
+		rename	xopt_decrease_reason__004	        xopt_decrease_reason__transport
+		rename	xopt_decrease_reason__005	        xopt_decrease_reason__servreduc
+		rename	xopt_decrease_reason__006	        xopt_decrease_reason__disrupt
+		rename	xopt_decrease_reason__007	        xopt_decrease_reason__hours
+		rename	xopt_decrease_reason__008	        xopt_decrease_reason__closure
+		rename	xopt_decrease_reason__009	        xopt_decrease_reason__drugs
+		rename	xopt_decrease_reason__010	        xopt_decrease_reason__staff
+		rename	xopt_decrease_reason__011	        xopt_decrease_reason__other
+			        
+		rename	xer_increase__002	        xer_increase__injuries
+		rename	xer_increase__003	        xer_increase__surgeries
+		rename	xer_increase__004	        xer_increase__ncd
+		rename	xer_increase__005	        xer_increase__blood
+		rename	xer_decrease__002	        xer_decrease__injuries
+		rename	xer_decrease__003	        xer_decrease__surgeries
+		rename	xer_decrease__004	        xer_decrease__ncd
+		rename	xer_decrease__005	        xer_decrease__blood
+			        
+		rename	xout_decrease__001	        xout_decrease__immun
+		rename	xout_decrease__002	        xout_decrease__malaria
+		rename	xout_decrease__003	        xout_decrease__ntd
+		rename	xout_decrease__004	        xout_decrease__cbc
+		rename	xout_decrease__005	        xout_decrease__home 
+		rename	xout_decrease_num	        xout_decrease_num
+		rename	xout_decrease	        xout_decrease
+			        
+		rename	xsafe__001	        xsafe__entrance_screening
+		rename	xsafe__002	        xsafe__staff_entrance
+		rename	xsafe__003	        xsafe__sep_room
+		rename	xsafe__004	        xsafe__triage_c19
+		rename	xsafe__005	        xsafe__isolatareas
+		rename	xsafe__006	        xsafe__triage_guidelines
+		rename	xsafe__007	        xsafe__distancing
+		rename	xsafe__008	        xsafe__hygiene_instructions
+		rename	xsafe__009	        xsafe__hygiene_stations
+		rename	xsafe__010	        xsafe__ppe
+		rename	xsafe__011	        xsafe__cleaning
+			        
+		rename	xguideline__001	        xguideline__screening
+		rename	xguideline__002	        xguideline__c19_manage
+		rename	xguideline__003	        xguideline__ppe
+		rename	xguideline__004	        xguideline__c19_surveillance
+		rename	xguideline__005	        xguideline__deadbody
+		rename	xguideline__006	        xguideline__waste
+			        
+		rename	xppe_allsome__001	        xppe_allsome__gown
+		rename	xppe_allsome__002	        xppe_allsome__gloves
+		rename	xppe_allsome__003	        xppe_allsome__goggles
+		rename	xppe_allsome__004	        xppe_allsome__faceshield
+		rename	xppe_allsome__005	        xppe_allsome__respirator
+		rename	xppe_allsome__006	        xppe_allsome__mask
+			        
+		rename	xppe_all__001	        xppe_all__gown
+		rename	xppe_all__002	        xppe_all__gloves
+		rename	xppe_all__003	        xppe_all__goggles
+		rename	xppe_all__004	        xppe_all__faceshield
+		rename	xppe_all__005	        xppe_all__respirator
+		rename	xppe_all__006	        xppe_all__mask
+			        
+		rename	xcvd_pt__001	        xcvd_pt__sep_room
+		rename	xcvd_pt__002	        xcvd_pt__c19_check
+		rename	xcvd_pt__003	        xcvd_pt__o2_measure
+		rename	xcvd_pt__004	        xcvd_pt__refer
+		rename	xcvd_pt__005	        xcvd_pt__diagtest
+		rename	xcvd_pt__006	        xcvd_pt__home_isolate
+		rename	xcvd_pt__007	        xcvd_pt__tele
+			        
+		rename	xcvd_pthbsi__001	        xcvd_pthbsi__tele
+		rename	xcvd_pthbsi__002	        xcvd_pthbsi__homevisit
+		rename	xcvd_pthbsi__003	        xcvd_pthbsi__followup
+		rename	xcvd_pthbsi__004	        xcvd_pthbsi__safetyinstruct
+		rename	xcvd_pthbsi__005	        xcvd_pthbsi__complianceassess
+		rename	xcvd_pthbsi__006	        xcvd_pthbsi__report
+			        
+		rename	xdrug__001	        xdrug__salbutamol
+		rename	xdrug__002	        xdrug__metformin
+		rename	xdrug__003	        xdrug__hydrochlorothiazide
+		rename	xdrug__004	        xdrug__paracetamol
+		rename	xdrug__005	        xdrug__carbamazapine
+		rename	xdrug__006	        xdrug__amoxicillin
+		rename	xdrug__007	        xdrug__oralcontracept
+		rename	xdrug__008	        xdrug__oxytocin
+		rename	xdrug__009	        xdrug__magnesiumsulphate
+		rename	xdrug__010	        xdrug__heparin
+		rename	xdrug__011	        xdrug__hydrocortisone
+		rename	xdrug__012	        xdrug__epinephrine
+		rename	xdrug__013	        xdrug__artemether
+		rename	xdrug__014	        xdrug__efavirenz
+		rename	xdrug__015	        xdrug__isoniazid
+		rename	xdrug__016	        xdrug__ivfluids
+		rename	xdrug__017	        xdrug__oxygen
+			        
+		rename	xsupply__001	        xsupply__syringes
+		rename	xsupply__002	        xsupply__ivsets
+		rename	xsupply__003	        xsupply__gauze
+			        
+		rename	xvaccine__001	        xvaccine__mcv
+		rename	xvaccine__002	        xvaccine__dtp
+		rename	xvaccine__003	        xvaccine__polio
+		rename	xvaccine__004	        xvaccine__bcg
+		rename	xvaccine__005	        xvaccine__pneumo
+			        
+		rename	xdiag_av_a001	        xdiag_av__malaria
+		rename	xdiag_av_a002	        xdiag_av__bloodglucose
+		rename	xdiag_av_a003	        xdiag_av__urineglucose
+		rename	xdiag_av_a004	        xdiag_av__urineprotein
+		rename	xdiag_av_a005	        xdiag_av__pregnancy
+		rename	xdiag_avfun_a001	        xdiag_avfun__malaria
+		rename	xdiag_avfun_a002	        xdiag_avfun__bloodglucose
+		rename	xdiag_avfun_a003	        xdiag_avfun__urineglucose
+		rename	xdiag_avfun_a004	        xdiag_avfun__urineprotein
+		rename	xdiag_avfun_a005	        xdiag_avfun__pregnancy
+		rename	xdiag_av_h001	        xdiag_av__h_hiv
+		rename	xdiag_av_h002	        xidag_av__h_tb
+		rename	xdiag_av_h003	        xdiag_av__h_hbg
+		rename	xdiag_av_h004	        xdiag_av__h_bloodtype
+		rename	xdiag_av_h005	        xdiag_av__h_bloodcreatine
+		rename	xdiag_avfun_h001	        xdiag_avfun__h_hiv
+		rename	xdiag_avfun_h002	        xidag_avfun__h_tb
+		rename	xdiag_avfun_h003	        xdiag_avfun__h_hbg
+		rename	xdiag_avfun_h004	        xdiag_avfun__h_bloodtype
+		rename	xdiag_avfun_h005	        xdiag_avfun__h_bloodcreatine
+			        
+		rename	ximage_av_001	        ximage_av__xray
+		rename	ximage_av_002	        ximage_av__mri
+		rename	ximage_av_003	        ximage_av__ultrasound
+		rename	ximage_av_004	        ximage_av__ct
+		rename	ximage_avfun_001	        ximage_avfun__xray
+		rename	ximage_avfun_002	        ximage_avfun__mri
+		rename	ximage_avfun_003	        ximage_avfun__ultrasound
+		rename	ximage_avfun_004	        ximage_avfun__ct
+			        
+		rename	 xcovax_offer__001	        xcovax_offer__pfizer
+		rename	 xcovax_offerav__001	        xcovax_offerav__pfizer
+		rename	 xcovax_offer__002	        xcovax_offer__moderna
+		rename	 xcovax_offerav__002	        xcovax_offerav__moderna
+		rename	 xcovax_offer__003	        xcovax_offer__astra
+		rename	 xcovax_offerav__003	        xcovax_offerav__astra
+		rename	 xcovax_offer__004	        xcovax_offer__jj
+		rename	 xcovax_offerav__004	        xcovax_offerav__jj
+		rename	 xcovax_train__001	        xcovax_train__storage
+		rename	 xcovax_train__002	        xcovax_train__admin
+		rename	 xcovax_train__003	        xcovax_train__report_adverse
+		rename	 xcovax_train__004	        xcovax_train__manage_adverse
+			        
+		rename	vol_opt_now_001	        vol_opt_now_m1_opt
+		rename	vol_opt_now_002	        vol_opt_now_m2_opt
+		rename	vol_opt_now_003	        vol_opt_now_m3_opt
+		rename	vol_opt_now_004	        vol_opt_now_m4_opt
+		rename	vol_opt_last_005	        vol_opt_last_m1_opt
+		rename	vol_opt_last_006	        vol_opt_last_m2_opt
+		rename	vol_opt_last_007	        vol_opt_last_m3_opt
+		rename	vol_opt_last_008	        vol_opt_last_m4_opt
+		rename	vol_ipt_now_001	        vol_ipt_now_m1_ipt
+		rename	vol_ipt_now_002	        vol_ipt_now_m2_ipt
+		rename	vol_ipt_now_003	        vol_ipt_now_m3_ipt
+		rename	vol_ipt_now_004	        vol_ipt_now_m4_ipt
+		rename	vol_ipt_last_005	        vol_ipt_last_m1_ipt
+		rename	vol_ipt_last_006	        vol_ipt_last_m2_ipt
+		rename	vol_ipt_last_007	        vol_ipt_last_m3_ipt
+		rename	vol_ipt_last_008	        vol_ipt_last_m4_ipt
+		rename	vol_del_now_001	        vol_del_now_m1_del
+		rename	vol_del_now_002	        vol_del_now_m2_del
+		rename	vol_del_now_003	        vol_del_now_m3_del
+		rename	vol_del_now_004	        vol_del_now_m4_del
+		rename	vol_del_last_005	        vol_del_last_m1_del
+		rename	vol_del_last_006	        vol_del_last_m2_del
+		rename	vol_del_last_007	        vol_del_last_m3_del
+		rename	vol_del_last_008	        vol_del_last_m4_del
+		rename	vol_dpt_now_001	        vol_dpt_now_m1_dpt
+		rename	vol_dpt_now_002	        vol_dpt_now_m2_dpt
+		rename	vol_dpt_now_003	        vol_dpt_now_m3_dpt
+		rename	vol_dpt_now_004	        vol_dpt_now_m4_dpt
+		rename	vol_dpt_last_005	        vol_dpt_last_m1_dpt
+		rename	vol_dpt_last_006	        vol_dpt_last_m2_dpt
+		rename	vol_dpt_last_007	        vol_dpt_last_m3_dpt
+		rename	vol_dpt_last_008	        vol_dpt_last_m4_dpt
+	
 	sort facilitycode
 	save CEHS_`country'_R`round'.dta, replace 		
 				
@@ -1690,9 +1949,6 @@ use CEHS_`country'_R`round'.dta, clear
 		gen staff_pct_covaxfull = round(100*staff_num_covaxfull / staff_num_total_all, 1)
 		
 	tab group round, m
-	
-	rename xsafe__004 xsafe__triage
-	rename xsafe__005 xsafe__isolation
 	
 	***** round the number of observations, in case sampling weight was used (edit 5/22/2021)
 	foreach var of varlist obs*{

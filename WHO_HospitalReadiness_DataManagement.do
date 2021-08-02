@@ -1085,6 +1085,120 @@ restore
 		replace `var'=. if xcovax!=1
 		}	
 	
+*****E.2-Addendum
+**		Rename indicators ending with sub-question numbers with more friendly names. 
+**		These names are used in the dash board. 
+**		Thus, it is important to ensure the indicator names are correct, if questionnaire is adapted beyond minimum requirements.
+**		(Addendum on August 2, 2021)
+
+		rename	xtraining__001	        xtraining__ipc
+		rename	xtraining__002	        xtraining__ppe
+		rename	xtraining__003	        xtraining__triage
+		rename	xtraining__004	        xtraining__emerg
+		rename	xtraining__005	        xtraining__remote
+		rename	xtraining__006	        xtraining__mental
+		rename	xtraining__007	        xtraining__ss_ipc
+		rename	xtraining__008	        xtraining__ss_ppe
+		rename	xtraining__009	        xtraining__ss_c19cm
+			        
+		rename	xdrug__001	        xdrug__chlorhex
+		rename	xdrug__002	        xdrug__chlorine
+		rename	xdrug__003	        xdrug__epinephrine
+		rename	xdrug__004	        xdrug__ceftriaxone
+		rename	xdrug__005	        xdrug__ampicillin
+		rename	xdrug__006	        xdrug__azithromycin
+		rename	xdrug__007	        xdrug__rocuronium
+		rename	xdrug__008	        xdrug__haloperidol
+		rename	xdrug__009	        xdrug__morphine
+		rename	xdrug__010	        xdrug__paracetamol
+		rename	xdrug__011	        xdrug__hydrocortisone
+		rename	xdrug__012	        xdrug__heparin
+		rename	xdrug__013	        xdrug__saline
+		rename	xdrug__014	        xdrug__oxygen
+			        
+		rename	xsupply__001	        xsupply__syringes
+		rename	xsupply__002	        xsupply__ivsets
+		rename	xsupply__003	        xsupply__gauze
+			        
+		rename	xsafe__001	        xsafe__entrance_screening
+		rename	xsafe__002	        xsafe__staff_entrance
+		rename	xsafe__003	        xsafe__sep_room
+		rename	xsafe__004	        xsafe__triage_c19
+		rename	xsafe__005	        xsafe__isolatareas
+		rename	xsafe__006	        xsafe__triage_guidelines
+		rename	xsafe__007	        xsafe__distancing
+		rename	xsafe__008	        xsafe__hygiene_instructions
+		rename	xsafe__009	        xsafe__hygiene_stations
+		rename	xsafe__010	        xsafe__ppe
+		rename	xsafe__011	        xsafe__cleaning
+			        
+		rename	xguideline__001	        xguideline__screening
+		rename	xguideline__002	        xguideline__c19_manage
+		rename	xguideline__003	        xguideline__ppe
+		rename	xguideline__004	        xguideline__c19_surveillance
+		rename	xguideline__005	        xguideline__deadbody
+		rename	xguideline__006	        xguideline__waste
+			        
+		rename	xppe_allsome__001	        xppe_allsome__gown
+		rename	xppe_allsome__002	        xppe_allsome__gloves
+		rename	xppe_allsome__003	        xppe_allsome__goggles
+		rename	xppe_allsome__004	        xppe_allsome__faceshield
+		rename	xppe_allsome__005	        xppe_allsome__respirator
+		rename	xppe_allsome__006	        xppe_allsome__mask
+			        
+		rename	xppe_all__001	        xppe_all__gown
+		rename	xppe_all__002	        xppe_all__gloves
+		rename	xppe_all__003	        xppe_all__goggles
+		rename	xppe_all__004	        xppe_all__faceshield
+		rename	xppe_all__005	        xppe_all__respirator
+		rename	xppe_all__006	        xppe_all__mask
+			        
+		rename	xipcitem__001	        xipcitem__soap
+		rename	xipcitem__002	        xipcitem__sanitizer
+		rename	xipcitem__003	        xipcitem__biobag
+		rename	xipcitem__004	        xipcitem__boxes
+		rename	xipcitem__005	        xipcitem__bodybags
+			        
+		rename	xspcmitem__001	        xspcmitem__transport
+		rename	xspcmitem__002	        xspcmitem__swab
+			        
+		rename	xoffsitetime_1	        xoffsitetime_24hours
+		rename	xoffsitetime_2	        xoffsitetime_2days
+		rename	xoffsitetime_3	        xoffsitetime_3days
+		rename	xoffsitetime_7	        xoffsitetime_7days
+		                
+		rename	xequip_anyfunction__001	        xequip_anyfunction__xray
+		rename	xequip_anyfunction__002	        xequip_anyfunction__oximeters
+		rename	xequip_anyfunction__003	        xequip_anyfunction__vicu
+		rename	xequip_anyfunction__004	        xequip_anyfunction__vnoninv
+	        
+		rename	xequip_allfunction__001	        xequip_allfunction__xray
+		rename	xequip_allfunction__002	        xequip_allfunction__oximeters
+		rename	xequip_allfunction__003	        xequip_allfunction__vicu
+		rename	xequip_allfunction__004	        xequip_allfunction__vnoninv
+	        
+		rename	xequip_anymalfunction__003	        xequip_anymalfunction__vicu
+		rename	xequip_anymalfunction__004	        xequip_anymalfunction__vnoninv
+		
+		rename	xequip_malfunction_reason__001	xequip_malfunction_reason__inst
+		rename	xequip_malfunction_reason__002	xequip_malfunction_reason__cons
+		rename	xequip_malfunction_reason__003	xequip_malfunction_reason__staff
+		rename	xequip_malfunction_reason__004	xequip_malfunction_reason__funds
+		rename	xequip_malfunction_reason__005	xequip_malfunction_reason__power
+	        
+		rename	 xcovax_offer__001	        xcovax_offer__pfizer
+		rename	 xcovax_offerav__001	        xcovax_offerav__pfizer
+		rename	 xcovax_offer__002	        xcovax_offer__moderna
+		rename	 xcovax_offerav__002	        xcovax_offerav__moderna
+		rename	 xcovax_offer__003	        xcovax_offer__astra
+		rename	 xcovax_offerav__003	        xcovax_offerav__astra
+		rename	 xcovax_offer__004	        xcovax_offer__jj
+		rename	 xcovax_offerav__004	        xcovax_offerav__jj
+		rename	 xcovax_train__001	        xcovax_train__storage
+		rename	 xcovax_train__002	        xcovax_train__admin
+		rename	 xcovax_train__003	        xcovax_train__manage_adverse
+		rename	 xcovax_train__004	        xcovax_train__report_adverse
+	
 	sort facilitycode
 	save COVID19HospitalReadiness_`country'_R`round'.dta, replace 		
 	
@@ -1216,9 +1330,6 @@ use COVID19HospitalReadiness_`country'_R`round'.dta, clear
 	
 	tab group round, m
 	
-	rename xsafe__004 xsafe__triage
-	rename xsafe__005 xsafe__isolation	
-	
 	***** round the number of observations, in case sampling weight was used (edit 5/22/2021)
 	foreach var of varlist obs*{
 		replace `var' = round(`var', 1)
@@ -1244,10 +1355,10 @@ use summary_COVID19HospitalReadiness_`country'_R`round'.dta, clear
 	replace updatetime="`time'"
 
 export excel using "$chartbookdir\WHO_COVID19HospitalReadiness_Chartbook.xlsx", sheet("Indicator estimate data") sheetreplace firstrow(variables) nolabel keepcellfmt
+export delimited using "C:\Users\YoonJoung Choi\Dropbox\0 iSquared\iSquared_WHO\ACTA\3.AnalysisPlan\summary_COVID19HospitalReadiness_`country'_R`round'_Stata.csv", replace 
 
 /* For YJ's shiny app and cross check against results from R
 export delimited using "C:\Users\YoonJoung Choi\Dropbox\0 iSquared\iSquared_WHO\ACTA\4.ShinyApp\0_Model\summary_COVID19HospitalReadiness_`country'_R`round'.csv", replace 
-export delimited using "C:\Users\YoonJoung Choi\Dropbox\0 iSquared\iSquared_WHO\ACTA\3.AnalysisPlan\summary_COVID19HospitalReadiness_`country'_R`round'_Stata.csv", replace 
 */
 
 erase temp.dta
