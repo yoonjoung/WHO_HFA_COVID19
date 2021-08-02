@@ -788,7 +788,7 @@ restore
 	
 	gen byte xmargin = q305==1
 	
-	global itemlist "001 002 003 004 005 006 007 008 009 010 011 012 013 014 015 016"
+	global itemlist "001 002 003 004 005 006 007 008 009 010 011 012 013 014 015"
 	foreach item in $itemlist{	
 		gen xmargin__`item' 		= q306_`item'==1
 		}	
@@ -960,13 +960,13 @@ restore
 		rename	xmargin__014	        xmargin__orphan
 		rename	xmargin__015	        xmargin__other
 		        
-		rename	xvac_reason__001	        xvac_reason__notconcerned
-		rename	xvac_reason__002	        xvac_reason__uncertain
-		rename	xvac_reason__003	        xvac_reason__sideeffects
-		rename	xvac_reason__004	        xvac_reason__avoidfacilities
-		rename	xvac_reason__005	        xvac_reason__mistrust
-		rename	xvac_reason__006	        xvac_reason__toobusy
-		rename	xvac_reason__007	        xvac_reason__cost
+		rename	xvac_reason__001	        xvac_reason__001notconcerned
+		rename	xvac_reason__002	        xvac_reason__002uncertain
+		rename	xvac_reason__003	        xvac_reason__003sideeffects
+		rename	xvac_reason__004	        xvac_reason__004avoidfacilities
+		rename	xvac_reason__005	        xvac_reason__005mistrust
+		rename	xvac_reason__006	        xvac_reason__006toobusy
+		rename	xvac_reason__007	        xvac_reason__007cost
 		        
 		rename	xinit_ses_increased__001	        xinit_ses_increased__cash
 		rename	xinit_ses_increased__002	        xinit_ses_increased__gbv
@@ -995,7 +995,15 @@ restore
 		rename	xrisk_reason__004	        xrisk_reason__hours
 		rename	xrisk_reason__005	        xrisk_reason__transport
 		rename	xrisk_reason__006	        xrisk_reason__public
-	        
+
+		rename	xsupportneed__001	xsupportneed__monetary
+		rename	xsupportneed__002	xsupportneed__ppe
+		rename	xsupportneed__003	xsupportneed__supp
+		rename	xsupportneed__004	xsupportneed__traincovid
+		rename	xsupportneed__005	xsupportneed__trainother
+		rename	xsupportneed__006	xsupportneed__trans
+		rename	xsupportneed__007	xsupportneed__insurance
+		
 		rename	xsrvc_reduced__001	        xsrv_reduced__immune
 		rename	xsrvc_reduced__002	        xsrv_reduced__malaria
 		rename	xsrvc_reduced__003	        xsrv_reduced__ntd

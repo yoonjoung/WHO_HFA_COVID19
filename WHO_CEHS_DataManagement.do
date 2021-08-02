@@ -1617,17 +1617,19 @@ restore
 		rename	xopt_increase_reason__005	        xopt_increase_reason__comms
 		rename	xopt_increase_reason__006	        xopt_increase_reason__gbv
 		rename	xopt_increase_reason__007	        xopt_increase_reason__other
-		rename	xopt_decrease_reason__001	        xopt_decrease_reason__changerecs
-		rename	xopt_decrease_reason__002	        xopt_decrease_reason__fear
-		rename	xopt_decrease_reason__003	        xopt_decrease_reason__lockdown
-		rename	xopt_decrease_reason__004	        xopt_decrease_reason__transport
-		rename	xopt_decrease_reason__005	        xopt_decrease_reason__servreduc
-		rename	xopt_decrease_reason__006	        xopt_decrease_reason__disrupt
-		rename	xopt_decrease_reason__007	        xopt_decrease_reason__hours
-		rename	xopt_decrease_reason__008	        xopt_decrease_reason__closure
-		rename	xopt_decrease_reason__009	        xopt_decrease_reason__drugs
-		rename	xopt_decrease_reason__010	        xopt_decrease_reason__staff
-		rename	xopt_decrease_reason__011	        xopt_decrease_reason__other
+		
+		rename	xopt_decrease_reason__001	xopt_decrease_reason__changerecs
+		rename	xopt_decrease_reason__002	xopt_decrease_reason__fear
+		rename	xopt_decrease_reason__003	xopt_decrease_reason__lockdown
+		rename	xopt_decrease_reason__004	xopt_decrease_reason__transport
+		rename	xopt_decrease_reason__005	xopt_decrease_reason__othercom
+		rename	xopt_decrease_reason__006	xopt_decrease_reason__servreduc
+		rename	xopt_decrease_reason__007	xopt_decrease_reason__disrupt
+		rename	xopt_decrease_reason__008	xopt_decrease_reason__hours
+		rename	xopt_decrease_reason__009	xopt_decrease_reason__closure
+		rename	xopt_decrease_reason__010	xopt_decrease_reason__drugs
+		rename	xopt_decrease_reason__011	xopt_decrease_reason__staff
+		rename	xopt_decrease_reason__012	xopt_decrease_reason__otherfac
 			        
 		rename	xer_increase__002	        xer_increase__injuries
 		rename	xer_increase__003	        xer_increase__surgeries
@@ -1978,6 +1980,9 @@ export excel using "$chartbookdir\WHO_CEHS_Chartbook.xlsx", sheet("Indicator est
 
 /* For YJ's shiny app and cross check against results from R
 export delimited using "C:\Users\YoonJoung Choi\Dropbox\0 iSquared\iSquared_WHO\ACTA\4.ShinyApp\0_Model\summary_CEHS_`country'_R`round'.csv", replace 
+*/
+
+* To check against R results
 export delimited using "C:\Users\YoonJoung Choi\Dropbox\0 iSquared\iSquared_WHO\ACTA\3.AnalysisPlan\summary_CEHS_`country'_R`round'_Stata.csv", replace 
 */
 
