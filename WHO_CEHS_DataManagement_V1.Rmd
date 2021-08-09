@@ -32,7 +32,7 @@ suppressWarnings(suppressMessages(library(data.table)))
 ###Data cleaning, management, and analysis of continuity of essential health services    
 
 This provides steps and code for data cleaning, management, and analysis of __Continuity of Essential Health Services__ assessment survey. [See here for the questionnare](https://www.who.int/teams/integrated-health-services/monitoring-health-services/frontline-service-readiness-assessments). <span style="color: red;">
-(Standard module version as of 3/22/2021) </span>   
+(Standard module version as of 5/12/2021) </span>   
 
 This code:   
 1. Imports and cleans Continuity of Essential Health Services (aka "EHS") dataset from Lime Survey (i.e., green and blue tabs in the chartbook),   
@@ -1373,7 +1373,7 @@ dta<-dta%>%
     	xsupp_100 	=xsupp_score>=100,
     	xsupp_50 	=xsupp_score>=50,
 
-    		max=5,
+    		max=6,
     		temp=rowSums(dta[colnames(select(dta, starts_with("q703_")))], na.rm=TRUE ) , 
     	xvac_score	=100*(temp/max),
     	xvac_100 	=xvac_score>=100,
@@ -1817,6 +1817,7 @@ dta<-dta%>%
         xvaccine__polio	 = 	xvaccine__003	, 
         xvaccine__bcg	 = 	xvaccine__004	, 
         xvaccine__pneumo	 = 	xvaccine__005	, 
+        xvaccine__flu	 = 	xvaccine__006	,         
         			
         xdiag_av__malaria	 = 	xdiag_av_a001	, 
         xdiag_av__bloodglucose	 = 	xdiag_av_a002	, 

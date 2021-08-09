@@ -6,7 +6,8 @@ set more off
 numlabel, add
 
 *This code 
-*1) imports and cleans Continuity of EHS dataset from Lime Survey, created based on the March 22, 2021 Q version
+*1) imports and cleans Continuity of EHS dataset from Lime Survey, 
+*	created based on the May 12, 2021 Q version
 *2) creates field check tables for data quality monitoring, and 
 *3) creates indicator estimate data for dashboards and chartbook. 
 
@@ -736,8 +737,8 @@ restore
 		local pubmin			 1
 		local pubmax			 1
 			
-		local maxtraining	     5 /*total number of training items asked in q207*/
-		local maxtrainingsupport 9 /*total number of training/support items asked in q207*/
+		local maxtraining	     7 /*total number of training items asked in q207* - updated by CHELSEA to SEVEN from five*/
+		local maxtrainingsupport 9 /*total number of training/support items asked in q207*  - updated by CHELSEA to SEVEN from five*/
 
 		local maxdrug 			 17 /*total medicines asked in q701*/
 	
@@ -838,6 +839,7 @@ restore
 		gen byte xtraining__`item' = q207_`item' ==1
 		}		
 		
+		*CHELSEA - there are SEVEN training items (not five) so updated the max
 		gen max=`maxtraining'
 		egen temp=rowtotal(xtraining__001 xtraining__002 xtraining__003 xtraining__004 xtraining__005)
 	gen xtraining_score	=100*(temp/max)
@@ -1308,12 +1310,12 @@ restore
 
 	gen xvaccine_child=q409_005>=1 & q409_005<=3	
 		
-	global itemlist "001 002 003 004 005"
+	global itemlist "001 002 003 004 005 006"
 	foreach item in $itemlist{	
 		gen xvaccine__`item' = q703_`item' ==1
 		}	
 	
-		gen max=5
+		gen max=6
 		egen temp=rowtotal(xvaccine__* )
 	gen xvac_score	=100*(temp/max)
 	gen xvac_100 	=xvac_score>=100
@@ -1723,6 +1725,7 @@ restore
 		rename	xvaccine__003	        xvaccine__polio
 		rename	xvaccine__004	        xvaccine__bcg
 		rename	xvaccine__005	        xvaccine__pneumo
+		rename	xvaccine__006	        xvaccine__flu
 			        
 		rename	xdiag_av_a001	        xdiag_av__malaria
 		rename	xdiag_av_a002	        xdiag_av__bloodglucose
