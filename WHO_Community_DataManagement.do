@@ -37,6 +37,7 @@ numlabel, add
 * E. Create analytical variables 
 *****E.1. Country speciic code local <<<<<<<<<<========== MUST BE ADAPTED: 2. local per survey implementation and section 1 
 *****E.2. Construct analysis variables <<<<<<<<<<========== MUST BE ADAPTED: 3. country specific staffing - section 2 
+*****E.2.A Rename detailed indicators ending with sub-question numbers with more friendly/intuitive names
 *****E.3. Export clean Respondent-level data to chart book 
 * F. Create and export indicator estimate data 
 *****F.1. Calculate estimates 
@@ -227,6 +228,8 @@ export excel using "$chartbookdir\WHO_Community_Chartbook.xlsx", sheet("Facility
 		}	
 	
 	d q4*
+	
+	gen byte q404_008 = q404other!="" 
 	
 	*****************************
 	* Section 5
@@ -606,7 +609,7 @@ restore
 	* Section 2: need and use 
 	*****************************
 
-	global itemlist "001 002 003 004 005 006 007 008 009"
+	global itemlist "001 002 003 004 005 006 007 008 009 010"
 
 	foreach item in $itemlist{	
 		gen xunmetsomemost__`item' 	= q201_`item'>=2 & q201_`item'!=.
@@ -810,7 +813,7 @@ restore
 	gen byte xvac_most 		= xvac_adult_most==1 & xvac_child_most==1 /*most adults AND children*/	
 	gen byte xvac_mostsome	= xvac_adult_mostsome==1 | xvac_child_mostsome==1 /*most/some adults OR children*/
 	
-	global itemlist "001 002 003 004 005 006 007"
+	global itemlist "001 002 003 004 005 006 007 008"
 	foreach item in $itemlist{	
 		gen xvac_reason__`item' 		= q404_`item'==1
 		}		
@@ -907,96 +910,99 @@ restore
 		replace xsrvc_nochange__`item' 		=. if q607_`item'==5
 		}		
 	
-*****E.2-Addendum
+*****E.2.Addendum
 **		Rename indicators ending with sub-question numbers with more friendly names. 
-**		These names are used in the dash board. 
+**		These names are used in the dashboard. 
 **		Thus, it is important to ensure the indicator names are correct, if questionnaire is adapted beyond minimum requirements.
-**		(Addendum on August 2, 2021)
+**		(Addendum on August 17, 2021)
 
-		rename	xunmetsomemost__001	        xunmet__urgent
-		rename	xunmetsomemost__002	        xunmet__electsurg
-		rename	xunmetsomemost__003	        xunmet__chronicmeds
-		rename	xunmetsomemost__004	        xunmet__testing
-		rename	xunmetsomemost__005	        xunmet__mental
-		rename	xunmetsomemost__006	        xunmet__fp
-		rename	xunmetsomemost__007	        xunmet__anc
-		rename	xunmetsomemost__008	        xunmet__sba
-		rename	xunmetsomemost__009	        xunmet__immun
-			
-		rename	xunmetmost__001	        xunmetmost__urgent
-		rename	xunmetmost__002	        xunmetmost__electsurg
-		rename	xunmetmost__003	        xunmetmost__chronicmeds
-		rename	xunmetmost__004	        xunmetmost__testing
-		rename	xunmetmost__005	        xunmetmost__mental
-		rename	xunmetmost__006	        xunmetmost__fp
-		rename	xunmetmost__007	        xunmetmost__anc
-		rename	xunmetmost__008	        xunmetmost__sba
-		rename	xunmetmost__009	        xunmetmost__immun
-		        
-		rename	xsource__001	        xsource__chps
-		rename	xsource__002	        xsource__healthcentre
-		rename	xsource__003	        xsource__hospital
-		rename	xsource__004	        xsource__pharm
-		rename	xsource__005	        xsource__c19testcentre
-		rename	xsource__006	        xsource__c19phone
-		rename	xsource__007	        xsource__othertrained
-		rename	xsource__008	        xsource__traditional
-		rename	xsource__009	        xsource__internet
-		rename	xsource__010	        xsource__other
-		rename	xsource__011	        xsource__none
-			        
-		rename	xmargin__001	        xmargin__poverty
-		rename	xmargin__002	        xmargin__informal
-		rename	xmargin__003	        xmargin__unemployed
-		rename	xmargin__004	        xmargin__singleparent
-		rename	xmargin__005	        xmargin__isolatedold
-		rename	xmargin__006	        xmargin__disabled
-		rename	xmargin__007	        xmargin__lgbti
-		rename	xmargin__008	        xmargin__indigenous
-		rename	xmargin__009	        xmargin__religious
-		rename	xmargin__010	        xmargin__nomadic
-		rename	xmargin__011	        xmargin__migrants
-		rename	xmargin__012	        xmargin__ethnic
-		rename	xmargin__013	        xmargin__homeless
-		rename	xmargin__014	        xmargin__orphan
-		rename	xmargin__015	        xmargin__other
-		        
-		rename	xvac_reason__001	        xvac_reason__001notconcerned
-		rename	xvac_reason__002	        xvac_reason__002uncertain
-		rename	xvac_reason__003	        xvac_reason__003sideeffects
-		rename	xvac_reason__004	        xvac_reason__004avoidfacilities
-		rename	xvac_reason__005	        xvac_reason__005mistrust
-		rename	xvac_reason__006	        xvac_reason__006toobusy
-		rename	xvac_reason__007	        xvac_reason__007cost
-		        
-		rename	xinit_ses_increased__001	        xinit_ses_increased__cash
-		rename	xinit_ses_increased__002	        xinit_ses_increased__gbv
-		rename	xinit_ses_increased__003	        xinit_ses_increased__food
-		rename	xinit_ses_increased__004	        xinit_ses_increased__school
-		rename	xinit_ses_increased__005	        xinit_ses_increased__hygiene
-		rename	xinit_ses_increased__006	        xinit_ses_increased__isolated
-		rename	xinit_ses_increased__007	        xinit_ses_increased__taxrelief
-		rename	xinit_ses_increased__008	        xinit_ses_increased__local
-		rename	xinit_ses_increased__009	        xinit_ses_increased__other
-		        
-		rename	xinit_health_increased__001	        xinit_health_increased__hp
-		rename	xinit_health_increased__002	        xinit_health_increased__info
-		rename	xinit_health_increased__003	        xinit_health_increased__isolated
-		rename	xinit_health_increased__004	        xinit_health_increased__transhw
-		rename	xinit_health_increased__005	        xinit_health_increased__transvp
-		rename	xinit_health_increased__006	        xinit_health_increased__masks
-		rename	xinit_health_increased__007	        xinit_health_increased__handwash
-		rename	xinit_health_increased__008	        xinit_health_increased__hsaccess
-		rename	xinit_health_increased__009	        xinit_health_increased__water
-		rename	xinit_health_increased__010	        xinit_health_increased__other
-			        
-		rename	xrisk_reason__001	        xrisk_reason__manypeople
-		rename	xrisk_reason__002	        xrisk_reason__ppelack
-		rename	xrisk_reason__003	        xrisk_reason__age
-		rename	xrisk_reason__004	        xrisk_reason__hours
-		rename	xrisk_reason__005	        xrisk_reason__transport
-		rename	xrisk_reason__006	        xrisk_reason__public
-
+		rename	xunmetsomemost__001	xunmet__urgent
+		rename	xunmetsomemost__002	xunmet__electsurg
+		rename	xunmetsomemost__003	xunmet__chronicmeds
+		rename	xunmetsomemost__004	xunmet__testing
+		rename	xunmetsomemost__005	xunmet__mental
+		rename	xunmetsomemost__006	xunmet__fp
+		rename	xunmetsomemost__007	xunmet__anc
+		rename	xunmetsomemost__008	xunmet__sba
+		rename	xunmetsomemost__009	xunmet__immun
+		rename	xunmetsomemost__010	xunmet__homebased
+				
+		rename	xunmetmost__001	xunmetmost__urgent
+		rename	xunmetmost__002	xunmetmost__electsurg
+		rename	xunmetmost__003	xunmetmost__chronicmeds
+		rename	xunmetmost__004	xunmetmost__testing
+		rename	xunmetmost__005	xunmetmost__mental
+		rename	xunmetmost__006	xunmetmost__fp
+		rename	xunmetmost__007	xunmetmost__anc
+		rename	xunmetmost__008	xunmetmost__sba
+		rename	xunmetmost__009	xunmetmost__immun
+		rename	xunmetmost__010	xunmetmost__homebased
+				
+		rename	xsource__001	xsource__chw
+		rename	xsource__002	xsource__healthpost
+		rename	xsource__003	xsource__hospital
+		rename	xsource__004	xsource__pharm
+		rename	xsource__005	xsource__c19testcentre
+		rename	xsource__006	xsource__c19phone
+		rename	xsource__007	xsource__othertrained
+		rename	xsource__008	xsource__traditional
+		rename	xsource__009	xsource__internet
+		rename	xsource__010	xsource__other
+		rename	xsource__011	xsource__none
+				
+		rename	xmargin__001	xmargin__poverty
+		rename	xmargin__002	xmargin__informal
+		rename	xmargin__003	xmargin__unemployed
+		rename	xmargin__004	xmargin__singleparent
+		rename	xmargin__005	xmargin__isolatedold
+		rename	xmargin__006	xmargin__disabled
+		rename	xmargin__007	xmargin__lgbti
+		rename	xmargin__008	xmargin__indigenous
+		rename	xmargin__009	xmargin__religious
+		rename	xmargin__010	xmargin__nomadic
+		rename	xmargin__011	xmargin__migrants
+		rename	xmargin__012	xmargin__ethnic
+		rename	xmargin__013	xmargin__homeless
+		rename	xmargin__014	xmargin__orphan
+		rename	xmargin__015	xmargin__other
+				
+		rename	xvac_reason__001	xvac_reason__notconcerned
+		rename	xvac_reason__002	xvac_reason__uncertain
+		rename	xvac_reason__003	xvac_reason__sideeffects
+		rename	xvac_reason__004	xvac_reason__avoidfacilities
+		rename	xvac_reason__005	xvac_reason__mistrust
+		rename	xvac_reason__006	xvac_reason__toobusy
+		rename	xvac_reason__007	xvac_reason__cost
+		rename	xvac_reason__008	xvac_reason__other
+				
+		rename	xinit_ses_increased__001	xinit_ses_increased__cash
+		rename	xinit_ses_increased__002	xinit_ses_increased__gbv
+		rename	xinit_ses_increased__003	xinit_ses_increased__food
+		rename	xinit_ses_increased__004	xinit_ses_increased__school
+		rename	xinit_ses_increased__005	xinit_ses_increased__hygiene
+		rename	xinit_ses_increased__006	xinit_ses_increased__isolated
+		rename	xinit_ses_increased__007	xinit_ses_increased__taxrelief
+		rename	xinit_ses_increased__008	xinit_ses_increased__local
+		rename	xinit_ses_increased__009	xinit_ses_increased__other
+				
+		rename	xinit_health_increased__001	xinit_health_increased__hp
+		rename	xinit_health_increased__002	xinit_health_increased__info
+		rename	xinit_health_increased__003	xinit_health_increased__isolated
+		rename	xinit_health_increased__004	xinit_health_increased__transhw
+		rename	xinit_health_increased__005	xinit_health_increased__transvp
+		rename	xinit_health_increased__006	xinit_health_increased__masks
+		rename	xinit_health_increased__007	xinit_health_increased__handwash
+		rename	xinit_health_increased__008	xinit_health_increased__hsaccess
+		rename	xinit_health_increased__009	xinit_health_increased__water
+		rename	xinit_health_increased__010	xinit_health_increased__other
+				
+		rename	xrisk_reason__001	xrisk_reason__manypeople
+		rename	xrisk_reason__002	xrisk_reason__ppelack
+		rename	xrisk_reason__003	xrisk_reason__age
+		rename	xrisk_reason__004	xrisk_reason__hours
+		rename	xrisk_reason__005	xrisk_reason__transport
+		rename	xrisk_reason__006	xrisk_reason__public
+				
 		rename	xsupportneed__001	xsupportneed__monetary
 		rename	xsupportneed__002	xsupportneed__ppe
 		rename	xsupportneed__003	xsupportneed__supp
@@ -1004,22 +1010,26 @@ restore
 		rename	xsupportneed__005	xsupportneed__trainother
 		rename	xsupportneed__006	xsupportneed__trans
 		rename	xsupportneed__007	xsupportneed__insurance
-		
-		rename	xsrvc_reduced__001	        xsrv_reduced__immune
-		rename	xsrvc_reduced__002	        xsrv_reduced__malaria
-		rename	xsrvc_reduced__003	        xsrv_reduced__ntd
-		rename	xsrvc_reduced__004	        xsrv_reduced__tb
-		rename	xsrvc_reduced__005	        xsrv_reduced__home
-		rename	xsrvc_increased__001	        xsrv_increased__immune
-		rename	xsrvc_increased__002	        xsrv_increased__malaria
-		rename	xsrvc_increased__003	        xsrv_increased__ntd
-		rename	xsrvc_increased__004	        xsrv_increased__tb
-		rename	xsrvc_increased__005	        xsrv_increased__home
-		rename	xsrvc_nochange__001	        xsrv_nochange__immune
-		rename	xsrvc_nochange__002	        xsrv_nochange__malaria
-		rename	xsrvc_nochange__003	        xsrv_nochange__ntd
-		rename	xsrvc_nochange__004	        xsrv_nochange__tb
-		rename	xsrvc_nochange__005	        xsrv_nochange__home
+		rename	xsupportneed__008	xsupportneed__other
+				
+		rename	xsrvc_reduced__001	xsrv_reduced__immune
+		rename	xsrvc_reduced__002	xsrv_reduced__malaria
+		rename	xsrvc_reduced__003	xsrv_reduced__ntd
+		rename	xsrvc_reduced__004	xsrv_reduced__tb
+		rename	xsrvc_reduced__005	xsrv_reduced__home
+				
+		rename	xsrvc_increased__001	xsrv_increased__immune
+		rename	xsrvc_increased__002	xsrv_increased__malaria
+		rename	xsrvc_increased__003	xsrv_increased__ntd
+		rename	xsrvc_increased__004	xsrv_increased__tb
+		rename	xsrvc_increased__005	xsrv_increased__home
+				
+		rename	xsrvc_nochange__001	xsrv_nochange__immune
+		rename	xsrvc_nochange__002	xsrv_nochange__malaria
+		rename	xsrvc_nochange__003	xsrv_nochange__ntd
+		rename	xsrvc_nochange__004	xsrv_nochange__tb
+		rename	xsrvc_nochange__005	xsrv_nochange__home
+
 	
 	sort id
 	save Community_`country'_R`round'.dta, replace 		
