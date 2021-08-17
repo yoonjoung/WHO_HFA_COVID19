@@ -47,7 +47,7 @@ __REQUIRED country-specific changes, based on the minmum country-specific adapta
 
 <span style="color: blue;">Depending on the extent of additional country-specific adaptation, further revise __E.2. Construct analysis variables__.</span>    
 
-<span style="color: red;">See Section __E.2-Addendum__ (added on August 2, 2021)<span> 
+<span style="color: red;">See Section __E.2-Addendum__ (added on August 17, 2021)<span> 
 
 (Last updated: `r time`)    
 
@@ -280,6 +280,9 @@ dta<-dta%>%
         mutate_at(vars(varlist), funs(as.numeric))
     
     str(dta[varlist]) 
+    
+    varlist<-dta%>%select(starts_with("q404"))%>%colnames()
+    str(dta[varlist])    
 
 #####* Section 5
     varlist<-dta%>%select(q501, q502, q504)%>%colnames()
@@ -860,6 +863,10 @@ dta<-dta%>%
     	#/*most/some adults OR children*/
     	xvac_mostsome	= xvac_adult_mostsome==1 | xvac_child_mostsome==1 
     )%>%
+    mutate(
+        q404_008 = as.numeric(q404other!="" & q404other!="0"),
+        q404_008 = ifelse(is.na(q404_001)==TRUE, NA, q404_008)
+    )%>%
     rename_all(.funs = funs(sub("q404_", "xvac_reason__", .)))%>%
     mutate(
         xvac_reason_noconcern 	= xvac_reason__001==1,
@@ -979,122 +986,127 @@ dta<-cbind(dta, temp1, temp2, temp3, temp4, temp5)
 
 #####E.2-Addendum. Rename indicators for easier data use 
 
-<span style="color: blue;">Rename indicators ending with sub-question numbers with more friendly names. These names are used in the dash board. __Thus, it is important to ensure the indicator names are correct, if questionnaire is adapted beyond minimum requirements.__ (Addendum on August 2, 2021)<span>  
+<span style="color: blue;">Rename indicators ending with sub-question numbers with more friendly names. These names are used in the dash board. __Thus, it is important to ensure the indicator names are correct, if questionnaire is adapted beyond minimum requirements.__ (Addendum on August 17, 2021)<span>  
 
 ```{r rename_detailed_indicators}
 #dta%>%select(grep("__", names(dta)))%>%colnames() 
-
 dta<-dta%>%
-    rename(    
-        xunmet__urgent	 = 	xunmetsomemost__001	, 
-        xunmet__electsurg	 = 	xunmetsomemost__002	, 
-        xunmet__chronicmeds	 = 	xunmetsomemost__003	, 
-        xunmet__testing	 = 	xunmetsomemost__004	, 
-        xunmet__mental	 = 	xunmetsomemost__005	, 
-        xunmet__fp	 = 	xunmetsomemost__006	, 
-        xunmet__anc	 = 	xunmetsomemost__007	, 
-        xunmet__sba	 = 	xunmetsomemost__008	, 
-        xunmet__immun	 = 	xunmetsomemost__009	, 
-
-        xunmetmost__urgent	 = 	xunmetmost__001	, 
-        xunmetmost__electsurg	 = 	xunmetmost__002	, 
-        xunmetmost__chronicmeds	 = 	xunmetmost__003	, 
-        xunmetmost__testing	 = 	xunmetmost__004	, 
-        xunmetmost__mental	 = 	xunmetmost__005	, 
-        xunmetmost__fp	 = 	xunmetmost__006	, 
-        xunmetmost__anc	 = 	xunmetmost__007	, 
-        xunmetmost__sba	 = 	xunmetmost__008	, 
-        xunmetmost__immun	 = 	xunmetmost__009	, 
+    rename(  
+        xunmet__urgent	 = 	xunmetsomemost__001	 , 
+        xunmet__electsurg	 = 	xunmetsomemost__002	 , 
+        xunmet__chronicmeds	 = 	xunmetsomemost__003	 , 
+        xunmet__testing	 = 	xunmetsomemost__004	 , 
+        xunmet__mental	 = 	xunmetsomemost__005	 , 
+        xunmet__fp	 = 	xunmetsomemost__006	 , 
+        xunmet__anc	 = 	xunmetsomemost__007	 , 
+        xunmet__sba	 = 	xunmetsomemost__008	 , 
+        xunmet__immun	 = 	xunmetsomemost__009	 , 
+        xunmet__homebased	 = 	xunmetsomemost__010	 , 
+        			
+        xunmetmost__urgent	 = 	xunmetmost__001	 , 
+        xunmetmost__electsurg	 = 	xunmetmost__002	 , 
+        xunmetmost__chronicmeds	 = 	xunmetmost__003	 , 
+        xunmetmost__testing	 = 	xunmetmost__004	 , 
+        xunmetmost__mental	 = 	xunmetmost__005	 , 
+        xunmetmost__fp	 = 	xunmetmost__006	 , 
+        xunmetmost__anc	 = 	xunmetmost__007	 , 
+        xunmetmost__sba	 = 	xunmetmost__008	 , 
+        xunmetmost__immun	 = 	xunmetmost__009	 , 
+        xunmetmost__homebased	 = 	xunmetmost__010	 , 
+        			
+        xsource__chw	 = 	xsource__001	 , 
+        xsource__healthpost	 = 	xsource__002	 , 
+        xsource__hospital	 = 	xsource__003	 , 
+        xsource__pharm	 = 	xsource__004	 , 
+        xsource__c19testcentre	 = 	xsource__005	 , 
+        xsource__c19phone	 = 	xsource__006	 , 
+        xsource__othertrained	 = 	xsource__007	 , 
+        xsource__traditional	 = 	xsource__008	 , 
+        xsource__internet	 = 	xsource__009	 , 
+        xsource__other	 = 	xsource__010	 , 
+        xsource__none	 = 	xsource__011	 , 
+        			
+        xmargin__poverty	 = 	xmargin__001	 , 
+        xmargin__informal	 = 	xmargin__002	 , 
+        xmargin__unemployed	 = 	xmargin__003	 , 
+        xmargin__singleparent	 = 	xmargin__004	 , 
+        xmargin__isolatedold	 = 	xmargin__005	 , 
+        xmargin__disabled	 = 	xmargin__006	 , 
+        xmargin__lgbti	 = 	xmargin__007	 , 
+        xmargin__indigenous	 = 	xmargin__008	 , 
+        xmargin__religious	 = 	xmargin__009	 , 
+        xmargin__nomadic	 = 	xmargin__010	 , 
+        xmargin__migrants	 = 	xmargin__011	 , 
+        xmargin__ethnic	 = 	xmargin__012	 , 
+        xmargin__homeless	 = 	xmargin__013	 , 
+        xmargin__orphan	 = 	xmargin__014	 , 
+        xmargin__other	 = 	xmargin__015	 , 
+        		
+        xvac_reason__notconcerned	 = 	xvac_reason__001	 , 
+        xvac_reason__uncertain	 = 	xvac_reason__002	 , 
+        xvac_reason__sideeffects	 = 	xvac_reason__003	 , 
+        xvac_reason__avoidfacilities	 = 	xvac_reason__004	 , 
+        xvac_reason__mistrust	 = 	xvac_reason__005	 , 
+        xvac_reason__toobusy	 = 	xvac_reason__006	 , 
+        xvac_reason__cost	 = 	xvac_reason__007	 , 
+        xvac_reason__other	 = 	xvac_reason__008	 , 
+        			
+        xinit_ses_increased__cash	 = 	xinit_ses_increased__001	 , 
+        xinit_ses_increased__gbv	 = 	xinit_ses_increased__002	 , 
+        xinit_ses_increased__food	 = 	xinit_ses_increased__003	 , 
+        xinit_ses_increased__school	 = 	xinit_ses_increased__004	 , 
+        xinit_ses_increased__hygiene	 = 	xinit_ses_increased__005	 , 
+        xinit_ses_increased__isolated	 = 	xinit_ses_increased__006	 , 
+        xinit_ses_increased__taxrelief	 = 	xinit_ses_increased__007	 , 
+        xinit_ses_increased__local	 = 	xinit_ses_increased__008	 , 
+        xinit_ses_increased__other	 = 	xinit_ses_increased__009	 , 
+        			
+        xinit_health_increased__hp	 = 	xinit_health_increased__001	 , 
+        xinit_health_increased__info	 = 	xinit_health_increased__002	 , 
+        xinit_health_increased__isolated	 = 	xinit_health_increased__003	 , 
+        xinit_health_increased__transhw	 = 	xinit_health_increased__004	 , 
+        xinit_health_increased__transvp	 = 	xinit_health_increased__005	 , 
+        xinit_health_increased__masks	 = 	xinit_health_increased__006	 , 
+        xinit_health_increased__handwash	 = 	xinit_health_increased__007	 , 
+        xinit_health_increased__hsaccess	 = 	xinit_health_increased__008	 , 
+        xinit_health_increased__water	 = 	xinit_health_increased__009	 , 
+        xinit_health_increased__other	 = 	xinit_health_increased__010	 , 
+        			
+        xrisk_reason__manypeople	 = 	xrisk_reason__001	 , 
+        xrisk_reason__ppelack	 = 	xrisk_reason__002	 , 
+        xrisk_reason__age	 = 	xrisk_reason__003	 , 
+        xrisk_reason__hours	 = 	xrisk_reason__004	 , 
+        xrisk_reason__transport	 = 	xrisk_reason__005	 , 
+        xrisk_reason__public	 = 	xrisk_reason__006	 , 
+        			
+        xsupportneed__monetary	 = 	xsupportneed__001	 , 
+        xsupportneed__ppe	 = 	xsupportneed__002	 , 
+        xsupportneed__supp	 = 	xsupportneed__003	 , 
+        xsupportneed__traincovid	 = 	xsupportneed__004	 , 
+        xsupportneed__trainother	 = 	xsupportneed__005	 , 
+        xsupportneed__trans	 = 	xsupportneed__006	 , 
+        xsupportneed__insurance	 = 	xsupportneed__007	 , 
+        xsupportneed__other	 = 	xsupportneed__008	 , 
+        			
+        xsrv_reduced__immune	 = 	xsrvc_reduced__001	 , 
+        xsrv_reduced__malaria	 = 	xsrvc_reduced__002	 , 
+        xsrv_reduced__ntd	 = 	xsrvc_reduced__003	 , 
+        xsrv_reduced__tb	 = 	xsrvc_reduced__004	 , 
+        xsrv_reduced__home	 = 	xsrvc_reduced__005	 , 
+        			
+        xsrv_increased__immune	 = 	xsrvc_increased__001	 , 
+        xsrv_increased__malaria	 = 	xsrvc_increased__002	 , 
+        xsrv_increased__ntd	 = 	xsrvc_increased__003	 , 
+        xsrv_increased__tb	 = 	xsrvc_increased__004	 , 
+        xsrv_increased__home	 = 	xsrvc_increased__005	 , 
+        			
+        xsrv_nochange__immune	 = 	xsrvc_nochange__001	 , 
+        xsrv_nochange__malaria	 = 	xsrvc_nochange__002	 , 
+        xsrv_nochange__ntd	 = 	xsrvc_nochange__003	 , 
+        xsrv_nochange__tb	 = 	xsrvc_nochange__004	 , 
+        xsrv_nochange__home	 = 	xsrvc_nochange__005	 
         
-        xsource__chps	 = 	xsource__001	, 
-        xsource__healthcentre	 = 	xsource__002	, 
-        xsource__hospital	 = 	xsource__003	, 
-        xsource__pharm	 = 	xsource__004	, 
-        xsource__c19testcentre	 = 	xsource__005	, 
-        xsource__c19phone	 = 	xsource__006	, 
-        xsource__othertrained	 = 	xsource__007	, 
-        xsource__traditional	 = 	xsource__008	, 
-        xsource__internet	 = 	xsource__009	, 
-        xsource__other	 = 	xsource__010	, 
-        xsource__none	 = 	xsource__011	, 
-        
-        xmargin__poverty	 = 	xmargin__001	, 
-        xmargin__informal	 = 	xmargin__002	, 
-        xmargin__unemployed	 = 	xmargin__003	, 
-        xmargin__singleparent	 = 	xmargin__004	, 
-        xmargin__isolatedold	 = 	xmargin__005	, 
-        xmargin__disabled	 = 	xmargin__006	, 
-        xmargin__lgbti	 = 	xmargin__007	, 
-        xmargin__indigenous	 = 	xmargin__008	, 
-        xmargin__religious	 = 	xmargin__009	, 
-        xmargin__nomadic	 = 	xmargin__010	, 
-        xmargin__migrants	 = 	xmargin__011	, 
-        xmargin__ethnic	 = 	xmargin__012	, 
-        xmargin__homeless	 = 	xmargin__013	, 
-        xmargin__orphan	 = 	xmargin__014	, 
-        xmargin__other	 = 	xmargin__015	, 
-        
-        xvac_reason__001notconcerned	 = 	xvac_reason__001	, 
-        xvac_reason__002uncertain	 = 	xvac_reason__002	, 
-        xvac_reason__003sideeffects	 = 	xvac_reason__003	, 
-        xvac_reason__004avoidfacilities	 = 	xvac_reason__004	, 
-        xvac_reason__005mistrust	 = 	xvac_reason__005	, 
-        xvac_reason__006toobusy	 = 	xvac_reason__006	, 
-        xvac_reason__007cost	 = 	xvac_reason__007	, 
-        
-        xinit_ses_increased__cash	 = 	xinit_ses_increased__001	, 
-        xinit_ses_increased__gbv	 = 	xinit_ses_increased__002	, 
-        xinit_ses_increased__food	 = 	xinit_ses_increased__003	, 
-        xinit_ses_increased__school	 = 	xinit_ses_increased__004	, 
-        xinit_ses_increased__hygiene	 = 	xinit_ses_increased__005	, 
-        xinit_ses_increased__isolated	 = 	xinit_ses_increased__006	, 
-        xinit_ses_increased__taxrelief	 = 	xinit_ses_increased__007	, 
-        xinit_ses_increased__local	 = 	xinit_ses_increased__008	, 
-        xinit_ses_increased__other	 = 	xinit_ses_increased__009	, 
-        
-        xinit_health_increased__hp	 = 	xinit_health_increased__001	, 
-        xinit_health_increased__info	 = 	xinit_health_increased__002	, 
-        xinit_health_increased__isolated	 = 	xinit_health_increased__003	, 
-        xinit_health_increased__transhw	 = 	xinit_health_increased__004	, 
-        xinit_health_increased__transvp	 = 	xinit_health_increased__005	, 
-        xinit_health_increased__masks	 = 	xinit_health_increased__006	, 
-        xinit_health_increased__handwash	 = 	xinit_health_increased__007	, 
-        xinit_health_increased__hsaccess	 = 	xinit_health_increased__008	, 
-        xinit_health_increased__water	 = 	xinit_health_increased__009	, 
-        xinit_health_increased__other	 = 	xinit_health_increased__010	, 
-        
-        xrisk_reason__manypeople	 = 	xrisk_reason__001	, 
-        xrisk_reason__ppelack	 = 	xrisk_reason__002	, 
-        xrisk_reason__age	 = 	xrisk_reason__003	, 
-        xrisk_reason__hours	 = 	xrisk_reason__004	, 
-        xrisk_reason__transport	 = 	xrisk_reason__005	, 
-        xrisk_reason__public	 = 	xrisk_reason__006	, 
-        
-        xsupportneed__monetary	=	xsupportneed__001	,
-        xsupportneed__ppe	=	xsupportneed__002	,
-        xsupportneed__supp	=	xsupportneed__003	,
-        xsupportneed__traincovid	=	xsupportneed__004	,
-        xsupportneed__trainother	=	xsupportneed__005	,
-        xsupportneed__trans	=	xsupportneed__006	,
-        xsupportneed__insurance	=	xsupportneed__007	,
-        
-        xsrv_reduced__immune	 = 	xsrvc_reduced__001	, 
-        xsrv_reduced__malaria	 = 	xsrvc_reduced__002	, 
-        xsrv_reduced__ntd	 = 	xsrvc_reduced__003	, 
-        xsrv_reduced__tb	 = 	xsrvc_reduced__004	, 
-        xsrv_reduced__home	 = 	xsrvc_reduced__005	, 
-        xsrv_increased__immune	 = 	xsrvc_increased__001	, 
-        xsrv_increased__malaria	 = 	xsrvc_increased__002	, 
-        xsrv_increased__ntd	 = 	xsrvc_increased__003	, 
-        xsrv_increased__tb	 = 	xsrvc_increased__004	, 
-        xsrv_increased__home	 = 	xsrvc_increased__005	, 
-        xsrv_nochange__immune	 = 	xsrvc_nochange__001	, 
-        xsrv_nochange__malaria	 = 	xsrvc_nochange__002	, 
-        xsrv_nochange__ntd	 = 	xsrvc_nochange__003	, 
-        xsrv_nochange__tb	 = 	xsrvc_nochange__004	, 
-        xsrv_nochange__home	 = 	xsrvc_nochange__005	
-        
-    )
+    )   
 
 #dta%>%select(grep("__", names(dta)))%>%colnames() 
 ```

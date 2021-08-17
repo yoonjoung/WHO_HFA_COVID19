@@ -228,9 +228,7 @@ export excel using "$chartbookdir\WHO_Community_Chartbook.xlsx", sheet("Facility
 		}	
 	
 	d q4*
-	
-	gen byte q404_008 = q404other!="" 
-	
+		
 	*****************************
 	* Section 5
 	*****************************
@@ -792,7 +790,7 @@ restore
 	
 	gen byte xmargin = q305==1
 	
-	global itemlist "001 002 003 004 005 006 007 008 009 010 011 012 013 014 015"
+	global itemlist "001 002 003 004 005 006 007 008 009 010 011 012 013 014 015 016"
 	foreach item in $itemlist{	
 		gen xmargin__`item' 		= q306_`item'==1
 		}	
@@ -812,6 +810,9 @@ restore
 	
 	gen byte xvac_most 		= xvac_adult_most==1 & xvac_child_most==1 /*most adults AND children*/	
 	gen byte xvac_mostsome	= xvac_adult_mostsome==1 | xvac_child_mostsome==1 /*most/some adults OR children*/
+
+	gen byte q404_008 = q404other!="" & q404other!="0" 
+	replace q404_008=. if q404_001==.
 	
 	global itemlist "001 002 003 004 005 006 007 008"
 	foreach item in $itemlist{	
@@ -1123,8 +1124,9 @@ export excel using "$chartbookdir\WHO_Community_Chartbook.xlsx", sheet("Indicato
 
 /* For YJ's shiny app and cross check against results from R
 export delimited using "C:\Users\YoonJoung Choi\Dropbox\0 iSquared\iSquared_WHO\ACTA\4.ShinyApp\0_Model\summary_Commmunity_`country'_R`round'.csv", replace 
-export delimited using "C:\Users\YoonJoung Choi\Dropbox\0 iSquared\iSquared_WHO\ACTA\3.AnalysisPlan\summary_Community_`country'_R`round'_Stata.csv", replace 
 */
+
+export delimited using "C:\Users\YoonJoung Choi\Dropbox\0 iSquared\iSquared_WHO\ACTA\3.AnalysisPlan\summary_Community_`country'_R`round'_Stata.csv", replace 
 
 erase temp.dta
 
