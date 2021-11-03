@@ -108,7 +108,7 @@ export delimited using "$downloadcsvdir/LimeSurvey_Community_`country'_R`round'_
 		}		
 		replace Q106=. 
 
-export excel using "$chartbookdir\WHO_Community_Chartbook.xlsx", sheet("Facility-level raw data") sheetreplace firstrow(variables) nolabel
+export excel using "$chartbookdir\WHO_Community_Chartbook_10.21.xlsx", sheet("Facility-level raw data") sheetreplace firstrow(variables) nolabel
 
 *****B.4. Drop duplicate cases 
 	
@@ -882,7 +882,7 @@ restore
 	global itemlist "001 002 003 004 005 006"
 	foreach item in $itemlist{	
 		gen xrisk_reason__`item' 		= q603_`item'==1
-		}			
+		}					
 	
 	gen byte xstigma	=q604>=2 & q604!=.
 	
@@ -893,6 +893,17 @@ restore
 	foreach item in $itemlist{	
 		gen xsupportneed__`item' 		= q606_`item'==1
 		}
+		
+	****************************************************************************
+	*REVISION 2021/10/25 based on feedback from the Ghana team 
+	*replace with missing if not applicable 
+	*this is my oversight. we should change this - just like in other reasons questions*/
+	foreach var of varlist xrisk_reason__*{ 
+		replace `var'=. if xrisk_mod==0
+		}
+	
+	*END OF REVISION 2021/10/25 
+	****************************************************************************				
 		
 	global itemlist "001 002 003 004 005"
 	foreach item in $itemlist{	
@@ -1039,7 +1050,7 @@ restore
 	
 *****E.3. Export clean Respondent-level data to chart book 
 
-	export excel using "$chartbookdir\WHO_Community_Chartbook.xlsx", sheet("Respondent-level cleaned data") sheetreplace firstrow(variables) nolabel
+	export excel using "$chartbookdir\WHO_Community_Chartbook_10.21.xlsx", sheet("Respondent-level cleaned data") sheetreplace firstrow(variables) nolabel
 		
 **************************************************************
 * F. Create indicator estimate data 
@@ -1052,9 +1063,17 @@ use Community_`country'_R`round'.dta, clear
 	gen obs=1 	
 	gen obs_chw=1 if zchw==1 	
 	gen obs_vacreason=1 if xvac_most!=1
-		
-	save temp.dta, replace 
 	
+	****************************************************************************
+	*REVISION 2021/10/25 based on feedback from the Ghana team 
+	*CREATE ADDITIONAL "OBS" VARIABLES TO HAVE CORRECT DENOMINATORS IN THE CHARTBOOK 
+
+	gen obs_riskreason=1 		if xrisk_mod==1 /*moderate OR high OR very high*/
+
+	*END OF REVISION 2021/10/25 
+	****************************************************************************		
+	save temp.dta, replace 
+
 *****F.1. Calculate estimates 
 
 	use temp.dta, clear
@@ -1120,13 +1139,11 @@ use summary_Community_`country'_R`round'.dta, clear
 	gen updatetime=""
 	replace updatetime="`time'"
 	
-export excel using "$chartbookdir\WHO_Community_Chartbook.xlsx", sheet("Indicator estimate data") sheetreplace firstrow(variables) nolabel keepcellfmt
+export excel using "$chartbookdir\WHO_Community_Chartbook_10.21.xlsx", sheet("Indicator estimate data") sheetreplace firstrow(variables) nolabel keepcellfmt
 
-/* For YJ's shiny app and cross check against results from R
-export delimited using "C:\Users\YoonJoung Choi\Dropbox\0 iSquared\iSquared_WHO\ACTA\4.ShinyApp\0_Model\summary_Commmunity_`country'_R`round'.csv", replace 
-*/
-
+* To check against R results
 export delimited using "C:\Users\YoonJoung Choi\Dropbox\0 iSquared\iSquared_WHO\ACTA\3.AnalysisPlan\summary_Community_`country'_R`round'_Stata.csv", replace 
+*/
 
 erase temp.dta
 

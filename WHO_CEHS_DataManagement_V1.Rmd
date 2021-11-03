@@ -19,7 +19,7 @@ time<-Sys.time()
 suppressWarnings(suppressMessages(library(dplyr)))
 suppressWarnings(suppressMessages(library(tidyverse)))
 suppressWarnings(suppressMessages(library(readxl)))
-suppressWarnings(suppressMessages(library(xlsx)))
+#suppressWarnings(suppressMessages(library(xlsx)))
 suppressWarnings(suppressMessages(library(openxlsx)))
 suppressWarnings(suppressMessages(library(stringr)))
 suppressWarnings(suppressMessages(library(stringi)))
@@ -29,7 +29,7 @@ suppressWarnings(suppressMessages(library(knitr)))
 suppressWarnings(suppressMessages(library(data.table)))
 ```
 
-###Data cleaning, management, and analysis of continuity of essential health services    
+### Data cleaning, management, and analysis of continuity of essential health services    
 
 This provides steps and code for data cleaning, management, and analysis of __Continuity of Essential Health Services__ assessment survey. [See here for the questionnare](https://www.who.int/teams/integrated-health-services/monitoring-health-services/frontline-service-readiness-assessments). <span style="color: red;">
 (Standard module version as of 5/12/2021) </span>   
@@ -55,17 +55,17 @@ Depending on the extent of additional country-specific adaptation, further revis
 
 ---
 
-####A. SETTING   
+#### A. SETTING   
 ```{r setting}
 #SET WORKING DIRECTORIES where this markdown file and subfolders are located
 
-setwd("C:/Users/YoonJoung Choi/Dropbox/0 iSquared/iSquared_WHO/ACTA/3.AnalysisPlan/")
+setwd("~/Dropbox/0 iSquared/iSquared_WHO/ACTA/3.AnalysisPlan/")
 ##setwd("C:/Users/YoonJoung Choi/World Health Organization/BANICA, Sorin - HSA unit/2 Global goods & tools/2 HFAs/1 HFAs for COVID-19/4. Implementation support materials/4. Analysis and dashboards/")
 
-chartbookdir<-("C:/Users/YoonJoung Choi/Dropbox/0 iSquared/iSquared_WHO/ACTA/3.AnalysisPlan/")
+chartbookdir<-("~/Dropbox/0 iSquared/iSquared_WHO/ACTA/3.AnalysisPlan/")
 ##chartbookdir<-("C:/Users/YoonJoung Choi/World Health Organization/BANICA, Sorin - HSA unit/2 Global goods & tools/2 HFAs/1 HFAs for COVID-19/4. Implementation support materials/4. Analysis and dashboards/")
 
-limesurveydir<-("C:/Users/YoonJoung Choi/Dropbox/0 iSquared/iSquared_WHO/ACTA/3.AnalysisPlan/ExportedCSV_FromLimeSurvey/")
+limesurveydir<-("~/Dropbox/0 iSquared/iSquared_WHO/ACTA/3.AnalysisPlan/ExportedCSV_FromLimeSurvey/")
 ##limesurveydir<-("C:/Users/YoonJoung Choi/World Health Organization/BANICA, Sorin - HSA unit/2 Global goods & tools/2 HFAs/1 HFAs for COVID-19/4. Implementation support materials/4. Analysis and dashboards/DownloadedCSV/")
 
 # Define local macro for the survey 
@@ -79,8 +79,8 @@ surveyid<-777777        #LimeSurvey survey ID
 
 ---
 
-####B. Import and drop duplicate cases
-#####B.1. Import raw data from LimeSurvey 
+#### B. Import and drop duplicate cases
+##### B.1. Import raw data from LimeSurvey 
 ```{r importraw, eval=FALSE}
 #Import directly from LimeSurvey - using the correct link, according to the country overview page (edit 6/23/2021)
 dtaraw<-read.csv(paste0("https://who.my-survey.host/index.php/plugins/direct?plugin=CountryOverview&docType=1&sid=",surveyid,"&language=en&function=createExport"))
@@ -115,13 +115,13 @@ As of `r time`, the downloaded raw data has `r obsraw` observations and `r cols`
 
 ---
 
-#####B.2. Export/save the data daily in CSV form with date
+##### B.2. Export/save the data daily in CSV form with date
 ```{r rawdatacsv}
 write.csv(dtaraw, paste0(limesurveydir,"LimeSurvey_CEHS_", country, "_R", round, "_", date, ".csv"))
 ```
 ---
 
-#####B.3. Export the data to chartbook 
+##### B.3. Export the data for chartbook 
 Then, export the raw data into the chartbook (green tab: "Facility-level raw data") - as is.
 ```{r chartbookexport1, eval=FALSE}
 dtaraw<-dtaraw%>%mutate(test=Sys.time())
@@ -133,7 +133,7 @@ saveWorkbook(wb, paste0(chartbookdir, "WHO_CEHS_Chartbook.xlsx"), overwrite = TR
 
 ---
 
-#####B.4. Drop duplicate cases 
+##### B.4. Drop duplicate cases 
 Assess duplicate rows based on facility code: Q101. Among the duplicate rows, keep the latest row, based on the submission date/time. 
 ```{r duplicates}
 # Identify duplicates 
@@ -166,15 +166,15 @@ A total of `r obsduplicate` duplicate rows from `r obsduplicateunique` unique fa
 
 ---
 
-####C. Destring and recoding 
-#####C.1. Change variable names to lowercase	
+#### C. Destring and recoding 
+##### C.1. Change variable names to lowercase	
 ```{r vartolow}
 names(dta)<-tolower(names(dta))
 ```
 
 ---
 
-#####C.1.a Assess time stamp data	
+##### C.1.a Assess time stamp data	
 ```{r timestamp, echo=FALSE, eval=FALSE}
 dta<-dta%>%
     rename(interviewtimee=interviewtime)%>%
@@ -196,7 +196,7 @@ dta<-dta%>%
 
 ---
 
-#####C.2. Change variable names to drop odd elements "y" "sq" - because of Lime survey's naming convention 
+##### C.2. Change variable names to drop odd elements "y" "sq" - because of Lime survey's naming convention 
 ```{r varnames}
 #Assess odd names to change
 colnames(dta)
@@ -218,7 +218,7 @@ dta<-dtanew
 
 ---
 
-#####C.3. Find non-numeric variables and desting 
+##### C.3. Find non-numeric variables and desting 
 Check variables section by scion, drop prefix "A" in categorical/character variables, and convert to numeric. 
 ```{r varformat}
 #change all factor to numeric
@@ -363,7 +363,7 @@ dta<-dta%>%
 
 ---
 
-#####C.4. Recode yes/no & yes/no/NA
+##### C.4. Recode yes/no & yes/no/NA
 ```{r varcode}
 # Recode 2=0 for no
 varlist<-dta%>%
@@ -388,7 +388,7 @@ dta[varlist][dta[varlist] == 2 ] <- 0 #no
 
 ---
 
-#####C.5. Label values 
+##### C.5. Label values 
 The following is value labels. 
 ```
 	#delimit;	
@@ -550,7 +550,7 @@ The following is value labels.
 
 ---
 
-####D. Create field check tables 
+#### D. Create field check tables 
 As of `r date`, the following are "field check tables." In Stata program, xls file is created. In R, the results are directly presented in this markdown file.  
 ```{r fieldcheck1, echo=FALSE, eval=FALSE}
 dtacheck<-dta%>%
@@ -766,23 +766,23 @@ round(mean(temp$missingmed_num, na.rm=TRUE), 1)
 
 ---
 
-####E. Create analytical variables 
-#####E.1. Country speciic code local 
+#### E. Create analytical variables 
+##### E.1. Country speciic code local 
 Update code here based on the questionnaire in the country 
 ```{r surveylocal}
 urbanmin<-1
 urbanmax<-1
 
 minlow  <-1 #/*lowest code for lower-level facilities in Q105*/
-maxlow  <-2 #/*highest code for lower-level facilities in Q105*/
-minhigh <-3 #/*lowest code for hospital/high-level facilities in Q105*/
-maxhigh	<-5 #/*highest code for hospital/high-level facilities in Q105*/
-primaryhospital <-3 #/*district hospital or equivalent */	
+maxlow  <-3 #/*highest code for lower-level facilities in Q105*/
+minhigh <-4 #/*lowest code for hospital/high-level facilities in Q105*/
+maxhigh	<-6 #/*highest code for hospital/high-level facilities in Q105*/
+primaryhospital <-4 #/*district hospital or equivalent */	
 
 pubmin<-1
 pubmax<-1
 
-maxtraining <-5 
+maxtraining <-7 
 maxtrainingsupport <-9 
 
 maxdrug <-17 #/*total medicines asked in q401*/
@@ -790,7 +790,7 @@ maxdrug <-17 #/*total medicines asked in q401*/
 
 ---
 
-#####E.2. Construct analysis variables 
+##### E.2. Construct analysis variables 
 Created analysis variables section by section.   
 * give prefix __z__ for background characteristics, which can be used as analysis strata     
 * give prefix __x__ for binary variables, which will be used to calculate percentage   
@@ -962,7 +962,10 @@ dta<-dta%>%
     	
     	xstrategy_reduce= 	q402==1  | q403==1  | q406_001==1 | q406_002==1 | q406_003==1 | q406_004==1 | q406_005==1,
     	xstrategy_reduce_closure= 	q402==1  ,
-    	xstrategy_reduce_hrchange= 	q403==1  | q406_001==1 | q406_002==1 | q406_003==1 | q406_004==1 | q406_005==1,
+    	#REVISION on 10/29/2021. Correct xstrategy_reduce_hrchange
+    	#xstrategy_reduce_hrchange= 	q403==1  | q406_001==1 | q406_002==1 | q406_003==1 | q406_004==1 | q406_005==1,
+    	xstrategy_reduce_hrchange= 	q403==1, 
+    	#END OF REVISION
     	xstrategy_reduce_reduce= 	q406_001==1 | q406_002==1 | q406_003==1,
     	xstrategy_reduce_redirect= 	q406_004==1,
     	xstrategy_reduce_priority= 	q406_005==1,
@@ -1031,7 +1034,20 @@ dta<-dta%>%
             xopt_change=ifelse(xopt_decrease==1 & xopt_increase==1, 2, xopt_change), #/*mixed*/
             xopt_change=ifelse(xopt_decrease==1 & xopt_increase==0, 3, xopt_change), #/*no service volume increased + at least one decreased*/
             xopt_change=ifelse(xopt_decrease==0 & xopt_increase==1, 4, xopt_change) #/*no service volume decreased + at least one increased*/
+    )%>%
+    
+    #REVISION 11/1/2021: generate overall service volumne change var 
+    mutate(
+        xoptoverall_increaseall = q409a ==1,
+		xoptoverall_decreaseall = q409a ==2,
+		xoptoverall_mixed = q409a ==3,
+		xoptoverall_nochange = q409a ==4,        
+		xoptoverall_increaseall = ifelse(is.na(q409a)==TRUE, NA, xoptoverall_increaseall), 
+		xoptoverall_decreaseall = ifelse(is.na(q409a)==TRUE, NA, xoptoverall_decreaseall), 
+		xoptoverall_mixed = ifelse(is.na(q409a)==TRUE, NA, xoptoverall_mixed), 
+		xoptoverall_nochange = ifelse(is.na(q409a)==TRUE, NA, xoptoverall_nochange) 
     )
+    #ENF OF REVISION
 
     	###***** REASONS for OPT volume changes
 
@@ -1339,7 +1355,12 @@ dta<-dta%>%
                 mutate_all(~replace(., is.na(.), 0))%>%
                 select(-xcvd_pthbsi)            
 
-dta<-cbind(dta, temp1)
+dta<-cbind(dta, temp1)%>%
+    #Revision 2021/10/29. leave it as missing if xcvd_pthbsi==0
+    mutate_at(vars(starts_with("xcvd_pthbsi__")), 
+              funs(ifelse(xcvd_pthbsi==0, NA,.))
+    )
+    #ENF OF REVISION
 
 dta<-dta%>%
     mutate(
@@ -1630,7 +1651,7 @@ dta<-cbind(dta, temp1, temp2)
 
 ---
 
-#####E.2-Addendum. Rename indicators for easier data use 
+##### E.2-Addendum. Rename indicators for easier data use 
 
 <span style="color: blue;">Rename indicators ending with sub-question numbers with more friendly names. These names are used in the dash board. __Thus, it is important to ensure the indicator names are correct, if questionnaire is adapted beyond minimum requirements.__ (Addendum on August 17, 2021)<span>  
 
@@ -1899,12 +1920,12 @@ dta<-dta%>%
 
 ---
 
-#####E.3. Merge with sampling weight 
+##### E.3. Merge with sampling weight 
 Select Option A (if threre are sampling weights) or Option B (if there is no sampling weight).    
 __Option A__  
 ```{r weightmerge_OptionA}
 # read sampling weight in the chartbook provided by the country. Makesure there are no duplicates 
-dtaweight<-read_excel(paste0(chartbookdir, "WHO_CEHS_Chartbook.xlsx"), sheet = "Weight")
+dtaweight<-read_excel(paste0(chartbookdir, "WHO_CEHS_Chartbook_10.21.xlsx"), sheet = "Weight")
 
     names(dtaweight)<-tolower(names(dtaweight))
 
@@ -1936,7 +1957,7 @@ dta<-dta%>%
 
 ---
 
-#####E.4. Export clean Respondent-level data to chart book 
+##### E.4. Export clean Respondent-level data for chartbook 
 ```{r cleandatacsv}
 write.csv(dta, paste0("CEHS_", country, "_R", round, ".csv"))
 ```
@@ -1951,8 +1972,8 @@ saveWorkbook(wb,paste0(chartbookdir, "WHO_CEHS_Chartbook.xlsx"),overwrite = TRUE
 
 ---
 
-####F. Create and export indicator estimate data 
-#####F.1. Calculate estimates 
+#### F. Create and export indicator estimate data 
+##### F.1. Calculate estimates 
 ```{r dtatemp_prep}
 dtatemp<-dta%>%
     mutate(
@@ -1974,6 +1995,13 @@ dtatemp<-dta%>%
     	obs_primary=ifelse( zlevel_low==1, 1, obs_primary), 
     	obs_hospital=ifelse( zlevel_low==0, 1, obs_hospital), 
         
+    	#REVISION 2021/10/29 : CREATE ADDITIONAL "OBS" VARIABLES TO HAVE CORRECT DENOMINATORS IN THE CHARTBOOK 
+    	obs_cvd_pt=NA,  		
+    	obs_cvd_pthbsi=NA,  	
+    	obs_cvd_pt=ifelse( xcvd_pt==1,1,obs_cvd_pt),
+    	obs_cvd_pthbsi=ifelse( xcvd_pthbsi==1,1,obs_cvd_pthbsi),
+    	# END OF REVISION 
+    	
         obshmis_opt=rowSums(dta[colnames(select(dta, starts_with("vol_opt_")))], na.rm=TRUE )>0 , 
         obshmis_ipt=rowSums(dta[colnames(select(dta, starts_with("vol_ipt_")))], na.rm=TRUE )>0 , 
         obshmis_del=rowSums(dta[colnames(select(dta, starts_with("vol_del_")))], na.rm=TRUE )>0 , 
@@ -2235,7 +2263,7 @@ dtasummary[sapply(dtasummary, is.nan)] <- NA
 
 ---
 
-#####F.2. Export indicator estimate data to chart book 
+##### F.2. Export indicator estimate data for chartbook 
 ```{r summarydatacsv}
 dtasummary<-dtasummary%>%
     mutate(

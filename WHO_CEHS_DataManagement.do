@@ -108,7 +108,7 @@ export delimited using "$downloadcsvdir/LimeSurvey_CEHS_`country'_R`round'_$date
 		replace `var'=""
 		}	
 		
-export excel using "$chartbookdir\WHO_CEHS_Chartbook.xlsx", sheet("Facility-level raw data") sheetreplace firstrow(variables) nolabel
+export excel using "$chartbookdir\WHO_CEHS_Chartbook_10.21.xlsx", sheet("Facility-level raw data") sheetreplace firstrow(variables) nolabel
 
 *****B.4. Drop duplicate cases 
 
@@ -730,10 +730,10 @@ restore
 		local urbanmax			 1
 		
 		local minlow		 	 1 /*lowest code for lower-level facilities in Q105*/
-		local maxlow		 	 2 /*highest code for lower-level facilities in Q105*/
-		local minhigh		 	 3 /*lowest code for hospital/high-level facilities in Q105*/
-		local maxhigh			 5 /*highest code for hospital/high-level facilities in Q105*/
-		local primaryhospital    3 /*district hospital or equivalent */	
+		local maxlow		 	 3 /*highest code for lower-level facilities in Q105*/
+		local minhigh		 	 4 /*lowest code for hospital/high-level facilities in Q105*/
+		local maxhigh			 6 /*highest code for hospital/high-level facilities in Q105*/
+		local primaryhospital    4 /*district hospital or equivalent */	
 		
 		local pubmin			 1
 		local pubmax			 1
@@ -927,12 +927,24 @@ restore
 		drop temp	
 	
 	gen xstrategy_reduce= 			q402==1  | q403==1  | q406_001==1 | q406_002==1 | q406_003==1 | q406_004==1 | q406_005==1
-	gen xstrategy_reduce_closure= 	q402==1  
-	gen xstrategy_reduce_hrchange= 	q403==1  | q406_001==1 | q406_002==1 | q406_003==1 | q406_004==1 | q406_005==1
+	
+	gen xstrategy_reduce_closure= 	q402==1  	
+	****************************************************************************
+	* REVISION 2021/10/29 based on feedback from the Ghana team 
+	* error in the previous code: 
+	* "gen xstrategy_reduce_hrchange= 	q403==1  | q406_001==1 | q406_002==1 | q406_003==1 | q406_004==1 | q406_005==1"
+	* should have included only Q403 for xstrategy_reduce_hrchange
+	gen xstrategy_reduce_hrchange= 	q403==1  
+	* END OF REVISION 
+	
+	* QUESTION TO CHELSEA should we also change code for xstrategy_reduce to include q406_006?
+	
+	****************************************************************************	
 	gen xstrategy_reduce_reduce= 	q406_001==1 | q406_002==1 | q406_003==1
 	gen xstrategy_reduce_redirect= 	q406_004==1
 	gen xstrategy_reduce_priority= 	q406_005==1
 	gen xstrategy_reduce_combine= 	q406_006==1
+	
 	gen xstrategy_self= 			q406_007==1
 	gen xstrategy_home= 			q406_008==1
 	gen xstrategy_remote= 			q406_009==1 
@@ -996,18 +1008,18 @@ restore
 			replace `item'_change=3 if `item'_decrease==1 & `item'_increase==0 /*no service volume increased + at least one decreased*/
 			replace `item'_change=4 if `item'_decrease==0 & `item'_increase==1 /*no service volume decreased + at least one increased*/
 		}				
-	/*
-	*** Chelsea and YJ to discuss further 
 		
-		tab xopt_increase xopt_decrease, m
+	****************************************************************************
+	*REVISION 2021/11/1  	
+
+	tab q409a, gen (q409a)
+		rename q409a1 xoptoverall_increaseall
+		rename q409a2 xoptoverall_decreaseall
+		rename q409a3 xoptoverall_mixed
+		rename q409a4 xoptoverall_nochange
+	*END OF THE REVISION
+	****************************************************************************	
 		
-		codebook q409a
-		tab q409a xopt_increase, m 
-		tab q409a xopt_decrease, m
-		
-		tab q409a xopt_change, m
-	*/
-	
 	***** REASONS for OPT volume changes
 					
 	global itemlist "001 002 003 004 005 006 007"
@@ -1228,7 +1240,7 @@ restore
 	*****************************
 	* Section 6: COVID management in primary care setting 
 	*****************************	
-	
+
 	gen xcvd_team		=q601==1
 	gen xcvd_sop		=q602==1
 		
@@ -1263,11 +1275,22 @@ restore
 		gen xcvd_pthbsi__`item' 	= xcvd_pthbsi==1 & q608_`item'==1 /* ALWAYS - TBC*/
 		}	
 
-		/*
-		foreach var of varlist xcvd_pthbsi_*{
+	****************************************************************************
+	*REVISION 2021/10/29 based on discussion with Chelsea, per feedback from the Ghana team 
+	*restrict denominator for BOTH xcvd_pt_* and xcvd_pthbsi_*
+	*denominators for xcvd_pt_* hs been already restricted. see above 
+	*See "Note on analysis code revision_2021 10 28.pdf"
+		foreach var of varlist xcvd_pthbsi_*{ 
 			replace `var'=. if xcvd_pthbsi==0
-			}		
-		*/ 
+			}		 		
+		
+		*Check	
+		bysort xcvd_pt: sum xcvd_pt xcvd_pt_*
+		bysort xcvd_pthbsi: sum xcvd_pthbsi xcvd_pthbsi_*
+		bysort zlevel_low: sum xcvd_pt xcvd_pt_* xcvd_pthbsi xcvd_pthbsi_*
+	
+	*END OF REVISION 
+	****************************************************************************	
 	
 	gen xcvd_guide_casemanage	= q609==1				
 		
@@ -1278,8 +1301,6 @@ restore
 	gen xcvd_info_who 		= q610==1	& q611_003==1
 	gen xcvd_info_prof 		= q610==1	& q611_004==1
 	gen xcvd_info_other		= q610==1	& q611_005==1
-	
-	sum xcvd_*
 	
 	*****************************
 	* Section 7: Therapeutics
@@ -1809,7 +1830,7 @@ restore
 /*RUN this chunk A if there is samplingb weight*/
 *CHUNK A BEGINS  
 
-import excel "$chartbookdir\WHO_CEHS_Chartbook.xlsx", sheet("Weight") firstrow clear
+import excel "$chartbookdir\WHO_CEHS_Chartbook_10.21.xlsx", sheet("Weight") firstrow clear
 	rename *, lower
 		
 	sort facilitycode
@@ -1838,7 +1859,7 @@ import excel "$chartbookdir\WHO_CEHS_Chartbook.xlsx", sheet("Weight") firstrow c
 	
 	export delimited using CEHS_`country'_R`round'.csv, replace 
 
-	export excel using "$chartbookdir\WHO_CEHS_Chartbook.xlsx", sheet("Facility-level cleaned data") sheetreplace firstrow(variables) nolabel
+	export excel using "$chartbookdir\WHO_CEHS_Chartbook_10.21.xlsx", sheet("Facility-level cleaned data") sheetreplace firstrow(variables) nolabel
 	
 **************************************************************
 * F. Create indicator estimate data 
@@ -1853,8 +1874,17 @@ use CEHS_`country'_R`round'.dta, clear
 	gen obs_er=1 		if xer==1
 	gen obs_vac=1 		if xvac==1
 	gen obs_covax=1 	if xcovax==1	
-	gen obs_primary=1 	if zlevel_low==1 /*COUNTRY SPECIFIC*/
-	gen obs_hospital=1 	if zlevel_low==0 /*COUNTRY SPECIFIC*/
+	gen obs_primary=1 	if zlevel_low==1 /*COUNTRY SPECIFIC*/ 
+	gen obs_hospital=1 	if zlevel_low==0 /*COUNTRY SPECIFIC*/ /*=>use this for ximage denominator*/ 
+	
+	****************************************************************************
+	*REVISION 2021/10/29 based on discussion with Chelsea, per feedback from the Ghana team 
+	*CREATE ADDITIONAL "OBS" VARIABLES TO HAVE CORRECT DENOMINATORS IN THE CHARTBOOK 
+	
+	gen obs_cvd_pt=1 		if xcvd_pt==1
+	gen obs_cvd_pthbsi=1 	if xcvd_pthbsi==1
+	*END OF REVISION 
+	****************************************************************************	
 	
 	global itemlist "opt ipt del dpt"
 	foreach item in $itemlist{	
@@ -1977,11 +2007,7 @@ use summary_CEHS_`country'_R`round'.dta, clear
 	gen updatetime=""
 	replace updatetime="`time'"
 	
-export excel using "$chartbookdir\WHO_CEHS_Chartbook.xlsx", sheet("Indicator estimate data") sheetreplace firstrow(variables) nolabel keepcellfmt
-
-/* For YJ's shiny app and cross check against results from R
-export delimited using "C:\Users\YoonJoung Choi\Dropbox\0 iSquared\iSquared_WHO\ACTA\4.ShinyApp\0_Model\summary_CEHS_`country'_R`round'.csv", replace 
-*/
+export excel using "$chartbookdir\WHO_CEHS_Chartbook_10.21.xlsx", sheet("Indicator estimate data") sheetreplace firstrow(variables) nolabel keepcellfmt
 
 * To check against R results
 export delimited using "C:\Users\YoonJoung Choi\Dropbox\0 iSquared\iSquared_WHO\ACTA\3.AnalysisPlan\summary_CEHS_`country'_R`round'_Stata.csv", replace 

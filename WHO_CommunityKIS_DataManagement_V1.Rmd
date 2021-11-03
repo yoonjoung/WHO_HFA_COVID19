@@ -19,8 +19,8 @@ time<-Sys.time()
 suppressMessages(library(dplyr))
 suppressWarnings(suppressMessages(library(tidyverse)))
 suppressWarnings(suppressMessages(library(readxl)))
-suppressWarnings(suppressMessages(library(xlsx)))
-#suppressWarnings(suppressMessages(library(openxlsx)))
+#suppressWarnings(suppressMessages(library(xlsx)))
+suppressWarnings(suppressMessages(library(openxlsx)))
 #suppressMessages(library(Matrix))
 suppressWarnings(suppressMessages(library(stringr)))
 suppressWarnings(suppressMessages(library(stringi)))
@@ -53,15 +53,15 @@ __REQUIRED country-specific changes, based on the minmum country-specific adapta
 
 ---
 
-####A. SETTING   
+#### A. SETTING   
 ```{r setting}
 #working directory where this markdown file and subfolders are located.
-setwd("C:/Users/YoonJoung Choi/Dropbox/0 iSquared/iSquared_WHO/ACTA/3.AnalysisPlan/")
+setwd("~/Dropbox/0 iSquared/iSquared_WHO/ACTA/3.AnalysisPlan/")
 
 #chartbookdir<-("C:/Users/YoonJoung Choi/World Health Organization/BANICA, Sorin - HSA unit/2 Global goods & tools/2 HFAs/1 HFAs for COVID-19/4. Implementation support materials/4. Analysis and dashboards/")
-chartbookdir<-("C:/Users/YoonJoung Choi/Dropbox/0 iSquared/iSquared_WHO/ACTA/3.AnalysisPlan/")
+chartbookdir<-("~/Dropbox/0 iSquared/iSquared_WHO/ACTA/3.AnalysisPlan/")
 
-limesurveydir<-("C:/Users/YoonJoung Choi/Dropbox/0 iSquared/iSquared_WHO/ACTA/3.AnalysisPlan/ExportedCSV_FromLimeSurvey/")
+limesurveydir<-("~/Dropbox/0 iSquared/iSquared_WHO/ACTA/3.AnalysisPlan/ExportedCSV_FromLimeSurvey/")
 
 # Define local macro for the survey 
 country<-"COUNTRYNAME" #country name 
@@ -76,8 +76,8 @@ surveyid<-777777        #LimeSurvey survey ID
 
 ---
 
-####B. Import and drop duplicate cases
-#####B.1. Import raw data from LimeSurvey 
+#### B. Import and drop duplicate cases
+##### B.1. Import raw data from LimeSurvey 
 ```{r importraw, eval=FALSE}
 #Import directly from LimeSurvey - using the correct link, according to the country overview page (edit 6/23/2021)
 dtaraw<-read.csv(paste0("https://who.my-survey.host/index.php/plugins/direct?plugin=CountryOverview&docType=1&sid=",surveyid,"&language=en&function=createExport"))
@@ -113,13 +113,14 @@ As of `r time`, the downloaded raw data has `r obsraw` observations and `r cols`
 
 ---
 
-#####B.2. Export/save the data daily in CSV form with date
+##### B.2. Export/save the data daily in CSV form with date
 ```{r rawdatacsv}
 write.csv(dtaraw, paste0(limesurveydir,"LimeSurvey_Community_", country, "_R", round, "_", date, ".csv"))
 ```
+
 ---
 
-#####B.3. Export the data to chartbook 
+##### B.3. Export the data for chartbook 
 Then, export the raw data into the chartbook (green tab: "Facility-level raw data") - as is.
 ```{r chartbookexport1, eval=FALSE, echo=FALSE}
 dtaraw<-dtaraw%>%mutate(test=Sys.time())
@@ -155,7 +156,7 @@ write.xlsx(dtaraw,
 
 ---
 
-#####B.4. Drop duplicate cases 
+##### B.4. Drop duplicate cases 
 Assess duplicate rows based on facility code: Q101. Among the duplicate rows, keep the latest row, based on the submission date/time. 
 ```{r duplicates}
 # Identify duplicates 
@@ -188,15 +189,15 @@ A total of `r obsduplicate` duplicate rows from `r obsduplicateunique` unique fa
 
 ---
 
-####C. Data cleaning - variables 
-#####C.1. Change variable names to lowercase	
+#### C. Data cleaning - variables 
+##### C.1. Change variable names to lowercase	
 ```{r vartolow}
 names(dta)<-tolower(names(dta))
 ```
 
 ---
 
-#####C.1.a Assess time stamp data	
+##### C.1.a Assess time stamp data	
 ```{r timestamp, echo=FALSE, eval=FALSE}
 dta<-dta%>%
     rename(interviewtimee=interviewtime)%>%
@@ -218,7 +219,7 @@ dta<-dta%>%
 
 ---
 
-#####C.2. Change variable names to drop odd elements "y" "sq" - because of Lime survey's naming convention 
+##### C.2. Change variable names to drop odd elements "y" "sq" - because of Lime survey's naming convention 
 ```{r varnames}
 #Assess odd names to change
 colnames(dta)
@@ -234,7 +235,7 @@ dta<-dtanew
 
 ---
 
-#####C.3. Find non-numeric variables and desting 
+##### C.3. Find non-numeric variables and desting 
 Check variables section by scion, drop prefix "A" in categorical/character variables, and convert to numeric. 
 ```{r varformat}
 #change all factor to numeric
@@ -317,7 +318,7 @@ dta<-dta%>%
 
 ---
 
-#####C.4. Recode yes/no & yes/no/NA
+##### C.4. Recode yes/no & yes/no/NA
 ```{r varcode}
 table(dta$q601)
 
@@ -343,7 +344,7 @@ table(dta$q601)
 
 ---
 
-#####C.5. Label values 
+##### C.5. Label values 
 The following is value labels. 
 ```
 	#delimit;	
@@ -448,7 +449,7 @@ The following is value labels.
 
 ---
 
-####D. Create field check tables 
+#### D. Create field check tables 
 As of `r date`, the following are "field check tables." In Stata program, xls file is created. In R, the results are directly presented in this markdown file.  
 ```{r fieldcheck1, echo=FALSE, eval=FALSE}
 dtacheck<-dta%>%
@@ -671,8 +672,8 @@ print(paste(as.character(round(mean(dtacheck$missing10, na.rm=TRUE)*100, 1)), "%
 
 ---
 
-####E. Create analytical variables 
-#####E.1. Country speciic code local 
+#### E. Create analytical variables 
+##### E.1. Country speciic code local 
 Update code here based on the questionnaire in the country 
 ```{r surveylocal}
 urbanmin<-1
@@ -684,7 +685,7 @@ chwmax  <-3 #/*highest code for CHWs in Q113*/
 
 ---
 
-#####E.2. Construct analysis variables 
+##### E.2. Construct analysis variables 
 Created analysis variables section by section.   
 * give prefix __z__ for background characteristics, which can be used as analysis strata     
 * give prefix __x__ for binary variables, which will be used to calculate percentage   
@@ -979,12 +980,17 @@ dta<-dta%>%
                                     ifelse(. ==4 , 1, 
                                         ifelse(. <=3 , 0, .)))) )
         
-dta<-cbind(dta, temp1, temp2, temp3, temp4, temp5)     
+dta<-cbind(dta, temp1, temp2, temp3, temp4, temp5)%>%
+    #Revision 2021/10/29. xrisk_reason__*: replace with missing if not applicable 
+    mutate_at(vars(starts_with("xrisk_reason__")), 
+              funs(ifelse(xrisk_mod==0, NA,.))
+    )
+    #ENF OF REVISION
 ```
 
 ---
 
-#####E.2-Addendum. Rename indicators for easier data use 
+##### E.2-Addendum. Rename indicators for easier data use 
 
 <span style="color: blue;">Rename indicators ending with sub-question numbers with more friendly names. These names are used in the dash board. __Thus, it is important to ensure the indicator names are correct, if questionnaire is adapted beyond minimum requirements.__ (Addendum on August 17, 2021)<span>  
 
@@ -1113,7 +1119,7 @@ dta<-dta%>%
 
 ---
 
-#####E.3. Export clean Respondent-level data to chart book 
+##### E.3. Export clean Respondent-level data for chart book 
 ```{r cleandatacsv}
 write.csv(dta, paste0("Community_", country, "_R", round, ".csv"))
 ```
@@ -1130,8 +1136,8 @@ dta<-dta%>%mutate(test=Sys.time())
 
 ---
 
-####F. Create and export indicator estimate data 
-#####F.1. Calculate estimates 
+#### F. Create and export indicator estimate data 
+##### F.1. Calculate estimates 
 ```{r dtatemp_prep}
 dtatemp<-dta%>%
     mutate(
@@ -1141,7 +1147,13 @@ dtatemp<-dta%>%
     	obs_vacreason=NA, 
     
     	obs_chw=ifelse(zchw==1, 1, obs_chw),  	
-    	obs_vacreason=ifelse(xvac_most!=1, 1, obs_vacreason)
+    	obs_vacreason=ifelse(xvac_most!=1, 1, obs_vacreason), 
+    	
+    	#REVISION 2021/10/25: CREATE ADDITIONAL "OBS" VARIABLES TO HAVE CORRECT DENOMINATORS IN THE CHARTBOOK 
+    	obs_riskreason=NA, 
+    	obs_riskreason=ifelse(xrisk_mod==1, 1, obs_riskreason)
+    	#END OF REVISION
+    	
     )%>%
     select(-ends_with("_num"))
 
@@ -1230,6 +1242,13 @@ dim(dtasummaryall)
 dim(dtasummarylocation)
 dim(dtasummarychw)
 
+setcolorder(dtasummaryall, 
+            c("country", "round", "month", "year", "group", "grouplabel"))
+setcolorder(dtasummarylocation, 
+            c("country", "round", "month", "year", "group", "grouplabel"))
+setcolorder(dtasummarychw, 
+            c("country", "round", "month", "year", "group", "grouplabel"))
+
 dtasummary<-rbind(dtasummaryall, dtasummarylocation, dtasummarychw)
 dim(dtasummary)
 
@@ -1246,7 +1265,7 @@ colnames(dtasummary[ , 1:10])
 
 ---
 
-#####F.2. Export indicator estimate data to chart book 
+##### F.2. Export indicator estimate data for chart book 
 ```{r summarydatacsv}
 write.csv(dtasummary, paste0("summary_Community_", country, "_R", round, ".csv"))
 ```
