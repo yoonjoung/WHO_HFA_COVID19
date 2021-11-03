@@ -12,15 +12,14 @@ This repository has data cleaning/management/analysis programs. There are three 
 * Continuity of Essential Health Services Survey/Module   
 -- Questionnaire (PDF): __Continuity of EHS_20210512_Clean.pdf__   
 -- Mock-up data for testing with a country name, "EXAMPLE", and the round number 1: LimeSurvey_CEHS_EXAMPLE_R1.csv   
--- Analysis code in Stata: WHO_CEHS_DataManagement.do __(updated on 8/17/2021)__   
--- Analysis code in R: WHO_CEHS_DataManagement_V1.Rmd (https://rpubs.com/YJ_Choi/WHO_COVID19HFA_CEHS) __(updated on 8/17/2021)__      
--- SampleChartbook_ToPracticeDynamicDuo.xlsx (Sample chartbook to practice, using CEHS as an example)    
+-- Analysis code in Stata: WHO_CEHS_DataManagement.do __(updated on 11/3/2021)__   
+-- Analysis code in R: WHO_CEHS_DataManagement_V1.Rmd (https://rpubs.com/YJ_Choi/WHO_COVID19HFA_CEHS) __(updated on 11/3/2021)__      
 
 * Community   
 -- Questionnaire (PDF): __Community assessment tool_20210205_Clean.pdf__   
 -- Mock-up data for testing with a country name, "EXAMPLE", and the round number 1: LimeSurvey_Community_EXAMPLE_R1.csv   
--- Analysis code in Stata: WHO_Community_DataManagement.do __(updated on 8/17/2021)__   
--- Analysis code in R: WHO_CommunityKIS_DataManagement.Rmd (https://rpubs.com/YJ_Choi/WHO_COVID19HFA_Com) __(updated on 8/17/2021)__   
+-- Analysis code in Stata: WHO_Community_DataManagement.do __(updated on 11/3/2021)__   
+-- Analysis code in R: WHO_CommunityKIS_DataManagement.Rmd (https://rpubs.com/YJ_Choi/WHO_COVID19HFA_Com) __(updated on 11/3/2021)__   
 
 * Sample chartbook, using CEHS as an example        
 -- SampleChartbook_ToPracticeDynamicDuo.xlsx
