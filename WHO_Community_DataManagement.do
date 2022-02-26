@@ -5,9 +5,9 @@ capture log close
 set more off
 numlabel, add
 
-*This code 
+*This code last updated on 2/25/2022
 *1) imports and cleans Continuity of EHS dataset from Lime Survey, 
-*	created based on the February 5, 2021 Q version
+*	created based on the October 29, 2021 Q version
 *2) creates field check tables for data quality monitoring, and 
 *3) creates indicator estimate data for dashboards and chartbook. 
 
@@ -49,15 +49,15 @@ numlabel, add
 
 *** Directory for this do file 
 *cd "C:\Users\ctaylor\World Health Organization\BANICA, Sorin - HSA unit\2 Global goods & tools\2 HFAs\1 HFAs for COVID-19\4. Implementation support materials\4. Analysis and dashboards\"
-cd "C:\Users\YoonJoung Choi\World Health Organization\BANICA, Sorin - HSA unit\2 Global goods & tools\2 HFAs\1 HFAs for COVID-19\4. Implementation support materials\4. Analysis and dashboards\"
+cd "~/Dropbox/0 iSquared/iSquared_WHO/ACTA/3.AnalysisPlan/"
 
 *** Directory for downloaded CSV data, if different from the main directory
 *global downloadcsvdir "C:\Users\ctaylor\World Health Organization\BANICA, Sorin - HSA unit\2 Global goods & tools\2 HFAs\1 HFAs for COVID-19\4. Implementation support materials\4. Analysis and dashboards\DownloadedCSV\"
-global downloadcsvdir "C:\Users\YoonJoung Choi\World Health Organization\BANICA, Sorin - HSA unit\2 Global goods & tools\2 HFAs\1 HFAs for COVID-19\4. Implementation support materials\4. Analysis and dashboards\DownloadedCSV\"
+global downloadcsvdir "~/Dropbox/0 iSquared/iSquared_WHO/ACTA/3.AnalysisPlan/ExportedCSV_FromLimeSurvey/"
 
 *** Define a directory for the chartbook, if different from the main directory 
 *global chartbookdir "C:\Users\ctaylor\World Health Organization\BANICA, Sorin - HSA unit\2 Global goods & tools\2 HFAs\1 HFAs for COVID-19\4. Implementation support materials\4. Analysis and dashboards\"
-global chartbookdir "C:\Users\YoonJoung Choi\World Health Organization\BANICA, Sorin - HSA unit\2 Global goods & tools\2 HFAs\1 HFAs for COVID-19\4. Implementation support materials\4. Analysis and dashboards\"
+global chartbookdir "~/Dropbox/0 iSquared/iSquared_WHO/ACTA/3.AnalysisPlan/"
 
 *** Define local macro for the survey 
 local country	 		 COUNTRYNAME /*country name*/	
@@ -92,7 +92,7 @@ global date=subinstr("`c_today'", " ", "",.)
 
 	*/
 import delimited "$downloadcsvdir/LimeSurvey_Community_EXAMPLE_R1.csv", case(preserve) clear  /*THIS LINE ONLY FOR PRACTICE*/
-
+		
 *****B.2. Export/save the data daily in CSV form with date 
 export delimited using "$downloadcsvdir/LimeSurvey_Community_`country'_R`round'_$date.csv", replace 
 
@@ -101,15 +101,15 @@ export delimited using "$downloadcsvdir/LimeSurvey_Community_`country'_R`round'_
 	codebook token Q105
 	list Q1* if Q105==. | token=="" 
 	*****CHECK: this is an empty row. There should be none	
-
+	
 	*****MASK idenitifiable information*/
 	foreach var of varlist Q101 Q107 Q7011 Q7012{
 		replace `var'=""
 		}		
 		replace Q106=. 
 
-export excel using "$chartbookdir\WHO_Community_Chartbook_10.21.xlsx", sheet("Facility-level raw data") sheetreplace firstrow(variables) nolabel
-
+export excel using "$chartbookdir/WHO_Community_Chartbook_Feb2022.xlsx", sheet("Respondent-level raw data") sheetreplace firstrow(variables) nolabel
+	
 *****B.4. Drop duplicate cases 
 	
 	lookfor id
@@ -217,12 +217,17 @@ export excel using "$chartbookdir\WHO_Community_Chartbook_10.21.xlsx", sheet("Fa
 	d q3*
 	
 	*****************************	
-	* Section 4
+	* Section 4 - option 2 in the October 29 version Q
 	*****************************
-	sum q4*
-	codebook q401 q402 q403
 	
-	foreach var of varlist q401 q402 q403  {		
+	* Few countries would need to choose option 1 
+	* If option 1 is truly needed, refer to the older analysis code. 
+	
+	sum q4*
+
+	codebook q401 q402 q403 q405
+	
+	foreach var of varlist q401 q402 q403 q405{		
 		replace `var' = usubinstr(`var', "A", "", 1) 
 		destring `var', replace 
 		}	
@@ -230,38 +235,31 @@ export excel using "$chartbookdir\WHO_Community_Chartbook_10.21.xlsx", sheet("Fa
 	d q4*
 		
 	*****************************
-	* Section 5
+	* Section 5 - deleted in the October 29 version Q
 	*****************************
-	sum q5*		
-	codebook q501 q502* q504 
-	
-	foreach var of varlist q501 q502 q504   {		
-		replace `var' = usubinstr(`var', "A", "", 1) 
-		destring `var', replace 
-		}	
-		
-	d q5*	
-		
+			
 	*****************************			
 	* Section 6
 	*****************************
-	sum q6*
-	codebook q602 q604 q605 q607_* 
 	
-	foreach var of varlist q602 q604 q605 q607_*  {		
+	sum q6*
+
+	codebook q601a q602 q604 q605 q607_* q608 q609 
+	
+	foreach var of varlist q601a q602 q604 q605 q607_* q608 q609 {		
 		replace `var' = usubinstr(`var', "A", "", 1) 
 		destring `var', replace 
 		}	
 		
 	d q6*		
-		
+	
 	*****************************			
 	* Section 7
 	*****************************
 	sum q7*
-	codebook q701 q702
+	codebook q701 q704
 	
-	foreach var of varlist q701 q702 {		
+	foreach var of varlist q701 q704 {		
 		replace `var' = usubinstr(`var', "A", "", 1) 
 		destring `var', replace 
 		}			
@@ -270,19 +268,17 @@ export excel using "$chartbookdir\WHO_Community_Chartbook_10.21.xlsx", sheet("Fa
 	
 	#delimit;
 	sum		
-		q301_*  q303_* q304_* q305 q306_* 
-		q404_*
-		q503_* q505_* 
-		q601  q603_* q606_*
+		q301_*  q303_* q304_* 
+		q403 q404_* q405 q406_*
+		q601* q603_* q606_* q608
 		; 
 		#delimit cr
 	
 	#delimit;
 	foreach var of varlist 
-		q301_*  q303_* q304_* q305 q306_* 
-		q404_*
-		q503_* q505_* 
-		q601  q603_* q606_*
+		q301_*  q303_* q304_* 
+		q403 q404_* q405 q406_*
+		q601* q603_* q606_* q608
 		{; 
 		#delimit cr		
 		recode `var' 2=0 /*no*/
@@ -294,11 +290,10 @@ export excel using "$chartbookdir\WHO_Community_Chartbook_10.21.xlsx", sheet("Fa
 	
 	lab define yesno 1"1. yes" 0"0. no"; 	
 	foreach var of varlist 
-		q301_*  q303_* q304_* q305 q306_* 
-		q404_*
-		q503_* q505_* 
-		q601  q603_* q606_*
-		{;	
+		q301_*  q303_* q304_* 
+		q403 q404_* q405 q406_*
+		q601* q603_* q606_* q608
+		{; 
 	labe values `var' yesno; 
 	};		
 
@@ -342,20 +337,6 @@ export excel using "$chartbookdir\WHO_Community_Chartbook_10.21.xlsx", sheet("Fa
 	foreach var of varlist q401 q402 q403{;	
 		lab values `var' people4;
 		};
-	
-	lab define q501
-		1"1.Limited"
-		2"2.Moderate"
-		3"3.Significant";  
-	lab values q501 q501; 
-	
-	lab define change
-		1"1.Increased/enhanced"
-		2"2.Remained stable"
-		3"3.Decreased";  
-	foreach var of varlist q502 q504 {;	
-		lab values `var' change;
-		};
 		
 	lab define q602
 		1"1.No risk"
@@ -381,8 +362,7 @@ export excel using "$chartbookdir\WHO_Community_Chartbook_10.21.xlsx", sheet("Fa
 		1"1.Slightly reduced"
 		2"2.Substantially reduced or suspended"
 		3"3.Increased"
-		4"3.No change"
-		5"3.Not applicable";  	
+		4"3.No change";  	
 	foreach var of varlist q607_* {;	
 		lab values `var' q607;
 		};
@@ -399,29 +379,29 @@ preserve
 
 			gen updatedate = "$date"
 	
-	tabout updatedate using "$chartbookdir\FieldCheckTable_Community_`country'_R`round'_$date.xls", replace ///
+	tabout updatedate using "$chartbookdir/FieldCheckTable_Community_`country'_R`round'_$date.xls", replace ///
 		cells(freq col) h2("Date of field check table update") f(0 1) clab(n %)
 
 			split submitdate_string, p(" ")
 			gen date=date(submitdate_string1, "MDY") 
 			format date %td
 						
-	tabout submitdate_string1 using "$chartbookdir\FieldCheckTable_Community_`country'_R`round'_$date.xls", append ///
+	tabout submitdate_string1 using "$chartbookdir/FieldCheckTable_Community_`country'_R`round'_$date.xls", append ///
 		cells(freq col) h2("Date of interviews (submission date, final)") f(0 1) clab(n %)
 			
-			gen xresult=q702==1
+			gen xresult=q704==1
 			
 			gen byte responserate= xresult==1
 			label define responselist 0 "Not complete" 1 "Complete"
 			label val responserate responselist
 
-	tabout responserate using "$chartbookdir\FieldCheckTable_Community_`country'_R`round'_$date.xls", append ///
+	tabout responserate using "$chartbookdir/FieldCheckTable_Community_`country'_R`round'_$date.xls", append ///
 		cells(freq col) h2("Interview response rate") f(0 1) clab(n %)
 	
-	tabout q114 using "$chartbookdir\FieldCheckTable_Community_`country'_R`round'_$date.xls", append ///
+	tabout q114 using "$chartbookdir/FieldCheckTable_Community_`country'_R`round'_$date.xls", append ///
 		cells(freq col) h2("Number of completed interviews by area") f(0 1) clab(n %)
 		
-	tabout q113 using "$chartbookdir\FieldCheckTable_Community_`country'_R`round'_$date.xls", append ///
+	tabout q113 using "$chartbookdir/FieldCheckTable_Community_`country'_R`round'_$date.xls", append ///
 		cells(freq col) h2("Number of completed interviews by respondent occupation") f(0 1) clab(n %)		
 
 	*REVISION: 4/20/2021		
@@ -433,9 +413,9 @@ preserve
 				replace time_complete = round(time_complete, 1)
 				replace time_incomplete = round(time_incomplete, 1)
 
-	tabout time_complete using "$chartbookdir\FieldCheckTable_Community_`country'_R`round'_$date.xls", append ///
+	tabout time_complete using "$chartbookdir/FieldCheckTable_Community_`country'_R`round'_$date.xls", append ///
 		cells(freq col) h2("Average interview length (minutes), among completed interviews") f(0 1) clab(n %)		
-	tabout time_incomplete using "$chartbookdir\FieldCheckTable_Community_`country'_R`round'_$date.xls", append ///
+	tabout time_incomplete using "$chartbookdir/FieldCheckTable_Community_`country'_R`round'_$date.xls", append ///
 		cells(freq col) h2("Average interview length (minutes), among incomplete interviews") f(0 1) clab(n %)	
 	*/
 	
@@ -443,26 +423,26 @@ preserve
 
 			capture drop missing
 			gen missing=0
-			foreach var of varlist q702 {	
+			foreach var of varlist q704 {	
 				replace missing=1 if `var'==.				
 				}		
 			lab values missing yesno		
-
-	tabout missing using "$chartbookdir\FieldCheckTable_Community_`country'_R`round'_$date.xls", append ///
+			
+	tabout missing using "$chartbookdir/FieldCheckTable_Community_`country'_R`round'_$date.xls", append ///
 		cells(freq col) h2("0. Missing survery results (among all interviews)") f(0 1) clab(n %)									
 
 keep if xresult==1 /*the following calcualtes % missing in select questions among completed interviews*/		
-			
+
 			capture drop missing
 			gen missing=0
 			foreach var of varlist q201_* {	
 				replace missing=1 if `var'==.
 				}			
 			lab values missing yesno
-			
-	tabout missing using "$chartbookdir\FieldCheckTable_Community_`country'_R`round'_$date.xls", append ///
-		cells(freq col) h2("1. Missing unmet need responses in one or more of the tracer items (among completed interviews)") f(0 1) clab(n %)					
 
+	tabout missing using "$chartbookdir/FieldCheckTable_Community_`country'_R`round'_$date.xls", append ///
+		cells(freq col) h2("1. Missing unmet need responses in one or more of the tracer items (among completed interviews)") f(0 1) clab(n %)					
+	
 			capture drop missing
 			gen missing=0
 			foreach var of varlist q303_* {	
@@ -472,20 +452,8 @@ keep if xresult==1 /*the following calcualtes % missing in select questions amon
 			tab missing, m	
 			lab values missing yesno		
 			
-	tabout missing using "$chartbookdir\FieldCheckTable_Community_`country'_R`round'_$date.xls", append ///
+	tabout missing using "$chartbookdir/FieldCheckTable_Community_`country'_R`round'_$date.xls", append ///
 		cells(freq col) h2("2. Missing reason for unmet need during the pandemic in one or more of the tracer items (among completed interviews)") f(0 1) clab(n %)					
-		
-			capture drop missing
-			gen missing=0
-			foreach var of varlist q306_* {	
-				replace missing=1 if `var'==.
-				}	
-				replace missing=. if q305==0
-			tab missing, m	
-			lab values missing yesno	
-			
-	tabout missing using "$chartbookdir\FieldCheckTable_Community_`country'_R`round'_$date.xls", append ///
-		cells(freq col) h2("3. Missing marginalized population (among completed interviews)") f(0 1) clab(n %)					
 
 			capture drop missing
 			gen missing=0
@@ -495,42 +463,20 @@ keep if xresult==1 /*the following calcualtes % missing in select questions amon
 			tab missing, m
 			lab values missing yesno		
 
-	tabout missing using "$chartbookdir\FieldCheckTable_Community_`country'_R`round'_$date.xls", append ///
-		cells(freq col) h2("4. Missing vaccine demand among adults OR children, when applicable (among completed interviews)") f(0 1) clab(n %)					
+	tabout missing using "$chartbookdir/FieldCheckTable_Community_`country'_R`round'_$date.xls", append ///
+		cells(freq col) h2("4. Missing vaccine demand among adults, when applicable (among completed interviews)") f(0 1) clab(n %)					
 	
 			capture drop missing
 			gen missing=0
 			foreach var of varlist q404_* {	
 				replace missing=1 if `var'==.
 				}		
-				replace missing=. if q402==1 & q403==1
+				replace missing=. if q402==1 
 			lab values missing yesno		
 
-	tabout missing using "$chartbookdir\FieldCheckTable_Community_`country'_R`round'_$date.xls", append ///
+	tabout missing using "$chartbookdir/FieldCheckTable_Community_`country'_R`round'_$date.xls", append ///
 		cells(freq col) h2("5. Missing reasons for no vaccine demand in one or more of the tracer items (among completed interviews)") f(0 1) clab(n %)					
 
-			capture drop missing
-			gen missing=0
-			foreach var of varlist q503_* {	
-				replace missing=1 if `var'==.
-				}	
-				replace missing=. if q502!=1
-			lab values missing yesno		
-
-	tabout missing using "$chartbookdir\FieldCheckTable_Community_`country'_R`round'_$date.xls", append ///
-		cells(freq col) h2("6. Missing increased social initiatives (among completed interviews)") f(0 1) clab(n %)							
-
-			capture drop missing
-			gen missing=0
-			foreach var of varlist q505_* {	
-				replace missing=1 if `var'==.
-				}	
-				replace missing=. if q504!=1
-			lab values missing yesno		
-
-	tabout missing using "$chartbookdir\FieldCheckTable_Community_`country'_R`round'_$date.xls", append ///
-		cells(freq col) h2("7. Missing increased health initiatives (among completed interviews)") f(0 1) clab(n %)		
-		
 			capture drop missing
 			gen missing=0
 			foreach var of varlist q603_* {	
@@ -539,7 +485,7 @@ keep if xresult==1 /*the following calcualtes % missing in select questions amon
 				replace missing=. if q602<=2
 			lab values missing yesno		
 
-	tabout missing using "$chartbookdir\FieldCheckTable_Community_`country'_R`round'_$date.xls", append ///
+	tabout missing using "$chartbookdir/FieldCheckTable_Community_`country'_R`round'_$date.xls", append ///
 		cells(freq col) h2("8. Missing reasons for risks (among completed interviews)") f(0 1) clab(n %)			
 				
 			capture drop missing
@@ -549,7 +495,7 @@ keep if xresult==1 /*the following calcualtes % missing in select questions amon
 				}		
 			lab values missing yesno		
 
-	tabout missing using "$chartbookdir\FieldCheckTable_Community_`country'_R`round'_$date.xls", append ///
+	tabout missing using "$chartbookdir/FieldCheckTable_Community_`country'_R`round'_$date.xls", append ///
 		cells(freq col) h2("9. Missing CHW stigma (among completed interviews)") f(0 1) clab(n %)							
 		
 			capture drop missing
@@ -560,7 +506,7 @@ keep if xresult==1 /*the following calcualtes % missing in select questions amon
 				replace missing=. if q605==1
 			lab values missing yesno		
 
-	tabout missing using "$chartbookdir\FieldCheckTable_Community_`country'_R`round'_$date.xls", append ///
+	tabout missing using "$chartbookdir/FieldCheckTable_Community_`country'_R`round'_$date.xls", append ///
 		cells(freq col) h2("10. Missing support needed (among completed interviews)") f(0 1) clab(n %)					
 	
 restore
@@ -771,9 +717,7 @@ restore
 		foreach item in 016 {	
 			replace xbar_covid_qexp =1 	if q303_`item'==1
 			}	
-			
-
-			
+						
 	***** Source of care 
 	
 	global itemlist "001 002 003 004 005 006 007 008 009 010 011"
@@ -786,14 +730,6 @@ restore
 			replace xsource_trained	=1 	if q304_`item'==1 /*COUNTRY-SPECIFIC MUST BE ADAPTED*/
 			}		
 			
-	***** Equity
-	
-	gen byte xmargin = q305==1
-	
-	global itemlist "001 002 003 004 005 006 007 008 009 010 011 012 013 014 015 016"
-	foreach item in $itemlist{	
-		gen xmargin__`item' 		= q306_`item'==1
-		}	
 
 	*****************************
 	* Section 4: vaccine 
@@ -805,18 +741,46 @@ restore
 	gen byte xvac_adult_most 	= q402<=1
 	gen byte xvac_adult_mostsome= q402<=2
 	
-	gen byte xvac_child_most 	= q403<=1
-	gen byte xvac_child_mostsome= q403<=2
 	
-	gen byte xvac_most 		= xvac_adult_most==1 & xvac_child_most==1 /*most adults AND children*/	
-	gen byte xvac_mostsome	= xvac_adult_mostsome==1 | xvac_child_mostsome==1 /*most/some adults OR children*/
+	/* 2/25/2022 eidt starts */
+	*no more xvac_child_* and, thus, xvac_most*	
+	
+	gen byte xvac_noaccess 	= q403==1 
+	
+	global itemlist "001 002 003 004 005 006 007"
+	foreach item in $itemlist{	
+		gen xvac_noaccess_reason__`item' 		= q404_`item'==1
+		}		
+	
+	/*
+	
+	RESPONSE OPTIONS FROM QUESTIONNAIRE
+	
+	1. Not yet eligible for the COVID-19 vaccine, and waiting to become eligible  
+	2. It is too far to visit a vaccination site or facility  
+	3. There are too many people at a vaccination site and wait time is too long 
+	4. There are not enough staff at a vaccination site and wait time is too long  
+	5. It is difficult to make an app for the vaccination 
+	6. Concerned about cost  
+	7. Other 
+	*/
+	gen	xvac_noaccess_reason_eligible = xvac_noaccess_reason__001==1
+	gen	xvac_noaccess_reason_distance	= xvac_noaccess_reason__002==1 
+	gen	xvac_noaccess_reason_wait 	= xvac_noaccess_reason__003==1 | xvac_noaccess_reason__004==1
+	gen	xvac_noaccess_reason_app 		= xvac_noaccess_reason__005==1 
+	gen	xvac_noaccess_reason_cost		= xvac_noaccess_reason__006==1 	
 
-	gen byte q404_008 = q404other!="" & q404other!="0" 
-	replace q404_008=. if q404_001==.
+	foreach var of varlist xvac_noaccess_reason* {
+		replace `var' = . if xvac_noaccess !=1
+		}
+	
+	gen byte xvac_nowant 	= q405==1 
+	
+	/* 2/25/2022 eidt endss */
 	
 	global itemlist "001 002 003 004 005 006 007 008"
 	foreach item in $itemlist{	
-		gen xvac_reason__`item' 		= q404_`item'==1
+		gen xvac_reason__`item' 		= q406_`item'==1
 		}		
 	
 	/*
@@ -840,46 +804,37 @@ restore
 	gen	xvac_reason_cost 		= xvac_reason__007==1 
 
 	foreach var of varlist xvac_reason*{
-		replace `var' = . if xvac_most !=0
+		replace `var' = . if xvac_nowant !=1
 		}
 	
 	sum xvac*
 		
 	*****************************
-	* Section 5: Community assets and vulnerabilities 
+	* Section 5: Community assets and vulnerabilities - dropped in October 29, 2021 version
 	*****************************	
-	gen xeconimpact_modsig =q501==2 | q501==3  
-	gen xeconimpact_sig =q501==3  
-	
-	tab xeconimpact_modsig xeconimpact_sig
-	
-	gen xinit_ses_increased = q502==1 
-	gen xinit_ses_nochange = q502==2 
-	gen xinit_ses_decreased = q502==3 
-	
-	global itemlist "001 002 003 004 005 006 007 008 009"  
-	foreach item in $itemlist{	
-		gen xinit_ses_increased__`item' 		= q503_`item'==1
-		}	
-
-	gen xinit_health_increased = q504==1 
-	gen xinit_health_nochange = q504==2 
-	gen xinit_health_decreased = q504==3 
-	
-	global itemlist "001 002 003 004 005 006 007 008 009 010"  
-	foreach item in $itemlist{	
-		gen xinit_health_increased__`item' 		= q505_`item'==1
-		}	
-	
+		
 	*****************************
 	* Section 6: CHW service provision 
 	*****************************
-	gen byte xknowledge			=q601==1
-		
-	gen byte xrisk_mod	=q602>=3 & q602!=.
+	
+	/* 2/25/2022 eidts */
+	* no more xknowledge 
+	* new q601*
+	* q603_003
+	* new sub quesitons in q606
+	* q6080 & q609	
+	
+	gen byte xtraining = q601a==1
+	
+	global itemlist "001 002 003"
+	foreach item in $itemlist{	
+		gen xtraining__`item' 	= q601b_`item'==1
+		}						
+	
+	gen byte xrisk_modhigh	=q602>=3 & q602!=.
 	gen byte xrisk_high	=q602>=4 & q602!=.
 
-	global itemlist "001 002 003 004 005 006"
+	global itemlist "001 002 003 004 005 006 007"
 	foreach item in $itemlist{	
 		gen xrisk_reason__`item' 		= q603_`item'==1
 		}					
@@ -889,7 +844,7 @@ restore
 	gen byte xsupport_most		=q605<=1
 	gen byte xsupport_somemost	=q605<=2
 	
-	global itemlist "001 002 003 004 005 006 007 008"
+	global itemlist "001 002 003 004 005 006 007 008 009 010 011 012"
 	foreach item in $itemlist{	
 		gen xsupportneed__`item' 		= q606_`item'==1
 		}
@@ -899,7 +854,7 @@ restore
 	*replace with missing if not applicable 
 	*this is my oversight. we should change this - just like in other reasons questions*/
 	foreach var of varlist xrisk_reason__*{ 
-		replace `var'=. if xrisk_mod==0
+		replace `var'=. if xrisk_modhigh==0
 		}
 	
 	*END OF REVISION 2021/10/25 
@@ -921,6 +876,10 @@ restore
 		replace xsrvc_increased__`item' 	=. if q607_`item'==5
 		replace xsrvc_nochange__`item' 		=. if q607_`item'==5
 		}		
+	
+	gen byte xself_covax_any	=q608==1 
+	gen byte xself_covax_full	=q608==1 & q609<=2
+	
 	
 *****E.2.Addendum
 **		Rename indicators ending with sub-question numbers with more friendly names. 
@@ -961,23 +920,15 @@ restore
 		rename	xsource__009	xsource__internet
 		rename	xsource__010	xsource__other
 		rename	xsource__011	xsource__none
-				
-		rename	xmargin__001	xmargin__poverty
-		rename	xmargin__002	xmargin__informal
-		rename	xmargin__003	xmargin__unemployed
-		rename	xmargin__004	xmargin__singleparent
-		rename	xmargin__005	xmargin__isolatedold
-		rename	xmargin__006	xmargin__disabled
-		rename	xmargin__007	xmargin__lgbti
-		rename	xmargin__008	xmargin__indigenous
-		rename	xmargin__009	xmargin__religious
-		rename	xmargin__010	xmargin__nomadic
-		rename	xmargin__011	xmargin__migrants
-		rename	xmargin__012	xmargin__ethnic
-		rename	xmargin__013	xmargin__homeless
-		rename	xmargin__014	xmargin__orphan
-		rename	xmargin__015	xmargin__other
-				
+		
+		rename	xvac_noaccess_reason__001		xvac_noaccess_reason__eligible
+		rename	xvac_noaccess_reason__002		xvac_noaccess_reason__distance
+		rename	xvac_noaccess_reason__003		xvac_noaccess_reason__waitcrowd
+		rename	xvac_noaccess_reason__004		xvac_noaccess_reason__waitstaff
+		rename	xvac_noaccess_reason__005		xvac_noaccess_reason__app
+		rename	xvac_noaccess_reason__006		xvac_noaccess_reason__cost
+		rename	xvac_noaccess_reason__007		xvac_noaccess_reason__other
+		
 		rename	xvac_reason__001	xvac_reason__notconcerned
 		rename	xvac_reason__002	xvac_reason__uncertain
 		rename	xvac_reason__003	xvac_reason__sideeffects
@@ -986,43 +937,33 @@ restore
 		rename	xvac_reason__006	xvac_reason__toobusy
 		rename	xvac_reason__007	xvac_reason__cost
 		rename	xvac_reason__008	xvac_reason__other
-				
-		rename	xinit_ses_increased__001	xinit_ses_increased__cash
-		rename	xinit_ses_increased__002	xinit_ses_increased__gbv
-		rename	xinit_ses_increased__003	xinit_ses_increased__food
-		rename	xinit_ses_increased__004	xinit_ses_increased__school
-		rename	xinit_ses_increased__005	xinit_ses_increased__hygiene
-		rename	xinit_ses_increased__006	xinit_ses_increased__isolated
-		rename	xinit_ses_increased__007	xinit_ses_increased__taxrelief
-		rename	xinit_ses_increased__008	xinit_ses_increased__local
-		rename	xinit_ses_increased__009	xinit_ses_increased__other
-				
-		rename	xinit_health_increased__001	xinit_health_increased__hp
-		rename	xinit_health_increased__002	xinit_health_increased__info
-		rename	xinit_health_increased__003	xinit_health_increased__isolated
-		rename	xinit_health_increased__004	xinit_health_increased__transhw
-		rename	xinit_health_increased__005	xinit_health_increased__transvp
-		rename	xinit_health_increased__006	xinit_health_increased__masks
-		rename	xinit_health_increased__007	xinit_health_increased__handwash
-		rename	xinit_health_increased__008	xinit_health_increased__hsaccess
-		rename	xinit_health_increased__009	xinit_health_increased__water
-		rename	xinit_health_increased__010	xinit_health_increased__other
-				
+		
+		rename  xtraining__001		xtraining__spread
+		rename  xtraining__002		xtraining__mask
+		rename  xtraining__003		xtraining__covax
+		
 		rename	xrisk_reason__001	xrisk_reason__manypeople
 		rename	xrisk_reason__002	xrisk_reason__ppelack
-		rename	xrisk_reason__003	xrisk_reason__age
-		rename	xrisk_reason__004	xrisk_reason__hours
-		rename	xrisk_reason__005	xrisk_reason__transport
-		rename	xrisk_reason__006	xrisk_reason__public
+		rename	xrisk_reason__003	xrisk_reason__novax
+		rename	xrisk_reason__004	xrisk_reason__age
+		rename	xrisk_reason__005	xrisk_reason__hours
+		rename	xrisk_reason__006	xrisk_reason__transport
+		rename	xrisk_reason__007	xrisk_reason__public
 				
 		rename	xsupportneed__001	xsupportneed__monetary
 		rename	xsupportneed__002	xsupportneed__ppe
 		rename	xsupportneed__003	xsupportneed__supp
-		rename	xsupportneed__004	xsupportneed__traincovid
-		rename	xsupportneed__005	xsupportneed__trainother
-		rename	xsupportneed__006	xsupportneed__trans
-		rename	xsupportneed__007	xsupportneed__insurance
-		rename	xsupportneed__008	xsupportneed__other
+		*rename	xsupportneed__004	xsupportneed__traincovid
+		rename	xsupportneed__004	xsupportneed__tc_protection	
+		rename	xsupportneed__005	xsupportneed__tc_prevention
+		rename	xsupportneed__006	xsupportneed__tc_vax
+		rename	xsupportneed__007	xsupportneed__tc_management
+		rename	xsupportneed__008	xsupportneed__tc_othercovid
+		
+		rename	xsupportneed__009	xsupportneed__trainother
+		rename	xsupportneed__010	xsupportneed__trans
+		rename	xsupportneed__011	xsupportneed__insurance
+		rename	xsupportneed__012	xsupportneed__other
 				
 		rename	xsrvc_reduced__001	xsrv_reduced__immune
 		rename	xsrvc_reduced__002	xsrv_reduced__malaria
@@ -1042,7 +983,6 @@ restore
 		rename	xsrvc_nochange__004	xsrv_nochange__tb
 		rename	xsrvc_nochange__005	xsrv_nochange__home
 
-	
 	sort id
 	save Community_`country'_R`round'.dta, replace 		
 
@@ -1050,7 +990,7 @@ restore
 	
 *****E.3. Export clean Respondent-level data to chart book 
 
-	export excel using "$chartbookdir\WHO_Community_Chartbook_10.21.xlsx", sheet("Respondent-level cleaned data") sheetreplace firstrow(variables) nolabel
+	export excel using "$chartbookdir/WHO_Community_Chartbook_Feb2022.xlsx", sheet("Respondent-level cleaned data") sheetreplace firstrow(variables) nolabel
 		
 **************************************************************
 * F. Create indicator estimate data 
@@ -1062,13 +1002,14 @@ use Community_`country'_R`round'.dta, clear
 	
 	gen obs=1 	
 	gen obs_chw=1 if zchw==1 	
-	gen obs_vacreason=1 if xvac_most!=1
+	*gen obs_vacreason=1 if xvac_most!=1
+	gen obs_vacreason=1 if xvac_adult_most!=1 /*2/25/2022 no more xvac_most, since we ask about adults only*/
 	
 	****************************************************************************
 	*REVISION 2021/10/25 based on feedback from the Ghana team 
 	*CREATE ADDITIONAL "OBS" VARIABLES TO HAVE CORRECT DENOMINATORS IN THE CHARTBOOK 
 
-	gen obs_riskreason=1 		if xrisk_mod==1 /*moderate OR high OR very high*/
+	gen obs_riskreason=1 		if xrisk_modhigh==1 /*moderate OR high OR very high*/
 
 	*END OF REVISION 2021/10/25 
 	****************************************************************************		
@@ -1139,10 +1080,11 @@ use summary_Community_`country'_R`round'.dta, clear
 	gen updatetime=""
 	replace updatetime="`time'"
 	
-export excel using "$chartbookdir\WHO_Community_Chartbook_10.21.xlsx", sheet("Indicator estimate data") sheetreplace firstrow(variables) nolabel keepcellfmt
+export excel using "$chartbookdir/WHO_Community_Chartbook_Feb2022.xlsx", sheet("Indicator estimate data") sheetreplace firstrow(variables) nolabel keepcellfmt
 
+/*
 * To check against R results
-export delimited using "C:\Users\YoonJoung Choi\Dropbox\0 iSquared\iSquared_WHO\ACTA\3.AnalysisPlan\summary_Community_`country'_R`round'_Stata.csv", replace 
+export delimited using "~/Dropbox/0 iSquared/iSquared_WHO/ACTA/3.AnalysisPlan/summary_Community_`country'_R`round'_Stata.csv", replace 
 */
 
 erase temp.dta
