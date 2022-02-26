@@ -18,7 +18,7 @@ This repository has data cleaning/management/analysis programs. There are three 
 -- Analysis code in R: WHO_CommunityKIS_DataManagement.Rmd (https://rpubs.com/YJ_Choi/WHO_COVID19HFA_Com) __(updated on 2/XX/2022)__   
 (Questionnaire version that the analsis code is based on: __Community assessment tool_20220225_Clean.pdf__)   
 
-For each module, the questionnarie and mock-up data for practice/test are available at the __WHO resource site: (https://www.who.int/teams/integrated-health-services/monitoring-health-services/frontline-service-readiness-assessments)__ 
+__For each module, the questionnarie and mock-up data for practice/test are available at the WHO resource site__: (https://www.who.int/teams/integrated-health-services/monitoring-health-services/frontline-service-readiness-assessments) 
 
 ### Version1_2021 02 06 (initial publication: Feb 6, 2021)
 
