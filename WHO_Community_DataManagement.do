@@ -5,7 +5,7 @@ capture log close
 set more off
 numlabel, add
 
-*This code last updated on 2/25/2022
+*This code was last updated on 2/27/2022
 *1) imports and cleans Continuity of EHS dataset from Lime Survey, 
 *	created based on the October 29, 2021 Q version
 *2) creates field check tables for data quality monitoring, and 
@@ -49,14 +49,17 @@ numlabel, add
 
 *** Directory for this do file 
 *cd "C:\Users\ctaylor\World Health Organization\BANICA, Sorin - HSA unit\2 Global goods & tools\2 HFAs\1 HFAs for COVID-19\4. Implementation support materials\4. Analysis and dashboards\"
+*cd "C:\Users\YoonJoung Choi\Dropbox\0 iSquared\iSquared_WHO\ACTA\3.AnalysisPlan"
 cd "~/Dropbox/0 iSquared/iSquared_WHO/ACTA/3.AnalysisPlan/"
 
 *** Directory for downloaded CSV data, if different from the main directory
 *global downloadcsvdir "C:\Users\ctaylor\World Health Organization\BANICA, Sorin - HSA unit\2 Global goods & tools\2 HFAs\1 HFAs for COVID-19\4. Implementation support materials\4. Analysis and dashboards\DownloadedCSV\"
+*global downloadcsvdir "C:\Users\YoonJoung Choi\Dropbox\0 iSquared\iSquared_WHO\ACTA\3.AnalysisPlan\ExportedCSV_FromLimeSurvey"
 global downloadcsvdir "~/Dropbox/0 iSquared/iSquared_WHO/ACTA/3.AnalysisPlan/ExportedCSV_FromLimeSurvey/"
 
 *** Define a directory for the chartbook, if different from the main directory 
 *global chartbookdir "C:\Users\ctaylor\World Health Organization\BANICA, Sorin - HSA unit\2 Global goods & tools\2 HFAs\1 HFAs for COVID-19\4. Implementation support materials\4. Analysis and dashboards\"
+*global chartbookdir "C:\Users\YoonJoung Choi\Dropbox\0 iSquared\iSquared_WHO\ACTA\3.AnalysisPlan"
 global chartbookdir "~/Dropbox/0 iSquared/iSquared_WHO/ACTA/3.AnalysisPlan/"
 
 *** Define local macro for the survey 
