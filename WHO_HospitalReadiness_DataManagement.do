@@ -5,8 +5,11 @@ capture log close
 set more off
 numlabel, add
 
+*This code was last updated on 5/19/2022 to update section B.4
+*Based on the July 7, 2021 Q version 
+
 *This code 
-*1) imports and cleans Continuity of EHS dataset from Lime Survey, created based on the April 12, 2021 Q version 
+*1) imports and cleans Continuity of EHS dataset from Lime Survey,
 *2) creates field check tables for data quality monitoring, and 
 *3) creates indicator estimate data for dashboards and chartbook. 
 
@@ -49,15 +52,18 @@ numlabel, add
 
 *** Directory for this do file 
 *cd "C:\Users\ctaylor\World Health Organization\BANICA, Sorin - HSA unit\2 Global goods & tools\2 HFAs\1 HFAs for COVID-19\4. Implementation support materials\4. Analysis and dashboards\"
-cd "C:\Users\YoonJoung Choi\World Health Organization\BANICA, Sorin - HSA unit\2 Global goods & tools\2 HFAs\1 HFAs for COVID-19\4. Implementation support materials\4. Analysis and dashboards\"
+*cd "C:\Users\YoonJoung Choi\World Health Organization\BANICA, Sorin - HSA unit\2 Global goods & tools\2 HFAs\1 HFAs for COVID-19\4. Implementation support materials\4. Analysis and dashboards\"
+cd "~/Dropbox/0 iSquared/iSquared_WHO/ACTA/3.AnalysisPlan/"
 
 *** Directory for downloaded CSV data, if different from the main directory
 *global downloadcsvdir "C:\Users\ctaylor\World Health Organization\BANICA, Sorin - HSA unit\2 Global goods & tools\2 HFAs\1 HFAs for COVID-19\4. Implementation support materials\4. Analysis and dashboards\DownloadedCSV\"
-global downloadcsvdir "C:\Users\YoonJoung Choi\World Health Organization\BANICA, Sorin - HSA unit\2 Global goods & tools\2 HFAs\1 HFAs for COVID-19\4. Implementation support materials\4. Analysis and dashboards\DownloadedCSV\"
+*global downloadcsvdir "C:\Users\YoonJoung Choi\World Health Organization\BANICA, Sorin - HSA unit\2 Global goods & tools\2 HFAs\1 HFAs for COVID-19\4. Implementation support materials\4. Analysis and dashboards\DownloadedCSV\"
+global downloadcsvdir "~/Dropbox/0 iSquared/iSquared_WHO/ACTA/3.AnalysisPlan/ExportedCSV_FromLimeSurvey/"
 
 *** Define a directory for the chartbook, if different from the main directory 
 *global chartbookdir "C:\Users\ctaylor\World Health Organization\BANICA, Sorin - HSA unit\2 Global goods & tools\2 HFAs\1 HFAs for COVID-19\4. Implementation support materials\4. Analysis and dashboards\"
-global chartbookdir "C:\Users\YoonJoung Choi\World Health Organization\BANICA, Sorin - HSA unit\2 Global goods & tools\2 HFAs\1 HFAs for COVID-19\4. Implementation support materials\4. Analysis and dashboards\"
+*global chartbookdir "C:\Users\YoonJoung Choi\World Health Organization\BANICA, Sorin - HSA unit\2 Global goods & tools\2 HFAs\1 HFAs for COVID-19\4. Implementation support materials\4. Analysis and dashboards\"
+global chartbookdir "~/Dropbox/0 iSquared/iSquared_WHO/ACTA/3.AnalysisPlan/"
 
 *** Define local macro for the survey 
 local country	 		 COUNTRYNAME /*country name*/	
@@ -94,7 +100,7 @@ global date=subinstr("`c_today'", " ", "",.)
 import delimited "$downloadcsvdir/LimeSurvey_COVID19HospitalReadiness_EXAMPLE_R1.csv", case(preserve) clear /*THIS LINE ONLY FOR PRACTICE*/
 
 *****B.2. Export/save the data daily in CSV form with date 	
-*export delimited using "$downloadcsvdir/LimeSurvey_COVID19HospitalReadiness_`country'_R`round'_$date.csv", replace
+export delimited using "$downloadcsvdir/LimeSurvey_COVID19HospitalReadiness_`country'_R`round'_$date.csv", replace
 	
 *****B.3. Export the data to chartbook  	
 		
@@ -108,7 +114,7 @@ import delimited "$downloadcsvdir/LimeSurvey_COVID19HospitalReadiness_EXAMPLE_R1
 		}		
 		replace Q109 =. 	
 	
-export excel using "$chartbookdir\WHO_COVID19HospitalReadiness_Chartbook.xlsx", sheet("Facility-level raw data") sheetreplace firstrow(variables) nolabel
+export excel using "$chartbookdir/WHO_COVID19HospitalReadiness_Chartbook_08.21.xlsx", sheet("Facility-level raw data") sheetreplace firstrow(variables) nolabel
 
 *****B.4. Drop duplicate cases 
 
@@ -119,27 +125,55 @@ export excel using "$chartbookdir\WHO_COVID19HospitalReadiness_Chartbook.xlsx", 
 
 	*****identify duplicate cases, based on facility code*/
 	duplicates tag Q101, gen(duplicate) 
+		
+		/* YC edit starts 5/19/2022*/
+		* must check string value and update
+		* 	1. "mask" in the "clock" line for submitdate
+		* 	2. "format" line for the submitdatelatest		
+		*REFERENCE: https://www.stata.com/manuals13/u24.pdf
+		codebook submitdate* 
 				
 		rename submitdate submitdate_string			
-	gen double submitdate = clock(submitdate_string, "MDY hm")
-		format submitdate %tc
+	gen double submitdate = clock(submitdate_string, "MDY hm") /*"clock" line in the standard code*/
+	*gen double submitdate = clock(submitdate_string, "YMDhms") /*"clock" line with different mask*/
+		format submitdate %tc 
+		
+		codebook submitdate*
+		/* edit pauses*/
 	
-	list Q101 Q102 Q104 Q105 submitdate* startdate datestamp if duplicate==1 
+	list Q101 Q102 Q104 Q105 submitdate* startdate datestamp if duplicate!=0  
 	*****CHECK HERE: In the model data, there is one duplicate for practice purpose. 
 	
 	*****drop duplicates before the latest submission */
-	egen double submitdatelatest = max(submitdate) if duplicate==1 , by(Q101) /*LATEST TIME WITHIN EACH DUPLICATE YC edit 6/29/2021*/											
-	
-		format %tcnn/dd/ccYY_hh:MM submitdatelatest
+	egen double submitdatelatest = max(submitdate) if duplicate!=0  , by(Q101) /*LATEST TIME WITHIN EACH DUPLICATE YC edit 6/29/2021*/					
+		format %tcnn/dd/ccYY_hh:MM submitdatelatest /*"format line without seconds*/
+		*format %tcnn/dd/ccYY_hh:MM:SS submitdatelatest /*"format line with seconds*/
 		
-		list Q101 Q102 Q104 Q105 submitdate* if duplicate==1	
+		list Q101 Q102 Q104 Q105 submitdate* if duplicate!=0 	
 	
-	drop if duplicate==1 & submitdate!=submitdatelatest 
+	/*YC edit 5/19/2022
+		.                 list Q101 Q102 Q104 Q105 submitdate* if duplicate!=0    
+
+			 +------------------------------------------------------------------------------------------+
+			 | Q101   Q102   Q104   Q105     submitdate_string           submitdate    submitdatelatest |
+			 |------------------------------------------------------------------------------------------|
+		 10. |    .                        2022-05-17 02:36:27   17may2022 02:36:27   5/17/2022 2:40:28 |
+		 92. |    .                        2022-05-17 02:40:28   17may2022 02:40:28   5/17/2022 2:40:28 |
+			 +------------------------------------------------------------------------------------------+
+
+		* In this real data example (not the mock data), the facility with "duplicates" has missing facility ID. 
+		* data managers must check if this is a real facility or not. 
+		* But, in principle, we delete data entries with missing facility ID. 
+		
+	*/	
+		
+	drop if duplicate!=0  & submitdate!=submitdatelatest 
+	drop if Q101==. 
 	
 	*****confirm there's no duplicate cases, based on facility code*/
 	duplicates report Q101,
 	*****CHECK HERE: Now there should be no duplicate 
-
+	
 	drop duplicate submitdatelatest
 	
 **************************************************************
@@ -448,14 +482,14 @@ preserve
 
 			gen updatedate = "$date"
 	
-	tabout updatedate using "$chartbookdir\FieldCheckTable_COVID19Hospital_`country'_R`round'_$date.xls", replace ///
+	tabout updatedate using "$chartbookdir/FieldCheckTable_COVID19Hospital_`country'_R`round'_$date.xls", replace ///
 		cells(freq col) h2("Date of field check table update") f(0 1) clab(n %)
 
 			split submitdate_string, p(" ")
 			gen date=date(submitdate_string1, "YMD") /* KECT - changed to YMD from MDY*/
 			format date %td
 						
-	tabout submitdate_string1 using "$chartbookdir\FieldCheckTable_COVID19Hospital_`country'_R`round'_$date.xls", append ///
+	tabout submitdate_string1 using "$chartbookdir/FieldCheckTable_COVID19Hospital_`country'_R`round'_$date.xls", append ///
 		cells(freq col) h2("Date of interviews (submission date, final)") f(0 1) clab(n %)
 			
 			gen xresult=q1004==1
@@ -464,13 +498,13 @@ preserve
 			label define responselist 0 "Not complete" 1 "Complete"
 			label val responserate responselist
 
-	tabout responserate using "$chartbookdir\FieldCheckTable_COVID19Hospital_`country'_R`round'_$date.xls", append ///
+	tabout responserate using "$chartbookdir/FieldCheckTable_COVID19Hospital_`country'_R`round'_$date.xls", append ///
 		cells(freq col) h2("Interview response rate") f(0 1) clab(n %) mi
 	
-	tabout q104 using "$chartbookdir\FieldCheckTable_COVID19Hospital_`country'_R`round'_$date.xls", append ///
+	tabout q104 using "$chartbookdir/FieldCheckTable_COVID19Hospital_`country'_R`round'_$date.xls", append ///
 		cells(freq col) h2("number of interviews by area") f(0 1) clab(n %) mi
 		
-	tabout q105 using "$chartbookdir\FieldCheckTable_COVID19Hospital_`country'_R`round'_$date.xls", append ///
+	tabout q105 using "$chartbookdir/FieldCheckTable_COVID19Hospital_`country'_R`round'_$date.xls", append ///
 		cells(freq col) h2("number of interviews by hospital type") f(0 1) clab(n %) mi		
 
 	*REVISION: 4/20/2021		
@@ -482,9 +516,9 @@ preserve
 				replace time_complete = round(time_complete, 1)
 				replace time_incomplete = round(time_incomplete, 1)
 		
-	tabout time_complete using "$chartbookdir\FieldCheckTable_COVID19Hospital_`country'_R`round'_$date.xls", append ///
+	tabout time_complete using "$chartbookdir/FieldCheckTable_COVID19Hospital_`country'_R`round'_$date.xls", append ///
 		cells(freq col) h2("Average interview length (minutes), among completed interviews") f(0 1) clab(n %)		
-	tabout time_incomplete using "$chartbookdir\FieldCheckTable_COVID19Hospital_`country'_R`round'_$date.xls", append ///
+	tabout time_incomplete using "$chartbookdir/FieldCheckTable_COVID19Hospital_`country'_R`round'_$date.xls", append ///
 		cells(freq col) h2("Average interview length (minutes), among incomplete interviews") f(0 1) clab(n %)	
 	*/
 	
@@ -497,7 +531,7 @@ preserve
 				}		
 			lab values missing yesno		
 
-	tabout missing using "$chartbookdir\FieldCheckTable_COVID19Hospital_`country'_R`round'_$date.xls", append ///
+	tabout missing using "$chartbookdir/FieldCheckTable_COVID19Hospital_`country'_R`round'_$date.xls", append ///
 		cells(freq col) h2("0. Missing survery results (among all interviews)") f(0 1) clab(n %)				
 		
 keep if xresult==1 /*the following calcualtes % missing in select questions among completed interviews*/		
@@ -510,7 +544,7 @@ capture drop missing
 				}		
 			lab values missing yesno
 			
-	tabout missing using "$chartbookdir\FieldCheckTable_COVID19Hospital_`country'_R`round'_$date.xls", append ///
+	tabout missing using "$chartbookdir/FieldCheckTable_COVID19Hospital_`country'_R`round'_$date.xls", append ///
 		cells(freq col) h2("1. Missing number of beds when facility provides inpatient services (among completed interviews)") f(0 1) clab(n %)					
 
 			capture drop missing
@@ -520,7 +554,7 @@ capture drop missing
 				}		
 			lab values missing yesno		
 
-	tabout missing using "$chartbookdir\FieldCheckTable_COVID19Hospital_`country'_R`round'_$date.xls", append ///
+	tabout missing using "$chartbookdir/FieldCheckTable_COVID19Hospital_`country'_R`round'_$date.xls", append ///
 		cells(freq col) h2("2. Missing number of nurses (either the total number or the number who have been infected) (among completed interviews)") f(0 1) clab(n %)					
 	
 			capture drop missing
@@ -530,7 +564,7 @@ capture drop missing
 				}					
 			lab values missing yesno	
 
-	tabout missing using "$chartbookdir\FieldCheckTable_COVID19Hospital_`country'_R`round'_$date.xls", append ///
+	tabout missing using "$chartbookdir/FieldCheckTable_COVID19Hospital_`country'_R`round'_$date.xls", append ///
 		cells(freq col) h2("3. Missing medicines - in one or more of the tracer items (among completed interviews)") f(0 1) clab(n %)							
 					
 			capture drop missing
@@ -540,7 +574,7 @@ capture drop missing
 				}		
 			lab values missing yesno	
 
-	tabout missing using "$chartbookdir\FieldCheckTable_COVID19Hospital_`country'_R`round'_$date.xls", append ///
+	tabout missing using "$chartbookdir/FieldCheckTable_COVID19Hospital_`country'_R`round'_$date.xls", append ///
 		cells(freq col) h2("4. Missing PPE item - in one or more of the tracer items (among completed interviews)") f(0 1) clab(n %)					
 				
 			capture drop missing
@@ -551,7 +585,7 @@ capture drop missing
 				}					
 			lab values missing yesno	
 
-	tabout missing using "$chartbookdir\FieldCheckTable_COVID19Hospital_`country'_R`round'_$date.xls", append ///
+	tabout missing using "$chartbookdir/FieldCheckTable_COVID19Hospital_`country'_R`round'_$date.xls", append ///
 		cells(freq col) h2("5. Missing PCR capacity  (among completed interviews)") f(0 1) clab(n %)					
 						
 			capture drop missing
@@ -561,7 +595,7 @@ capture drop missing
 				}					
 			lab values missing yesno	
 
-	tabout missing using "$chartbookdir\FieldCheckTable_COVID19Hospital_`country'_R`round'_$date.xls", append ///
+	tabout missing using "$chartbookdir/FieldCheckTable_COVID19Hospital_`country'_R`round'_$date.xls", append ///
 		cells(freq col) h2("6. Missing entry in the number of equipment (either the total number or the number of functional) (among completed interviews)") f(0 1) clab(n %)					
 			*/
 			
@@ -1215,7 +1249,7 @@ restore
 /*RUN this chunk A if there is samplingb weight*/
 *CHUNK A BEGINS  
 
-import excel "$chartbookdir\WHO_COVID19HospitalReadiness_Chartbook.xlsx", sheet("Weight") firstrow clear
+import excel "$chartbookdir/WHO_COVID19HospitalReadiness_Chartbook_08.21.xlsx", sheet("Weight") firstrow clear
 	rename *, lower
 		
 	sort facilitycode
@@ -1244,7 +1278,7 @@ import excel "$chartbookdir\WHO_COVID19HospitalReadiness_Chartbook.xlsx", sheet(
 
 	export delimited using COVID19HospitalReadiness_`country'_R`round'.csv, replace 
 
-	export excel using "$chartbookdir\WHO_COVID19HospitalReadiness_Chartbook.xlsx", sheet("Facility-level cleaned data") sheetreplace firstrow(variables) nolabel
+	export excel using "$chartbookdir/WHO_COVID19HospitalReadiness_Chartbook_08.21.xlsx", sheet("Facility-level cleaned data") sheetreplace firstrow(variables) nolabel
 		
 **************************************************************
 * F. Create indicator estimate data 
@@ -1362,13 +1396,10 @@ use summary_COVID19HospitalReadiness_`country'_R`round'.dta, clear
 	gen updatetime=""
 	replace updatetime="`time'"
 
-export excel using "$chartbookdir\WHO_COVID19HospitalReadiness_Chartbook.xlsx", sheet("Indicator estimate data") sheetreplace firstrow(variables) nolabel keepcellfmt
-export excel using "$chartbookdir\WHO_COVID19HospitalReadiness_Chartbook.xlsx_08.21", sheet("Indicator estimate data") sheetreplace firstrow(variables) nolabel keepcellfmt
+export excel using "$chartbookdir/WHO_COVID19HospitalReadiness_Chartbook_08.21.xlsx", sheet("Indicator estimate data") sheetreplace firstrow(variables) nolabel keepcellfmt
 
-export delimited using "C:\Users\YoonJoung Choi\Dropbox\0 iSquared\iSquared_WHO\ACTA\3.AnalysisPlan\summary_COVID19HospitalReadiness_`country'_R`round'_Stata.csv", replace 
-
-/* For YJ's shiny app and cross check against results from R
-export delimited using "C:\Users\YoonJoung Choi\Dropbox\0 iSquared\iSquared_WHO\ACTA\4.ShinyApp\0_Model\summary_COVID19HospitalReadiness_`country'_R`round'.csv", replace 
+/* To check against R results
+export delimited using "~/Dropbox/0 iSquared/iSquared_WHO/ACTA/3.AnalysisPlan/summary_COVID19HospitalReadiness_`country'_R`round'_Stata.csv", replace 
 */
 
 erase temp.dta

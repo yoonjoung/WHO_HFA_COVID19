@@ -17,11 +17,11 @@ date<-as.Date(Sys.time(	), format='%d%b%Y')
 time<-Sys.time()
 
 suppressMessages(library(dplyr))
+suppressWarnings(suppressMessages(library(dplyr)))
 suppressWarnings(suppressMessages(library(tidyverse)))
 suppressWarnings(suppressMessages(library(readxl)))
 #suppressWarnings(suppressMessages(library(xlsx)))
 suppressWarnings(suppressMessages(library(openxlsx)))
-#suppressMessages(library(Matrix))
 suppressWarnings(suppressMessages(library(stringr)))
 suppressWarnings(suppressMessages(library(stringi)))
 suppressWarnings(suppressMessages(library(lubridate)))
@@ -30,10 +30,10 @@ suppressWarnings(suppressMessages(library(knitr)))
 suppressWarnings(suppressMessages(library(data.table)))
 ```
 
-###Data cleaning, management, and analysis of COVID-19 commmunity assessment with key informant interviews 
+### Data cleaning, management, and analysis of COVID-19 commmunity assessment with key informant interviews 
 
 This provides steps and code for data cleaning, management, and analysis of __COVID-19 commuunity key informant__ assessment survey. [See here for the questionnare](https://www.who.int/teams/integrated-health-services/monitoring-health-services/frontline-service-readiness-assessments). <span style="color: red;">
-(Standard module version as of 2/5/2021) </span>    
+(Standard module version as of 2/25/2022) </span>    
 
 This code:   
 1. Imports and cleans COVID-19 community key informant (aka "community") dataset from Lime Survey (i.e., green and blue tabs in the chartbook),   
@@ -158,12 +158,21 @@ write.xlsx(dtaraw,
 
 ##### B.4. Drop duplicate cases 
 Assess duplicate rows based on facility code: Q101. Among the duplicate rows, keep the latest row, based on the submission date/time. 
+
+<span style="color: red;">__Data managers must check the `submitdate` string values. Then modify format when you convert the string value to numeric, using `as.POSIXct`. See an example below.__ (Revision on 5/19/2022)<span>
 ```{r duplicates}
+# CHECK submitdate 
+str(dtaraw$submitdate)
+
 # Identify duplicates 
 dta<-dtaraw %>% 
     mutate(
         submitdate_string=as.character(submitdate),
+        
+        #use this line if submitedate does not have seconds 
         submitdate=as.POSIXct(as.character(submitdate),format= "%m/%d/%Y %H:%M")
+        #use this line if submitedate dos seconds 
+        #submitdate=as.POSIXct(as.character(submitdate),format= "%m/%d/%Y %H:%M:%S")
         )%>%
     group_by(Q105)%>% 
     mutate(
@@ -181,6 +190,10 @@ dta<-dtaraw %>%
 dta<-dta%>%
     filter(latest==1)%>%
     select(-dupe, -latest)
+
+#keep only if ID is NOT missing 
+dta<-dta%>%
+    filter(is.na(Q105)==FALSE)
 
 obs<-nrow(dta)
 obsunique<-length(unique(dta$Q105))
@@ -273,7 +286,10 @@ dta<-dta%>%
     str(dta[varlist]) 
 
 #####* Section 4
-    varlist<-dta%>%select(q401, q402, q403)%>%colnames()
+#####* Section 4 - option 2 in the October 29 version Q 
+    #* Few countries would need to choose option 1 
+	#* If option 1 is truly needed, refer to the older analysis code.     
+    varlist<-dta%>%select(q401, q402, q403, q405)%>%colnames()
     str(dta[varlist])
     
     dta<-dta%>%
@@ -281,22 +297,14 @@ dta<-dta%>%
         mutate_at(vars(varlist), funs(as.numeric))
     
     str(dta[varlist]) 
-    
-    varlist<-dta%>%select(starts_with("q404"))%>%colnames()
-    str(dta[varlist])    
 
 #####* Section 5
-    varlist<-dta%>%select(q501, q502, q504)%>%colnames()
-    str(dta[varlist])
+#####* Section 5 - deleted in the October 29 version Q
     
-    dta<-dta%>%
-        mutate_at(vars(varlist), list(~ sub("^A", "\\1", .)))%>%
-        mutate_at(vars(varlist), funs(as.numeric))
-    
-    str(dta[varlist]) 
-
 #####* Section 6
-    varlist<-dta%>%select(q602, q604, q605, starts_with("q607_"))%>%colnames()
+    varlist<-dta%>%
+        select(q601a, q602, q604, q605, starts_with("q607_"), q608, q609)%>%
+        colnames()
     str(dta[varlist])
     
     dta<-dta%>%
@@ -306,7 +314,7 @@ dta<-dta%>%
     str(dta[varlist])  
 
 #####* Section 7
-    varlist<-dta%>%select(q701, q702)%>%colnames()
+    varlist<-dta%>%select(q701, q704)%>%colnames()
     str(dta[varlist])
     
     dta<-dta%>%
@@ -326,14 +334,14 @@ varlist<-dta%>%
     select(starts_with("q301_"), 
            starts_with("q303_"), 
            starts_with("q304_"),
-           q305, 
-           starts_with("q306_"),
+           q403, 
            starts_with("q404_"),
-           starts_with("q503_"),
-           starts_with("q505_"),
-           q601,
+           q405, 
+           starts_with("q406_"),
+           starts_with("q601"),
            starts_with("q603_"),
-           starts_with("q606_")
+           starts_with("q606_"), 
+           q608
            )%>%
     colnames()
 
@@ -351,10 +359,9 @@ The following is value labels.
 	
 	lab define yesno 1"1. yes" 0"0. no"; 	
 	foreach var of varlist 
-		q301_*  q303_* q304_* q305 q306_* 
-		q404_*
-		q503_* q505_* 
-		q601  q603_* q606_*
+		q301_*  q303_* q304_* 
+		q403 q404_* q405 q406_*
+		q601* q603_* q606_* q608
 		{;	
 	labe values `var' yesno; 
 	};		
@@ -399,21 +406,7 @@ The following is value labels.
 	foreach var of varlist q401 q402 q403{;	
 		lab values `var' people4;
 		};
-	
-	lab define q501
-		1"1.Limited"
-		2"2.Moderate"
-		3"3.Significant";  
-	lab values q501 q501; 
-	
-	lab define change
-		1"1.Increased/enhanced"
-		2"2.Remained stable"
-		3"3.Decreased";  
-	foreach var of varlist q502 q504 {;	
-		lab values `var' change;
-		};
-		
+
 	lab define q602
 		1"1.No risk"
 		2"2.Slight"
@@ -438,8 +431,7 @@ The following is value labels.
 		1"1.Slightly reduced"
 		2"2.Substantially reduced or suspended"
 		3"3.Increased"
-		4"3.No change"
-		5"3.Not applicable";  	
+		4"3.No change";  	
 	foreach var of varlist q607_* {;	
 		lab values `var' q607;
 		};
@@ -456,7 +448,7 @@ dtacheck<-dta%>%
     mutate(
         updatedate= as.character(as.Date(Sys.time(	), format='%d%b%Y')), 
         date=as.POSIXct(as.character(submitdate_string),format= "%m/%d/%Y"), 
-        xresult=q702==1, 
+        xresult=q704==1, 
         responserate= xresult==1 #label define responselist 0 "Not complete" 1 "Complete"    
         )%>%
     group_by(xresult)%>%
@@ -477,7 +469,7 @@ dtacheck<-dta%>%
     mutate(
         updatedate= as.character(as.Date(Sys.time(	), format='%d%b%Y')), 
         date=as.POSIXct(as.character(submitdate_string),format= "%m/%d/%Y"), 
-        xresult=q702==1, 
+        xresult=q704==1, 
         responserate= xresult==1 #label define responselist 0 "Not complete" 1 "Complete"    
         )
 ```
@@ -529,21 +521,10 @@ dtacheck<-dtacheck%>%
         missing2 = missing_num, 
         missing2 = ifelse(missing_num>=1, 1, missing2) )
 
-#3. Missing marginalized population (among completed interviews)
-varlist<-dtacheck%>%select(starts_with("q306_"))%>%colnames()
-str(dtacheck[varlist])
-dtacheck[varlist] <- lapply(dtacheck[varlist],
-                             function(x){ifelse(is.na(x)==0,0,
-                                                ifelse(is.na(x)==1,1,x))})
-
-dtacheck<-dtacheck%>%
-    mutate(
-        missing_num = rowSums(dtacheck[varlist] ), 
-        missing3 = missing_num, 
-        missing3 = ifelse(missing_num>=1, 1, missing3) )
+#3. Missing marginalized population (among completed interviews) - N/A since the October 29, 2021 version
 
 #4. Missing vaccine demand among adults OR children, when applicable (among completed interviews)
-varlist<-dtacheck%>%select(q402, q403)%>%colnames()
+varlist<-dtacheck%>%select(q402)%>%colnames()
 str(dtacheck[varlist])
 dtacheck[varlist] <- lapply(dtacheck[varlist],
                              function(x){ifelse(is.na(x)==0,0,
@@ -555,7 +536,7 @@ dtacheck<-dtacheck%>%
         missing4 = missing_num, 
         missing4 = ifelse(missing_num>=1, 1, missing4) )
 
-#5. Missing reasons for no vaccine demand in one or more of the tracer items (among completed interviews)
+#5. Missing reasons for no vaccine demand in one or more of the tracer items (among completed interviews)  
 varlist<-dtacheck%>%select(starts_with("q404_"))%>%colnames()
 str(dtacheck[varlist])
 dtacheck[varlist] <- lapply(dtacheck[varlist],
@@ -568,31 +549,9 @@ dtacheck<-dtacheck%>%
         missing5 = missing_num, 
         missing5 = ifelse(missing_num>=1, 1, missing5) )
 
-#6. Missing increased social initiatives (among completed interviews)
-varlist<-dtacheck%>%select(starts_with("q503_"))%>%colnames()
-str(dtacheck[varlist])
-dtacheck[varlist] <- lapply(dtacheck[varlist],
-                             function(x){ifelse(is.na(x)==0,0,
-                                                ifelse(is.na(x)==1,1,x))})
+#6. Missing increased social initiatives (among completed interviews) -  N/A since the October 29, 2021 version
 
-dtacheck<-dtacheck%>%
-    mutate(
-        missing_num = rowSums(dtacheck[varlist] ), 
-        missing6 = missing_num, 
-        missing6 = ifelse(missing_num>=1, 1, missing6) )
-
-#7. Missing increased health initiatives (among completed interviews)"
-varlist<-dtacheck%>%select(starts_with("q505_"))%>%colnames()
-str(dtacheck[varlist])
-dtacheck[varlist] <- lapply(dtacheck[varlist],
-                             function(x){ifelse(is.na(x)==0,0,
-                                                ifelse(is.na(x)==1,1,x))})
-
-dtacheck<-dtacheck%>%
-    mutate(
-        missing_num = rowSums(dtacheck[varlist] ), 
-        missing7 = missing_num, 
-        missing7 = ifelse(missing_num>=1, 1, missing7) )
+#7. Missing increased health initiatives (among completed interviews) -  N/A since the October 29, 2021 version
 
 #8. Missing reasons for risks (among completed interviews)
 varlist<-dtacheck%>%select(starts_with("q603_"))%>%colnames()
@@ -645,8 +604,7 @@ print(paste(as.character(round(mean(dtacheck$missing1, na.rm=TRUE)*100, 1)), "%"
 #2. Missing reason for unmet need during the pandemic in one or more of the tracer items (among completed interviews) 
 print(paste(as.character(round(mean(dtacheck$missing2, na.rm=TRUE)*100, 1)), "%"))
 
-#3. Missing marginalized population (among completed interviews)
-print(paste(as.character(round(mean(dtacheck$missing3, na.rm=TRUE)*100, 1)), "%"))
+#3. Missing marginalized population (among completed interviews) - N/A since the October 29, 2021 version
 
 #4. Missing vaccine demand among adults OR children, when applicable (among completed interviews)
 print(paste(as.character(round(mean(dtacheck$missing4, na.rm=TRUE)*100, 1)), "%"))
@@ -654,11 +612,9 @@ print(paste(as.character(round(mean(dtacheck$missing4, na.rm=TRUE)*100, 1)), "%"
 #5. Missing reasons for no vaccine demand in one or more of the tracer items (among completed interviews)
 print(paste(as.character(round(mean(dtacheck$missing5, na.rm=TRUE)*100, 1)), "%"))
 
-#6. Missing increased social initiatives (among completed interviews)
-print(paste(as.character(round(mean(dtacheck$missing6, na.rm=TRUE)*100, 1)), "%"))
+#6. Missing increased social initiatives (among completed interviews) - N/A since the October 29, 2021 version
 
-#7. Missing increased health initiatives (among completed interviews)"
-print(paste(as.character(round(mean(dtacheck$missing7, na.rm=TRUE)*100, 1)), "%"))
+#7. Missing increased health initiatives (among completed interviews) - N/A since the October 29, 2021 version
 
 #8. Missing reasons for risks (among completed interviews)
 print(paste(as.character(round(mean(dtacheck$missing8, na.rm=TRUE)*100, 1)), "%"))
@@ -836,15 +792,8 @@ dta<-dta%>%
         temp = rowSums(dta[ , varlist], na.rm=TRUE),
         xsource_trained = temp>=1
     )%>%
-    rename_all(.funs = funs(sub("q304_", "xsource__", .)))%>%
-    
-		#***** Equity    
-    mutate(xmargin = q305==1)%>%
-    rename_all(.funs = funs(sub("q306_", "xmargin__", .)))%>%
-    mutate_at(vars(starts_with("xmargin__")), 
-              ~replace(., is.na(.)==TRUE, 0))
-		
-		
+    rename_all(.funs = funs(sub("q304_", "xsource__", .)))
+
 ```
 
 ```{r section4}
@@ -855,20 +804,27 @@ dta<-dta%>%
     	
     	xvac_adult_most 	= q402<=1,
     	xvac_adult_mostsome= q402<=2,
-    	
-    	xvac_child_most 	= q403<=1,
-    	xvac_child_mostsome= q403<=2,
-    	
-    	#/*most adults AND children*/
-    	xvac_most 		= xvac_adult_most==1 & xvac_child_most==1, 	
-    	#/*most/some adults OR children*/
-    	xvac_mostsome	= xvac_adult_mostsome==1 | xvac_child_mostsome==1 
+    	#no more xvac_child_* and, thus, xvac_most* in Oct 29 version
+    
+        xvac_noaccess 	= q403==1     
     )%>%
+    rename_all(.funs = funs(sub("q404_", "xvac_noaccess_reason__", .)))%>%
     mutate(
-        q404_008 = as.numeric(q404other!="" & q404other!="0"),
-        q404_008 = ifelse(is.na(q404_001)==TRUE, NA, q404_008)
+        xvac_noaccess_reason_eligible = xvac_noaccess_reason__001==1,
+    	xvac_noaccess_reason_distance	= xvac_noaccess_reason__002==1 ,
+    	xvac_noaccess_reason_wait 	= xvac_noaccess_reason__003==1 | xvac_noaccess_reason__004==1 ,
+    	xvac_noaccess_reason_app 		= xvac_noaccess_reason__005==1 ,
+    	xvac_noaccess_reason_cost		= xvac_noaccess_reason__006==1 	
     )%>%
-    rename_all(.funs = funs(sub("q404_", "xvac_reason__", .)))%>%
+    mutate_at(vars(starts_with("xvac_noaccess_reason")), 
+              funs(ifelse(is.na(.)==TRUE, 0,.))
+    )%>%
+    mutate_at(vars(starts_with("xvac_noaccess_reason")), 
+              funs(ifelse(xvac_noaccess!=1, NA,.))
+    )%>%
+    mutate( xvac_nowant 	= q405==1)%>%     
+
+    rename_all(.funs = funs(sub("q406_", "xvac_reason__", .)))%>%
     mutate(
         xvac_reason_noconcern 	= xvac_reason__001==1,
     	xvac_reason_exposure	= xvac_reason__004==1, 
@@ -877,23 +833,8 @@ dta<-dta%>%
     	xvac_reason_time 		= xvac_reason__006==1, 
     	xvac_reason_cost 		= xvac_reason__007==1 
     )%>%
-    mutate_if(is.logical, as.numeric)
-
-table(dta$xvac_most)
-summary(dta$xvac_most)
-summary(dta$xvac_reason__001)
-summary(dta$xvac_reason_noconcern)
-```
-
-```
-dta<-dta%>%
-    mutate(
-        xvac_reason_noconcern 	= ifelse(NA, xvac_most==1, xvac_reason_noconcern), 
-    	xvac_reason_exposure	= ifelse(NA, xvac_most==1, xvac_reason_exposure),
-    	xvac_reason_anticovac 	= ifelse(NA, xvac_most==1, xvac_reason_anticovac),
-    	xvac_reason_antivac 	= ifelse(NA, xvac_most==1, xvac_reason_antivac),
-    	xvac_reason_time 		= ifelse(NA, xvac_most==1, xvac_reason_time),
-    	xvac_reason_cost 		= ifelse(NA, xvac_most==1, xvac_reason_cost)
+    mutate_at(vars(starts_with("xvac_reason")), 
+              funs(ifelse(xvac_nowant!=1, NA,.)) 
     )%>%
     mutate_if(is.logical, as.numeric)
 
@@ -904,44 +845,20 @@ summary(dta$xvac_reason_noconcern)
 
 ```{r section5}
 #####* Section 5: Community assets and vulnerabilities 
-dta<-dta%>%
-    mutate(
-        xeconimpact_modsig =q501==2 | q501==3 , 
-    	xeconimpact_sig =q501==3 ,
-    	
-    	xinit_ses_increased = q502==1, 
-    	xinit_ses_nochange = q502==2, 
-    	xinit_ses_decreased = q502==3,
-        
-        xinit_health_increased = q504==1, 
-    	xinit_health_nochange = q504==2, 
-    	xinit_health_decreased = q504==3 
-    )
-
-
-        temp1<-dta%>%select(starts_with("q503_"))%>%
-            rename_all(.funs = funs(sub("q503_", "xinit_ses_increased__", .)))%>%
-            mutate_all( funs(ifelse(. ==1 , 1, 
-                                  ifelse(. !=1, 0,  .))) )%>%
-            mutate_all(~replace(., is.na(.), 0)) 
-        
-        temp2<-dta%>%select(starts_with("q505_"))%>%
-            rename_all(.funs = funs(sub("q505_", "xinit_health_increased__", .)))%>%
-            mutate_all( funs(ifelse(. ==1 , 1, 
-                                  ifelse(. !=1, 0,  .))) )%>%
-            mutate_all(~replace(., is.na(.), 0)) 
-
-dta<-cbind(dta, temp1, temp2)    
-
+#####* Section 5 - deleted in the October 29 version Q
 ```
 
 ```{r section6}
 #####* Section 6: CHW service provision 
 dta<-dta%>%
-    mutate(
-    	xknowledge			=q601==1,
-    		
-    	xrisk_mod	=q602>=3 & is.na(q602)==FALSE,
+    mutate(	xtraining = q601a==1)%>% 
+    rename_all(.funs = funs(sub("q601b_", "xtraining__", .)))%>%
+    mutate_at(vars(starts_with("xtraining__")), 
+              funs(ifelse(is.na(.)==TRUE, 0,.))
+    )%>%      
+    
+    mutate(		
+    	xrisk_modhigh	=q602>=3 & is.na(q602)==FALSE,
     	xrisk_high	=q602>=4 & is.na(q602)==FALSE,
     	
     	xstigma	=q604>=2 & is.na(q604)==FALSE,
@@ -983,9 +900,18 @@ dta<-dta%>%
 dta<-cbind(dta, temp1, temp2, temp3, temp4, temp5)%>%
     #Revision 2021/10/29. xrisk_reason__*: replace with missing if not applicable 
     mutate_at(vars(starts_with("xrisk_reason__")), 
-              funs(ifelse(xrisk_mod==0, NA,.))
+              funs(ifelse(xrisk_modhigh==0, NA,.))
     )
     #ENF OF REVISION
+
+dta<-dta%>%
+    mutate(
+        xself_covax_any	=q608==1 ,
+	    xself_covax_full	=q608==1 & q609<=2
+    )%>%
+    mutate_at(vars(starts_with("xself_covax")), 
+              funs(ifelse(is.na(.)==TRUE, 0,.))
+    )
 ```
 
 ---
@@ -1031,23 +957,14 @@ dta<-dta%>%
         xsource__internet	 = 	xsource__009	 , 
         xsource__other	 = 	xsource__010	 , 
         xsource__none	 = 	xsource__011	 , 
-        			
-        xmargin__poverty	 = 	xmargin__001	 , 
-        xmargin__informal	 = 	xmargin__002	 , 
-        xmargin__unemployed	 = 	xmargin__003	 , 
-        xmargin__singleparent	 = 	xmargin__004	 , 
-        xmargin__isolatedold	 = 	xmargin__005	 , 
-        xmargin__disabled	 = 	xmargin__006	 , 
-        xmargin__lgbti	 = 	xmargin__007	 , 
-        xmargin__indigenous	 = 	xmargin__008	 , 
-        xmargin__religious	 = 	xmargin__009	 , 
-        xmargin__nomadic	 = 	xmargin__010	 , 
-        xmargin__migrants	 = 	xmargin__011	 , 
-        xmargin__ethnic	 = 	xmargin__012	 , 
-        xmargin__homeless	 = 	xmargin__013	 , 
-        xmargin__orphan	 = 	xmargin__014	 , 
-        xmargin__other	 = 	xmargin__015	 , 
-        		
+
+        xvac_noaccess_reason__eligible	 = 	xvac_noaccess_reason__001	 ,
+        xvac_noaccess_reason__distance	 = 	xvac_noaccess_reason__002	 ,
+        xvac_noaccess_reason__waitcrowd	 = 	xvac_noaccess_reason__003	 ,
+        xvac_noaccess_reason__waitstaff	 = 	xvac_noaccess_reason__004	 ,
+        xvac_noaccess_reason__app	 = 	xvac_noaccess_reason__005	 ,
+        xvac_noaccess_reason__cost	 = 	xvac_noaccess_reason__006	 ,
+        xvac_noaccess_reason__other       	 = 	xvac_noaccess_reason__007	 ,            		
         xvac_reason__notconcerned	 = 	xvac_reason__001	 , 
         xvac_reason__uncertain	 = 	xvac_reason__002	 , 
         xvac_reason__sideeffects	 = 	xvac_reason__003	 , 
@@ -1056,43 +973,33 @@ dta<-dta%>%
         xvac_reason__toobusy	 = 	xvac_reason__006	 , 
         xvac_reason__cost	 = 	xvac_reason__007	 , 
         xvac_reason__other	 = 	xvac_reason__008	 , 
-        			
-        xinit_ses_increased__cash	 = 	xinit_ses_increased__001	 , 
-        xinit_ses_increased__gbv	 = 	xinit_ses_increased__002	 , 
-        xinit_ses_increased__food	 = 	xinit_ses_increased__003	 , 
-        xinit_ses_increased__school	 = 	xinit_ses_increased__004	 , 
-        xinit_ses_increased__hygiene	 = 	xinit_ses_increased__005	 , 
-        xinit_ses_increased__isolated	 = 	xinit_ses_increased__006	 , 
-        xinit_ses_increased__taxrelief	 = 	xinit_ses_increased__007	 , 
-        xinit_ses_increased__local	 = 	xinit_ses_increased__008	 , 
-        xinit_ses_increased__other	 = 	xinit_ses_increased__009	 , 
-        			
-        xinit_health_increased__hp	 = 	xinit_health_increased__001	 , 
-        xinit_health_increased__info	 = 	xinit_health_increased__002	 , 
-        xinit_health_increased__isolated	 = 	xinit_health_increased__003	 , 
-        xinit_health_increased__transhw	 = 	xinit_health_increased__004	 , 
-        xinit_health_increased__transvp	 = 	xinit_health_increased__005	 , 
-        xinit_health_increased__masks	 = 	xinit_health_increased__006	 , 
-        xinit_health_increased__handwash	 = 	xinit_health_increased__007	 , 
-        xinit_health_increased__hsaccess	 = 	xinit_health_increased__008	 , 
-        xinit_health_increased__water	 = 	xinit_health_increased__009	 , 
-        xinit_health_increased__other	 = 	xinit_health_increased__010	 , 
-        			
+
+    	xtraining__spread	 = 	xtraining__001	 ,
+    	xtraining__mask	 = 	xtraining__002	 ,
+    	xtraining__covax	 = 	xtraining__003	 ,
+    	
         xrisk_reason__manypeople	 = 	xrisk_reason__001	 , 
         xrisk_reason__ppelack	 = 	xrisk_reason__002	 , 
-        xrisk_reason__age	 = 	xrisk_reason__003	 , 
-        xrisk_reason__hours	 = 	xrisk_reason__004	 , 
-        xrisk_reason__transport	 = 	xrisk_reason__005	 , 
-        xrisk_reason__public	 = 	xrisk_reason__006	 , 
+        xrisk_reason__novax	 = 	xrisk_reason__003	 ,
+        xrisk_reason__age	 = 	xrisk_reason__004	 ,
+        xrisk_reason__hours	 = 	xrisk_reason__005	 ,
+        xrisk_reason__transport	 = 	xrisk_reason__006	 ,
+        xrisk_reason__public	 = 	xrisk_reason__007	 ,
         			
         xsupportneed__monetary	 = 	xsupportneed__001	 , 
         xsupportneed__ppe	 = 	xsupportneed__002	 , 
         xsupportneed__supp	 = 	xsupportneed__003	 , 
-        xsupportneed__traincovid	 = 	xsupportneed__004	 , 
-        xsupportneed__trainother	 = 	xsupportneed__005	 , 
-        xsupportneed__trans	 = 	xsupportneed__006	 , 
-        xsupportneed__insurance	 = 	xsupportneed__007	 , 
-        xsupportneed__other	 = 	xsupportneed__008	 , 
+        #xsupportneed__traincovid	 = 	xsupportneed__004	 , 
+        xsupportneed__tc_protection	 = 	xsupportneed__004	 ,
+        xsupportneed__tc_prevention	 = 	xsupportneed__005	 ,
+        xsupportneed__tc_vax	 = 	xsupportneed__006	 ,
+        xsupportneed__tc_management	 = 	xsupportneed__007	 ,
+        xsupportneed__tc_othercovid	 = 	xsupportneed__008	 ,
+        	 
+        xsupportneed__trainother	 = 	xsupportneed__009	 ,
+        xsupportneed__trans	 = 	xsupportneed__010	 ,
+        xsupportneed__insurance	 = 	xsupportneed__011	 ,
+        xsupportneed__other	 = 	xsupportneed__012	 ,
         			
         xsrv_reduced__immune	 = 	xsrvc_reduced__001	 , 
         xsrv_reduced__malaria	 = 	xsrvc_reduced__002	 , 
@@ -1147,11 +1054,12 @@ dtatemp<-dta%>%
     	obs_vacreason=NA, 
     
     	obs_chw=ifelse(zchw==1, 1, obs_chw),  	
-    	obs_vacreason=ifelse(xvac_most!=1, 1, obs_vacreason), 
+    	obs_vacreason=ifelse(xvac_adult_most!=1, 1, obs_vacreason), 
+    	#/*2/25/2022 no more xvac_most, since we ask about adults only*/
     	
     	#REVISION 2021/10/25: CREATE ADDITIONAL "OBS" VARIABLES TO HAVE CORRECT DENOMINATORS IN THE CHARTBOOK 
     	obs_riskreason=NA, 
-    	obs_riskreason=ifelse(xrisk_mod==1, 1, obs_riskreason)
+    	obs_riskreason=ifelse(xrisk_modhigh==1, 1, obs_riskreason)
     	#END OF REVISION
     	
     )%>%
@@ -1243,11 +1151,11 @@ dim(dtasummarylocation)
 dim(dtasummarychw)
 
 setcolorder(dtasummaryall, 
-            c("country", "round", "month", "year", "group", "grouplabel"))
+            c("country", "round", "month", "year", "group", "grouplabel", "obs"))
 setcolorder(dtasummarylocation, 
-            c("country", "round", "month", "year", "group", "grouplabel"))
+            c("country", "round", "month", "year", "group", "grouplabel", "obs"))
 setcolorder(dtasummarychw, 
-            c("country", "round", "month", "year", "group", "grouplabel"))
+            c("country", "round", "month", "year", "group", "grouplabel", "obs"))
 
 dtasummary<-rbind(dtasummaryall, dtasummarylocation, dtasummarychw)
 dim(dtasummary)
@@ -1259,8 +1167,12 @@ dtasummary<-dtasummary%>%
     arrange(country, round, group, grouplabel)
 
 #move up identification variables 
-setcolorder(dtasummary, c("country", "round", "month", "year", "group", "grouplabel"))
+setcolorder(dtasummary, 
+            c("country", "round", "month", "year", "group", "grouplabel", "obs"))
 colnames(dtasummary[ , 1:10])
+
+#deal with NaN
+dtasummary[sapply(dtasummary, is.nan)] <- NA
 ```
 
 ---

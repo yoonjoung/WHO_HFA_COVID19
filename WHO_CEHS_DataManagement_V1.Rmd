@@ -135,12 +135,21 @@ saveWorkbook(wb, paste0(chartbookdir, "WHO_CEHS_Chartbook.xlsx"), overwrite = TR
 
 ##### B.4. Drop duplicate cases 
 Assess duplicate rows based on facility code: Q101. Among the duplicate rows, keep the latest row, based on the submission date/time. 
+
+<span style="color: red;">__Data managers must check the `submitdate` string values. Then modify format when you convert the string value to numeric, using `as.POSIXct`. See an example below.__ (Revision on 5/19/2022)<span>
 ```{r duplicates}
+# CHECK submitdate 
+str(dtaraw$submitdate)
+
 # Identify duplicates 
 dta<-dtaraw %>% 
     mutate(
         submitdate_string=as.character(submitdate),
+        
+        #use this line if submitedate does not have seconds 
         submitdate=as.POSIXct(as.character(submitdate),format= "%m/%d/%Y %H:%M")
+        #use this line if submitedate dos seconds 
+        #submitdate=as.POSIXct(as.character(submitdate),format= "%m/%d/%Y %H:%M:%S")
         )%>%
     group_by(Q101)%>% 
     mutate(
@@ -158,6 +167,10 @@ dta<-dtaraw %>%
 dta<-dta%>%
     filter(latest==1)%>%
     select(-dupe, -latest)
+
+#keep only if ID is NOT missing 
+dta<-dta%>%
+    filter(is.na(Q101)==FALSE)
 
 obs<-nrow(dta)
 obsunique<-length(unique(dta$Q101))
@@ -2254,7 +2267,8 @@ dtasummary<-dtasummary%>%
     arrange(country, round, group, grouplabel)
 
 #move up identification variables 
-setcolorder(dtasummary, c("country", "round", "month", "year", "group", "grouplabel"))
+setcolorder(dtasummary, 
+            c("country", "round", "month", "year", "group", "grouplabel", "obs"))
 colnames(dtasummary[ , 1:10])
 
 #deal with NaN
