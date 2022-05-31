@@ -4,13 +4,13 @@ This repository has data cleaning/management/analysis programs. There are three 
 ### Version1 (initial publication: March 28, 2021) - in the main directory
 
 * COVID-19 Hospital Case Management Capacity Survey/Module   
--- Analysis code in Stata: WHO_HospitalReadiness_DataManagement.do __(updated on 5/19/2022)__  
--- Analysis code in R: WHO_HospitalReadiness_DataManagement_V1.Rmd (https://rpubs.com/YJ_Choi/WHO_COVID19HFA_HospCM) __(updated on 5/19/2022)__    
+-- Analysis code in Stata: WHO_HospitalReadiness_DataManagement.do __(updated on 5/31/2022)__  
+-- Analysis code in R: WHO_HospitalReadiness_DataManagement_V1.Rmd (https://rpubs.com/YJ_Choi/WHO_COVID19HFA_HospCM) __(updated on 5/31/2022)__    
 (Questionnaire version that the analsis code is based on: __COVID health products_20210707_Clean.pdf__)    
 
 * Continuity of Essential Health Services Survey/Module   
--- Analysis code in Stata: WHO_CEHS_DataManagement.do __(updated on 5/19/2022)__   
--- Analysis code in R: WHO_CEHS_DataManagement_V1.Rmd (https://rpubs.com/YJ_Choi/WHO_COVID19HFA_CEHS) __(updated on 5/19/2022)__      
+-- Analysis code in Stata: WHO_CEHS_DataManagement.do __(updated on 5/31/2022)__   
+-- Analysis code in R: WHO_CEHS_DataManagement_V1.Rmd (https://rpubs.com/YJ_Choi/WHO_COVID19HFA_CEHS) __(updated on 5/31/2022)__      
 (Questionnaire version that the analsis code is based on: __Continuity of EHS_20210512_Clean.pdf__)   
 
 * Community   
