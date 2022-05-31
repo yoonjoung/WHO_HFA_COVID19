@@ -5,6 +5,7 @@ capture log close
 set more off
 numlabel, add
 
+*This code was last updated on 5/31/2022 to update section E.3
 *This code was last updated on 5/19/2022 to update section B.4
 *Based on the May 12, 2021 Q version
 
@@ -1866,6 +1867,19 @@ restore
 
 import excel "WHO_CEHS_Chartbook_10.21.xlsx", sheet("Weight") firstrow clear
 	rename *, lower
+
+		/*YC edit 5/31/2022*/
+		*check weight distribution normalized with mean=1? 
+		*if not, we have to rescale so that the mean of sampling weight==1
+						
+			*histogram weight, w(0.1) freq
+			
+			sum weight
+			replace weight=weight / r(mean) /*if already normalized, this line does not change anything*/
+			
+			sum weight
+					
+		/*edit ends*/
 		
 	sort facilitycode
 	merge facilitycode using CEHS_`country'_R`round'.dta, 

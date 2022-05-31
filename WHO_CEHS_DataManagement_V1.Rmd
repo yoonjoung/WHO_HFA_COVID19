@@ -1946,6 +1946,10 @@ dtaweight<-read_excel(paste0(chartbookdir, "WHO_CEHS_Chartbook_10.21.xlsx"), she
         rename_all(.funs = funs(sub(" ", "", .)))%>%
         select(facilitycode, weight)%>%
         distinct(facilitycode, .keep_all=TRUE)
+    
+    #normalize weight 
+    dtaweight<-dtaweight%>%
+	    mutate(weight = weight / mean(dtaweight$weight))    
 
 # check datasets     
 dim(dta)
