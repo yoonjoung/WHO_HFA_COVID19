@@ -4,7 +4,7 @@ This repository has data cleaning/management/analysis programs. There are three 
 ### Combined version (initial publication: September 16, 2022) - in the main directory
 
 -- Analysis code in Stata: WHO_CombinedCOVID19HFA_DataManagement.do __(updated on 9/16/2022)__  
--- Analysis code in R: forthcoming 
+-- Analysis code in R: forthcoming   
 (Questionnaire version that the analsis code is based on: __Rapid survey_14September2022_Clean.pdf__)    
 
 ### Version1 (initial publication: March 28, 2021) - in the main directory
