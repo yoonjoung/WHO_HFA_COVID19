@@ -128,7 +128,7 @@ export delimited using "$downloadcsvdir/LimeSurvey_CombinedCOVID19HFA_`country'_
 		replace `var'=.		
 		}		
 		
-export excel using "$chartbookdir/WHO_CombinedCOVID19HFA_ChartbookTest.xlsx", sheet("Facility-level raw data") sheetreplace firstrow(variables) nolabel
+export excel using "$chartbookdir/CombinedCOVID19HFA_Chartbook_draft.xlsx", sheet("Facility-level raw data") sheetreplace firstrow(variables) nolabel
 
 *****B.4. Drop duplicate cases 
 
@@ -190,7 +190,7 @@ export excel using "$chartbookdir/WHO_CombinedCOVID19HFA_ChartbookTest.xlsx", sh
 		
 	drop if duplicate!=0  & submitdate!=submitdatelatest 
 	drop if Q101==. 
-	
+
 	*****confirm there's no duplicate cases, based on facility code*/
 	duplicates report Q101,
 	*****CHECK HERE: 
@@ -795,7 +795,7 @@ export excel using "$chartbookdir/WHO_CombinedCOVID19HFA_ChartbookTest.xlsx", sh
 	*****************************
 	* Section 4: Availability of services for COVID-19 case management
 	*****************************	
-
+	
 	***** PT with suspected/confirmed C19 at primary care setting 
 	
 		gen xcvd_pt = q401==1 /*suspected or confirmed*/ 
@@ -868,20 +868,59 @@ export excel using "$chartbookdir/WHO_CombinedCOVID19HFA_ChartbookTest.xlsx", sh
 		rename	xcvd_optpt__003	xcvd_optpt__progmarker 
 		rename	xcvd_optpt__004	xcvd_optpt__covax 
 		rename	xcvd_optpt__005	xcvd_optpt__antiviral					
-			
-	***** PT with suspected/confirmed C19: ALL facilities, Primary or Hospitals /*NEW*/
+	
+	***** PT with suspected/confirmed C19: ALL facilities - Primary or Hospitals /*NEW*/
 		
-		gen xopt_covid = xcvd_pt==1 | xcvd_optpt==1
+		gen xopt_covid = xcvd_pt==1 | xcvd_optpt==1 /*suspected and confirmed*/ 
 			
 		gen	xopt_covid__triage 	 	 =	xcvd_pt__triage 	 ==1 |	xcvd_optpt__triage 	 ==1  
 		gen	xopt_covid__o2_measure	 =	xcvd_pt__o2_measure	 ==1 |	xcvd_optpt__o2_measure	 ==1  
 		gen	xopt_covid__progmarker 	 =	xcvd_pt__progmarker  ==1 |	xcvd_optpt__progmarker  ==1  
 		gen	xopt_covid__covax 		 =	xcvd_pt__covax 	 	 ==1 |	xcvd_optpt__covax 	 ==1  
 		gen xopt_covid__antiviral	 =  xcvd_pt__antiviral 	 ==1 |  xcvd_optpt__antiviral==1 
-
-			foreach var of varlist xopt_covid__* {
+		
+		gen xopt_covidehs__home_isolate 	= xcvd_pt__home_isolate	==1
+		gen xopt_covidehs__refer 			= xcvd_pt__refer 		==1
+				
+			local varlist xopt_covid__* /*indicators for the summary metrics*/ 
+				preserve
+				keep `varlist'
+				d, short
+				restore
+			gen max=`r(k)'			
+			egen temp=rowtotal(`varlist')			 
+		gen xopt_covid_score	=100*(temp/max)
+		gen xopt_covid_100 		=xopt_covid_score==100
+		gen xopt_covid_50 		=xopt_covid_score>=50
+			drop max temp	
+		
+		bysort zc19cm: sum xopt_covid*
+		
+			local varlist xopt_covid__* xopt_covidehs__* /*indicators for the summary metrics - for PHC*/ 
+				preserve
+				keep `varlist'
+				d, short
+				restore
+			gen max=`r(k)'			
+			egen temp=rowtotal(`varlist')			 
+		replace xopt_covid_score	=100*(temp/max)			if zc19cm==0
+		replace xopt_covid_100 		=xopt_covid_score==100	if zc19cm==0
+		replace xopt_covid_50 		=xopt_covid_score>=50	if zc19cm==0
+			drop max temp	
+		
+		bysort zc19cm: sum xopt_covid*
+		
+			foreach var of varlist xopt_covid__* xopt_covid_score xopt_covid_100 xopt_covid_50{
 				replace `var'=. if xopt_covid==0 /*missing if no C19 OPT*/
 				}		
+				
+			foreach var of varlist xopt_covidehs_* {
+				replace `var'=. if xopt_covid==0 | zc19cm==1 /*missing if no C19 OPT*/
+				}		
+				
+		bysort zc19cm: sum xopt_covid*		
+				
+		drop xcvd_* /*drop facility-level specific variables for C19CM at OPT*/
 
 	***** ER
 	
@@ -1582,7 +1621,8 @@ export excel using "$chartbookdir/WHO_CombinedCOVID19HFA_ChartbookTest.xlsx", sh
 /*RUN this chunk A if there is samplingb weight*/
 *CHUNK A BEGINS  
 
-import excel "$chartbookdir/WHO_CombinedCOVID19HFA_ChartbookTest.xlsx", sheet("Weight") firstrow clear
+import excel "$chartbookdir/CombinedCOVID19HFA_Chartbook_draft.xlsx", sheet("Weight") firstrow clear
+
 	rename *, lower
 
 		sum weight
@@ -1622,20 +1662,19 @@ import excel "$chartbookdir/WHO_CombinedCOVID19HFA_ChartbookTest.xlsx", sheet("W
 
 	export delimited using CombinedCOVID19HFA_`country'_R`round'.csv, replace 
 
-	export excel using "$chartbookdir/WHO_CombinedCOVID19HFA_ChartbookTest.xlsx", sheet("Facility-level cleaned data") sheetreplace firstrow(variables) nolabel
+	export excel using "$chartbookdir/CombinedCOVID19HFA_Chartbook_draft.xlsx", sheet("Facility-level cleaned data") sheetreplace firstrow(variables) nolabel
 		
 **************************************************************
 * F. Create indicator estimate data 
 **************************************************************
 
 use CombinedCOVID19HFA_`country'_R`round'.dta, clear
-	
+
 	***** To get the total number of observations per relevant part 
 	
 	gen obs=1 	
 	gen obs_c19cm=1 		if zc19cm==1
-	
-	gen obs_cvd_pt=1 		if xcvd_pt==1 		/*PRIMARY-level facilities that had seen patients with suspected/confirmed C19*/
+		
 	gen obs_opt_covid=1 	if xopt_covid==1 	/*facilities that provide OPT services for patients with suspected/confirmed C19*/
 	gen obs_er=1 			if xer==1 			/*facilities that provide 24-hour staffed ER services*/
 	gen obs_ipt=1 			if xipt==1			/*facilities that provide IPT services*/
@@ -1659,7 +1698,7 @@ use CombinedCOVID19HFA_`country'_R`round'.dta, clear
 *****F.1. Calculate estimates  
 
 	use temp.dta, clear
-	
+
 	collapse (count) obs* (mean) x*  (sum) staff_num_* ybed* [iweight=weight], by(country round month year  )
 		gen group="All"
 		gen grouplabel="All"
@@ -1758,7 +1797,7 @@ use summary_CombinedCOVID19HFA_`country'_R`round'.dta, clear
 	gen updatetime=""
 	replace updatetime="`time'"
 
-export excel using "$chartbookdir/WHO_CombinedCOVID19HFA_ChartbookTest.xlsx", sheet("Indicator estimate data") sheetreplace firstrow(variables) nolabel keepcellfmt
+export excel using "$chartbookdir/CombinedCOVID19HFA_Chartbook_draft.xlsx", sheet("Latest indicator estimate data") sheetreplace firstrow(variables) nolabel keepcellfmt
 
 /* To check against R results
 export delimited using "~/Dropbox/0 iSquared/iSquared_WHO/ACTA/3.AnalysisPlan/summary_CombinedCOVID19HFA_`country'_R`round'_Stata.csv", replace 
@@ -1798,7 +1837,7 @@ use summary_CombinedCOVID19HFA_`country'_R`round'.dta, clear
 			global itemlist "
 				xtraining xtrainingsupport 
 				xsafe xppe_all xipcitem xguideline 
-				xcvd_pt xcvd_optpt xcvd_ptsevere
+				xopt_covid xcvd_ptsevere
 				xdrugc19 xdrughosp xdrugehs xsupphosp 
 				xequip_anyfunction xdiagbasic xdiag 
 				xvac
@@ -1833,31 +1872,37 @@ log close
 /*
 
 * This section is to facilitate trend analysis for select key indicators. 
-* HQ WILL CREATE the "lavender" tab (i.e., "Indicator estimate data PAST") for each country. 
+* WHO/HQ WILL CREATE the "lavender" tab (i.e., "Past indicator estimate data") for each country's chartbook. 
 * This lavender tab includes key indicator estimates from all previous rounds. 
-* Further, for indicators that are common in both C19CM and CEHS tools, HQ calculated the indicators using pulled facility-level data.
-* THe "global" data are in the sharepoint folder, "1. Database"
+* Further, 
+*		1. for indicators that are common in both C19CM and CEHS tools, HQ calculated the indicators using pulled facility-level data.
+* 		2. for indicators that have a revised name, indicator names in the past data have been renamed. 
 
-	/*
-	https://worldhealthorg-my.sharepoint.com/:f:/r/personal/banicag_who_int/Documents/HSA%20unit/4%20Databases,%20analyses%20%26%20dashboards/2%20HFAs%20for%20COVID-19/1%20Database?csf=1&web=1&e=Tqv9Ul
-	*/
+* The do file is: "Code to combine previous modules to all for trending with new rounds.do"
+* Saved in the sharepoint folder:
+* "HSA unit/4 Databases, analyses & dashboards/2 HFAs for COVID-19/2. Analysis files/STATA code/code to create global database/"
 	
+* The "global" dataset is: "combined_new_elements.dta"
+* Saved in the sharepoint folder: 
+* "HSA unit/4 Databases, analyses & dashboards/2 HFAs for COVID-19/1. Database/"
+	
+* WHO/HQ TO UPDATE THE FOLLOWING DIRECTORY AS NEEDED 
 use "~/Dropbox/0 iSquared/iSquared_WHO/ACTA/5.Dashboard/1 Database/combined_new_elements.dta", clear
+
 	keep if country=="Ghana" /*using Ghana as an example*/
 	replace country = "`country'"
 
-	*order module country round year month group grouplabel obs*
-	order module country round year month group grouplabel 
-			
-	export excel using "$chartbookdir/WHO_CombinedCOVID19HFA_ChartbookTest.xlsx", sheet("Indicator estimate data PAST") sheetreplace firstrow(variables) nolabel keepcellfmt
+	order module country round year month group grouplabel obs*
+				
+	export excel using "$chartbookdir/CombinedCOVID19HFA_Chartbook_draft.xlsx", sheet("Past indicator estimate data") sheetreplace firstrow(variables) nolabel keepcellfmt
 
 */
 
-import excel "$chartbookdir/WHO_CombinedCOVID19HFA_ChartbookTest.xlsx", sheet("Indicator estimate data PAST") firstrow clear
+import excel "$chartbookdir/CombinedCOVID19HFA_Chartbook_draft.xlsx", sheet("Past indicator estimate data") firstrow clear
 	
 	save temp.dta, replace
 	
-import excel "$chartbookdir/WHO_CombinedCOVID19HFA_ChartbookTest.xlsx", sheet("Indicator estimate data") firstrow clear
+import excel "$chartbookdir/CombinedCOVID19HFA_Chartbook_draft.xlsx", sheet("Latest indicator estimate data") firstrow clear
 		
 		d, short
 		*local indicatorlist = "`r(varlist)'"
@@ -1867,7 +1912,7 @@ import excel "$chartbookdir/WHO_CombinedCOVID19HFA_ChartbookTest.xlsx", sheet("I
 		
 		d, short
 				
-export excel using "$chartbookdir/WHO_CombinedCOVID19HFA_ChartbookTest.xlsx", sheet("All round data") sheetreplace firstrow(variables) nolabel keepcellfmt		
+export excel using "$chartbookdir/CombinedCOVID19HFA_Chartbook_draft.xlsx", sheet("All round data") sheetreplace firstrow(variables) nolabel keepcellfmt		
 
 erase temp.dta
 	
