@@ -159,9 +159,10 @@ export excel using "$chartbookdir/CombinedCOVID19HFA_Chartbook_draft.xlsx", shee
 		codebook submitdate 
 				
 		rename submitdate submitdate_string			
-	gen submitdate = clock(submitdate_string, "MD20Y hm") /*"clock" line in the standard code*/
-	*gen double submitdate = clock(submitdate_string, "MDY hm") /*"clock" line with different mask: 4-digit year*/
-	*gen double submitdate = clock(submitdate_string, "YMDhms") /*"clock" line with different mask: with seconds*/
+	gen double submitdate 	= clock(submitdate_string, "YMDhms") /*"clock" line with different mask: with seconds*/
+	*gen submitdate 		= clock(submitdate_string, "MD20Y hm") /*"clock" line in the standard code*/
+	*gen double submitdate 	= clock(submitdate_string, "MDY hm") /*"clock" line with different mask: 4-digit year*/
+	
 		format submitdate %tc 
 		codebook submitdate*
 			
@@ -172,22 +173,25 @@ export excel using "$chartbookdir/CombinedCOVID19HFA_Chartbook_draft.xlsx", shee
 
 	*****drop duplicates before the latest submission */
 	egen double submitdatelatest = max(submitdate) if duplicate!=0  , by(Q101) /*LATEST TIME WITHIN EACH DUPLICATE*/					
-		format %tcnn/dd/ccYY_hh:MM submitdatelatest /*"format line without seconds*/
-		*format %tcnn/dd/ccYY_hh:MM:SS submitdatelatest /*"format line with seconds*/
+		
+		*format %tcnn/dd/ccYY_hh:MM submitdatelatest /*"format line without seconds*/
+		format %tcnn/dd/ccYY_hh:MM:SS submitdatelatest /*"format line with seconds*/
 		
 		sort Q101 submitdate
-		list Q101 Q105 submitdate* if duplicate!=0 	
+		list Q101 submitdate* if duplicate!=0 	
 
 		/*
-		.                 list Q101 Q105 submitdate* if duplicate!=0      
 
-			 +-----------------------------------------------------------------------------------------+
-			 |    Q101                      Q105   submitdate_~g           submitdate   submitdatela~t |
-			 |-----------------------------------------------------------------------------------------|
-		 63. | 7949982   Real Best Doctor Clinic   9/16/22 19:07   16sep2022 19:07:50   9/17/2022 9:06 |
-		 64. | 7949982   Real Best Doctor Clinic   9/16/22 19:09   16sep2022 19:10:01   9/17/2022 9:06 |
-		 65. | 7949982   Real Best Doctor Clinic   9/17/22 09:07   17sep2022 09:06:41   9/17/2022 9:06 |
-			 +-----------------------------------------------------------------------------------------+
+		.                 list Q101 submitdate* if duplicate!=0   
+
+			 +------------------------------------------------------------------------+
+			 |    Q101     submitdate_string           submitdate    submitdatelatest |
+			 |------------------------------------------------------------------------|
+		 60. | 5023684   2022-09-16 22:59:15   16sep2022 22:59:15   9/17/2022 9:07:59 |
+		 61. | 5023684   2022-09-16 23:59:15   16sep2022 23:59:15   9/17/2022 9:07:59 |
+		 62. | 5023684   2022-09-17 09:07:59   17sep2022 09:07:59   9/17/2022 9:07:59 |
+			 +------------------------------------------------------------------------+
+
 		*/	
 		
 	drop if duplicate!=0  & submitdate!=submitdatelatest 
@@ -213,12 +217,6 @@ export excel using "$chartbookdir/CombinedCOVID19HFA_Chartbook_draft.xlsx", shee
 	drop *time* 
 	*interviewtime is availabl in dataset only when directly downloaded from the server, not via export plug-in used in this code
 	*So, just do not deal with interview time for now. 
-	
-/*****C.1.b. Assess and drop annex data 
-
-	drop qa*
-	*Annex data. Ideally HMIS data should be used. 
-	*So, just do not deal with interview time for now. 	*/
 
 *****C.2. Change var names to drop odd elements "y" "sq" - because of Lime survey's naming convention 
 
@@ -338,7 +336,7 @@ export excel using "$chartbookdir/CombinedCOVID19HFA_Chartbook_draft.xlsx", shee
 	*****************************
 	sum q8*
 		
-	foreach var of varlist q804 q805 q806 q807* q808* 	{		
+	foreach var of varlist q804 q807* q808* 	{		
 		replace `var' = usubinstr(`var', "A", "", 1) 
 		destring `var', replace 
 		}			
@@ -380,7 +378,7 @@ export excel using "$chartbookdir/CombinedCOVID19HFA_Chartbook_draft.xlsx", shee
 		q501_*_a q501_*_b q503* q504* q505_*_b q506 
 		q601* q604*
 		q702* q703 q704
-		q801 q802 q803 
+		q801 q802 q803 q804 q805 q806 
 		q901 q905 q906 q910 q911* q912 q913 q914
 		q1001
 		"; 
@@ -419,21 +417,21 @@ export excel using "$chartbookdir/CombinedCOVID19HFA_Chartbook_draft.xlsx", shee
 	lab values `var' ipc;	
 	};	
 	
-	lab define mgmtcovid
+	lab define mgmt_optcovid
 		1"1.Yes to almost all patients"
 		2"2.Yes but only to some patients"
 		3"3.None of the patients";
 	foreach var of varlist q402* {;
-	lab values `var' mgmtcovid;	
+	lab values `var' mgmt_optcovid;	
 	};	
 	
-	lab define mgmtsevere
+	lab define mgmt_iptcovidsevere
 		1"1.Yes almost always"
 		2"2.Yes but only at certain times of days"
 		3"3.No, never able to provide the care"
 		4"4.N/A";
 	foreach var of varlist q415* {;
-	lab values `var' mgmtsevere;	
+	lab values `var' mgmt_iptcovidsevere;	
 	};	
 	
 	lab define optchange
@@ -501,6 +499,8 @@ export excel using "$chartbookdir/CombinedCOVID19HFA_Chartbook_draft.xlsx", shee
 	lab values `var' yesyesbutno; 
 	};	
 	
+	/*
+	*when "other" is selected, LimeSurvey treats Q1004 as string... :( 
 	lab define results
 		1"1.COMPLETED"
 		2"2.POSTPONED"
@@ -509,7 +509,8 @@ export excel using "$chartbookdir/CombinedCOVID19HFA_Chartbook_draft.xlsx", shee
 		5"5.REFUSED"
 		6"6.OTHER"; 
 	lab values q1004 results; 
-		
+	*/
+	
 	#delimit cr
 }
 **************************************************************
@@ -1341,10 +1342,10 @@ export excel using "$chartbookdir/CombinedCOVID19HFA_Chartbook_draft.xlsx", shee
 
 		global itemlist "001 002 003 004 005 006" 
 		foreach item in $itemlist{	
-			gen xdiag_av_a`item' 	= q807_`item'<=2 
+			gen xdiag_av_b`item' 	= q807_`item'<=2 
 			}	
 		foreach item in $itemlist{	
-			gen xdiag_avfun_a`item' = q807_`item'<=1
+			gen xdiag_avfun_b`item' = q807_`item'<=1
 			}			
 			
 		global itemlist "001 002 003 004"
@@ -1355,7 +1356,7 @@ export excel using "$chartbookdir/CombinedCOVID19HFA_Chartbook_draft.xlsx", shee
 			gen xdiag_avfun_h`item' = q808_`item'<=1		
 			}					
 							
-			local varlist xdiag_avfun_a* /*indicators for the summary metrics*/ 
+			local varlist xdiag_avfun_b* /*indicators for the summary metrics*/ 
 				preserve
 				keep `varlist'
 				d, short
@@ -1367,22 +1368,21 @@ export excel using "$chartbookdir/CombinedCOVID19HFA_Chartbook_draft.xlsx", shee
 		gen xdiagbasic_50 	=xdiagbasic_score>=50
 			drop max temp
 			
-			
-			local varlist xdiag_avfun_a* xdiag_avfun_h* /*indicators for the summary metrics: for hospitals*/ 
-				preserve
-				keep `varlist'
-				d, short
-				restore
-			gen maxhospital=`r(k)'
-			egen temphospital=rowtotal(`varlist')	
-			
-			local varlist xdiag_avfun_a* /*indicators for the summary metrics: for non-hospitals*/ 
+			local varlist xdiag_avfun_b* /*indicators for the summary metrics: for non-hospitals*/ 
 				preserve
 				keep `varlist'
 				d, short
 				restore
 			gen maxnonhospital=`r(k)'
 			egen tempnonhospital=rowtotal(`varlist')	
+			
+			local varlist xdiag_avfun_b* xdiag_avfun_h* /*indicators for the summary metrics: for hospitals*/ 
+				preserve
+				keep `varlist'
+				d, short
+				restore
+			gen maxhospital=`r(k)'
+			egen temphospital=rowtotal(`varlist')	
 			
 			gen max=.
 				replace max=maxnonhospital  if zlevel_hospital!=1 /*non-hospital*/
@@ -1399,24 +1399,24 @@ export excel using "$chartbookdir/CombinedCOVID19HFA_Chartbook_draft.xlsx", shee
 			replace `var'=. if zlevel_hospital==0 /*missing if NOT hospital*/
 			}				
 			
-			rename	xdiag_av_a001	xdiag_av__bloodglucose
-			rename	xdiag_av_a002	xdiag_av__urineglucose
-			rename	xdiag_av_a003	xdiag_av__urineprotein
-			rename	xdiag_av_a004	xdiag_av__pregnancy
-			rename	xdiag_av_a005	xdiag_av__hbg /*NEW - revised*/
-			rename	xdiag_av_a006	xdiag_av__malaria
+			rename	xdiag_av_b001	xdiag_av__bloodglucose
+			rename	xdiag_av_b002	xdiag_av__urineglucose
+			rename	xdiag_av_b003	xdiag_av__urineprotein
+			rename	xdiag_av_b004	xdiag_av__pregnancy
+			rename	xdiag_av_b005	xdiag_av__hbg /*NEW - revised*/
+			rename	xdiag_av_b006	xdiag_av__malaria
 			
 			rename	xdiag_av_h001	xdiag_av__h_hiv
 			rename	xdiag_av_h002	xidag_av__h_tb
 			rename	xdiag_av_h003	xdiag_av__h_bloodtype
 			rename	xdiag_av_h004	xdiag_av__h_bloodcreatine
 			
-			rename	xdiag_avfun_a001	xdiag_avfun__bloodglucose
-			rename	xdiag_avfun_a002	xdiag_avfun__urineglucose
-			rename	xdiag_avfun_a003	xdiag_avfun__urineprotein
-			rename	xdiag_avfun_a004	xdiag_avfun__pregnancy
-			rename	xdiag_avfun_a005	xdiag_avfun__hbg /*NEW - revised*/
-			rename	xdiag_avfun_a006	xdiag_avfun__malaria
+			rename	xdiag_avfun_b001	xdiag_avfun__bloodglucose
+			rename	xdiag_avfun_b002	xdiag_avfun__urineglucose
+			rename	xdiag_avfun_b003	xdiag_avfun__urineprotein
+			rename	xdiag_avfun_b004	xdiag_avfun__pregnancy
+			rename	xdiag_avfun_b005	xdiag_avfun__hbg /*NEW - revised*/
+			rename	xdiag_avfun_b006	xdiag_avfun__malaria
 
 			rename	xdiag_avfun_h001	xdiag_avfun__h_hiv
 			rename	xdiag_avfun_h002	xidag_avfun__h_tb
@@ -1810,9 +1810,6 @@ use summary_CombinedCOVID19HFA_`country'_R`round'.dta, clear
 	Pairs where more restrictive indicator is higher than less restrictive indicator
 	For example, xcovax_offerav__jj MUST BE ALWAYS EQUAL TO OR LOWER THAN xcovax_offer__jj
 	*/
-		
-			list group grouplabel xdiagbasic_score xdiag_score  ///
-				if xdiagbasic_score > xdiag_score  
 				
 			*global itemlist "pfizer moderna astra jj covishiled sinopharm sinovac"
 			global itemlist "pfizer moderna astra jj covishiled"
@@ -1820,6 +1817,15 @@ use summary_CombinedCOVID19HFA_`country'_R`round'.dta, clear
 				list group grouplabel xcovax_offerav__`item' xcovax_offer__`item' ///
 					if xcovax_offerav__`item' > xcovax_offer__`item' 
 			}	
+			
+	/*
+	Quiz: 
+	How about this pair? 
+	Is it possible that "xdiag_score" is higher than "xdiagbasic_score"??  
+	*/
+	
+			list group grouplabel obs xdiagbasic_score xdiag_score  ///
+				if xdiag_score  > xdiagbasic_score  
 	
 log close
 
