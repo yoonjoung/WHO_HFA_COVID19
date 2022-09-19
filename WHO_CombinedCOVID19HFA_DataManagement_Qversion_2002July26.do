@@ -5,7 +5,7 @@ capture log close
 set more off
 numlabel, add
 
-* Date of the combined COVID-19 HFA questionniare version: 14 September, 2022
+* Date of the combined COVID-19 HFA questionniare version: 26 July, 2022
 * Date of last code update: 19 September, 2022
 
 *This code 
@@ -98,8 +98,7 @@ global date=subinstr("`c_today'", " ", "",.)
 **************************************************************
 
 *****B.1. Import raw data from LimeSurvey 
-import delimited using "https://extranet.who.int/dataformv3/index.php/plugins/direct?plugin=CountryOverview&docType=1&sid=`surveyid'&language=en&function=createExport", case(preserve) clear
-
+*import delimited using "https://extranet.who.int/dataformv3/index.php/plugins/direct?plugin=CountryOverview&docType=1&sid=`surveyid'&language=en&function=createExport", case(preserve) clear
 	/*
 	
 	NOTE
@@ -113,7 +112,7 @@ import delimited using "https://extranet.who.int/dataformv3/index.php/plugins/di
 
 	*/
 
-import delimited "$downloadcsvdir/LimeSurvey_CombinedHFA_EXAMPLE_R3.csv", case(preserve) clear /*THIS LINE ONLY FOR PRACTICE*/
+import delimited "$downloadcsvdir/LimeSurvey_CombinedHFA_EXAMPLE_R3_Qversion_2022July26.csv", case(preserve) clear /*THIS LINE ONLY FOR PRACTICE*/
 
 *****B.2. Export/save the data daily in CSV form with date 	
 export delimited using "$downloadcsvdir/LimeSurvey_CombinedCOVID19HFA_`country'_R`round'_$date.csv", replace
@@ -128,7 +127,7 @@ export delimited using "$downloadcsvdir/LimeSurvey_CombinedCOVID19HFA_`country'_
 		replace `var'=.		
 		}		
 		
-export excel using "$chartbookdir/CombinedCOVID19HFA_Chartbook_draft.xlsx", sheet("Facility-level raw data") sheetreplace firstrow(variables) nolabel
+export excel using "$chartbookdir/CombinedCOVID19HFA_Chartbook_draft_Qversion_2022July26.xlsx", sheet("Facility-level raw data") sheetreplace firstrow(variables) nolabel
 
 *****B.4. Drop duplicate cases 
 
@@ -232,7 +231,10 @@ export excel using "$chartbookdir/CombinedCOVID19HFA_Chartbook_draft.xlsx", shee
 	rename (q505_*2) (q505_*_b)
 	
 	rename (q503*) (q503_0*)
-		
+	/*problem in the standard LimeSurvey tool of the July 26 version*/
+	rename q503_0other q503other /*this is NOT in the paper Q, but added in LS.*/
+	drop q503other
+			
 	lookfor sq
 	lookfor a
 	lookfor b
@@ -284,11 +286,12 @@ export excel using "$chartbookdir/CombinedCOVID19HFA_Chartbook_draft.xlsx", shee
 	*****************************
 	sum q4*
 		
-	foreach var of varlist q402* q415* q417*   {		
+	foreach var of varlist q402* q403*  {		
+	*foreach var of varlist q402* q403* q416* q418*   {			
 		replace `var' = usubinstr(`var', "A", "", 1) 
 		destring `var', replace 
 		}			
-
+		
 	sum q4*
 
 	*****************************
@@ -300,9 +303,12 @@ export excel using "$chartbookdir/CombinedCOVID19HFA_Chartbook_draft.xlsx", shee
 		replace `var' = usubinstr(`var', "A", "", 1) 
 		destring `var', replace 
 		}	
+	
+	/*problem in the standard LimeSurvey tool of the July 26 version*/
+	gen q504_008=q504other!=""
 		
 	sum q5*	
-
+	
 	*****************************	
 	* Section 6		
 	*****************************	
@@ -370,8 +376,8 @@ export excel using "$chartbookdir/CombinedCOVID19HFA_Chartbook_draft.xlsx", shee
 		q109 q110
 		q207 q208* q209 q210* q211 
 		q301 q302* q303 q306 q307*
-		q401 q403 q404 q405 q406 q411 q412 q414 q416 q417*
-		q501_*_a q501_*_b q503* q504* q505_*_b q506 
+		q401 q404 q405 q406 q407 q412 q413 q415 q417 q418*
+		q501_*_a q501_*_b q503* q504_* q505_*_b q506 
 		q601* q604*
 		q702* q703 q704
 		q801 q802 q803 q804 q805 q806 
@@ -379,7 +385,7 @@ export excel using "$chartbookdir/CombinedCOVID19HFA_Chartbook_draft.xlsx", shee
 		q1001
 		"; 
 		#delimit cr
-	
+
 	sum $varlistyesno
 
 	foreach var of varlist $varlistyesno{
@@ -387,7 +393,7 @@ export excel using "$chartbookdir/CombinedCOVID19HFA_Chartbook_draft.xlsx", shee
 		}	
 		
 	sum $varlistyesno
-							
+				
 *****C.5. Label values 
 {
 	#delimit;	
@@ -417,7 +423,7 @@ export excel using "$chartbookdir/CombinedCOVID19HFA_Chartbook_draft.xlsx", shee
 		1"1.Yes to almost all patients"
 		2"2.Yes but only to some patients"
 		3"3.None of the patients";
-	foreach var of varlist q402* {;
+	foreach var of varlist q402* q403* {;
 	lab values `var' mgmt_optcovid;	
 	};	
 	
@@ -426,7 +432,7 @@ export excel using "$chartbookdir/CombinedCOVID19HFA_Chartbook_draft.xlsx", shee
 		2"2.Yes but only at certain times of days"
 		3"3.No, never able to provide the care"
 		4"4.N/A";
-	foreach var of varlist q415* {;
+	foreach var of varlist q416* {;
 	lab values `var' mgmt_iptcovidsevere;	
 	};	
 	
@@ -810,28 +816,96 @@ export excel using "$chartbookdir/CombinedCOVID19HFA_Chartbook_draft.xlsx", shee
 	*****************************
 	* Section 4: Availability of services for COVID-19 case management
 	*****************************	
+
+	***** PT with suspected/confirmed C19 at primary care setting 
+	
+		gen xcvd_pt = q401==1 /*suspected or confirmed*/ 
+
+		global itemlist "001 002 003 004 005 006 007"
+		foreach item in $itemlist{	
+			gen xcvd_pt__`item' 	= xcvd_pt==1 & q402_`item'==1 /* ALWAYS*/
+			}	
 		
-	***** PT with suspected/confirmed C19: ALL facilities - Primary or Hospitals /*NEW*/
+			local varlist xcvd_pt__* /*indicators for the summary metrics*/ 
+				preserve
+				keep `varlist'
+				d, short
+				restore
+			gen max=`r(k)'
+			egen temp=rowtotal(`varlist')			 
+		gen xcvd_pt_score	=100*(temp/max)
+		gen xcvd_pt_100 	=xcvd_pt_score==100
+		gen xcvd_pt_50 		=xcvd_pt_score>=50
+			drop max temp		
+				
+			foreach var of varlist xcvd_pt*{
+				replace `var'=. if zc19cm==1 /*missing if C19CM facilities*/
+				}
+			foreach var of varlist xcvd_pt__* xcvd_pt_score xcvd_pt_100 xcvd_pt_50 {
+				replace `var'=. if xcvd_pt==0 /*missing if no patients with suspected C19*/
+				}
+				
+		* only among primary care facilities 
 		
-		gen xopt_covid = q401==1 /*suspected and confirmed*/ 
+		rename	xcvd_pt__001	xcvd_pt__triage /*NEW*/
+		rename	xcvd_pt__002	xcvd_pt__o2_measure
+		rename	xcvd_pt__003	xcvd_pt__progmarker /*NEW*/
+		rename	xcvd_pt__004	xcvd_pt__covax /*NEW*/
+		rename	xcvd_pt__005	xcvd_pt__home_isolate
+		rename	xcvd_pt__006	xcvd_pt__refer
+		rename	xcvd_pt__007	xcvd_pt__antiviral				
 		
+	***** PT with suspected/confirmed C19 at hospitals /*NEW*/
+	
+		gen xcvd_optpt = q401==1 /*suspected and confirmed*/ 
+
 		global itemlist "001 002 003 004 005"
 		foreach item in $itemlist{	
-			gen xopt_covid__`item' 	= xopt_covid==1 & q402_`item'==1 /* ALWAYS*/
+			gen xcvd_optpt__`item' 	= xcvd_optpt==1 & q403_`item'==1 /* ALWAYS*/
 			}	
 			
-		global itemlist "006 007"
-		foreach item in $itemlist{	
-			gen xopt_covidehs__`item' 	= xopt_covid==1 & q402_`item'==1 /* ALWAYS*/
-			}		
+			local varlist xcvd_optpt__* /*indicators for the summary metrics*/ 
+				preserve
+				keep `varlist'
+				d, short
+				restore
+			gen max=`r(k)'
+			egen temp=rowtotal(`varlist')			 
+		gen xcvd_optpt_score	=100*(temp/max)
+		gen xcvd_optpt_100 		=xcvd_optpt_score==100
+		gen xcvd_optpt_50 		=xcvd_optpt_score>=50
+			drop max temp		
 		
-		rename	xopt_covid__001	xopt_covid__triage 
-		rename	xopt_covid__002	xopt_covid__o2_measure
-		rename	xopt_covid__003	xopt_covid__progmarker 
-		rename	xopt_covid__004	xopt_covid__covax 
-		rename	xopt_covid__005	xopt_covid__antiviral	
-		rename  xopt_covidehs__006	xopt_covidehs__home_isolate 
-		rename  xopt_covidehs__007 xopt_covidehs__refer 		
+			foreach var of varlist xcvd_optpt*{
+				replace `var'=. if zc19cm==0 /*missing if NON C19CM facilities*/
+				}
+			foreach var of varlist xcvd_optpt__* xcvd_optpt_score xcvd_optpt_100 xcvd_optpt_50 {
+				replace `var'=. if xcvd_optpt==0 /*missing if no patients with suspected/confirmed C19*/
+				}			
+				
+		* only among hospitals 
+		rename	xcvd_optpt__001	xcvd_optpt__triage 
+		rename	xcvd_optpt__002	xcvd_optpt__o2_measure
+		rename	xcvd_optpt__003	xcvd_optpt__progmarker 
+		rename	xcvd_optpt__004	xcvd_optpt__covax 
+		rename	xcvd_optpt__005	xcvd_optpt__antiviral					
+	
+	***** PT with suspected/confirmed C19: ALL facilities - Primary or Hospitals /*NEW*/
+		
+		gen xopt_covid = xcvd_pt==1 | xcvd_optpt==1 /*suspected and confirmed*/ 
+			
+		gen	xopt_covid__triage 	 	 =	xcvd_pt__triage 	 ==1 |	xcvd_optpt__triage 	 ==1  
+		gen	xopt_covid__o2_measure	 =	xcvd_pt__o2_measure	 ==1 |	xcvd_optpt__o2_measure	 ==1  
+		gen	xopt_covid__progmarker 	 =	xcvd_pt__progmarker  ==1 |	xcvd_optpt__progmarker  ==1  
+		gen	xopt_covid__covax 		 =	xcvd_pt__covax 	 	 ==1 |	xcvd_optpt__covax 	 ==1  
+		gen xopt_covid__antiviral	 =  xcvd_pt__antiviral 	 ==1 |  xcvd_optpt__antiviral==1 
+		
+		gen xopt_covidehs__home_isolate 	= xcvd_pt__home_isolate	==1
+		gen xopt_covidehs__refer 			= xcvd_pt__refer 		==1
+				
+		*drop facility-level specific variables for C19CM at OPT*
+		*only one set of variables "xopt_covid*" for any type of facilities 
+		drop xcvd_* 
 				
 			local varlist xopt_covid__* /*indicators for the summary metrics*/ 
 				preserve
@@ -873,30 +947,30 @@ export excel using "$chartbookdir/CombinedCOVID19HFA_Chartbook_draft.xlsx", shee
 
 	***** ER
 	
-		gen xer = q403==1 & q404==1 
+		gen xer = q404==1 & q405==1 
 		/*NOTE: can be stricter than previous xer, since two questions are used*/
 
-		gen xer_triage = q405==1 /*NEW*/
+		gen xer_triage = q406==1 /*NEW*/
 		
 			replace xer_triage=. if xer==0 /*missing if no ER*/
 	
 	***** IPT: general & COVID19		
 
-		gen byte xipt= q406==1
+		gen byte xipt= q407==1
 		lab var xipt "facilities providing IPT services"
 		
-		gen ybed 			= q407
-		gen ybed_icu 	 	= q408
+		gen ybed 			= q408
+		gen ybed_icu 	 	= q409
 			
-		gen ybed_night   = q409
-		gen ybed_icu_night   = q410 /*NEW*/
+		gen ybed_night   = q410
+		gen ybed_icu_night   = q411 /*NEW*/
 		
-		gen xipt_surveillance = q411 /*NEW*/
+		gen xipt_surveillance = q412 /*NEW*/
 			
-		gen byte xipt_covid= q412==1 /*NEW*/
+		gen byte xipt_covid= q413==1 /*NEW*/
 		lab var xipt_covid "facilities providing IPT services for C19 patients"
 		
-		gen ybed_covid_night   = q413
+		gen ybed_covid_night   = q414
 		
 			foreach var of varlist xipt* ybed*{
 				replace `var'=. if zc19cm==0 /*missing if NOT C19CM facilities*/
@@ -910,11 +984,11 @@ export excel using "$chartbookdir/CombinedCOVID19HFA_Chartbook_draft.xlsx", shee
 		
 	***** IPT: severe/critical C19 cases		
 	
-		gen xcvd_ptsevere = q414==1  /*NEW*/
+		gen xcvd_ptsevere = q415==1  /*NEW*/
 		
 		global itemlist "001 002 003 004 005"
 		foreach item in $itemlist{	
-			gen xcvd_ptsevere__`item' 	= xcvd_ptsevere==1 & q415_`item'==1 /* ALWAYS*/ /*NEW*/
+			gen xcvd_ptsevere__`item' 	= xcvd_ptsevere==1 & q416_`item'==1 /* ALWAYS*/ /*NEW*/
 			}	
 						
 			local varlist xcvd_ptsevere__* /*indicators for the summary metrics*/ 
@@ -929,10 +1003,10 @@ export excel using "$chartbookdir/CombinedCOVID19HFA_Chartbook_draft.xlsx", shee
 		gen xcvd_ptsevere_50 	=xcvd_ptsevere_score>=50
 			drop max temp		
 		
-		gen xcvd_ptsevere_notable = q416==1 
+		gen xcvd_ptsevere_notable = q417==1 
 		
-		gen xcvd_ptsevere_repurpose	= q417_001==1 
-		gen xcvd_ptsevere_refer		= q417_002==1 
+		gen xcvd_ptsevere_repurpose	= q418_001==1 
+		gen xcvd_ptsevere_refer		= q418_002==1 
 
 			foreach var of varlist xcvd_ptsevere*{
 				replace `var'=. if zc19cm==0 /*missing if NOT C19CM facilities*/
@@ -947,8 +1021,7 @@ export excel using "$chartbookdir/CombinedCOVID19HFA_Chartbook_draft.xlsx", shee
 		rename	xcvd_ptsevere__002	xcvd_ptsevere__intubation /*NEW*/
 		rename	xcvd_ptsevere__003	xcvd_ptsevere__ventilation /*NEW*/
 		rename	xcvd_ptsevere__004	xcvd_ptsevere__iv /*NEW*/
-		rename	xcvd_ptsevere__005	xcvd_ptsevere__glucosetest /*NEW*/
-	
+		rename	xcvd_ptsevere__005	xcvd_ptsevere__glucosetest /*NEW*/	
 	
 	*****************************
 	* Section 5: Delivery and utilization of essential health services
@@ -1568,7 +1641,7 @@ export excel using "$chartbookdir/CombinedCOVID19HFA_Chartbook_draft.xlsx", shee
 /*RUN this chunk A if there is samplingb weight*/
 *CHUNK A BEGINS  
 
-import excel "$chartbookdir/CombinedCOVID19HFA_Chartbook_draft.xlsx", sheet("Weight") firstrow clear
+import excel "$chartbookdir/CombinedCOVID19HFA_Chartbook_draft_Qversion_2022July26.xlsx", sheet("Weight") firstrow clear
 
 	rename *, lower
 
@@ -1609,7 +1682,7 @@ import excel "$chartbookdir/CombinedCOVID19HFA_Chartbook_draft.xlsx", sheet("Wei
 
 	export delimited using CombinedCOVID19HFA_`country'_R`round'.csv, replace 
 
-	export excel using "$chartbookdir/CombinedCOVID19HFA_Chartbook_draft.xlsx", sheet("Facility-level cleaned data") sheetreplace firstrow(variables) nolabel
+	export excel using "$chartbookdir/CombinedCOVID19HFA_Chartbook_draft_Qversion_2022July26.xlsx", sheet("Facility-level cleaned data") sheetreplace firstrow(variables) nolabel
 		
 **************************************************************
 * F. Create indicator estimate data 
@@ -1751,7 +1824,7 @@ use summary_CombinedCOVID19HFA_`country'_R`round'.dta, clear
 	gen updatetime=""
 	replace updatetime="`time'"
 
-export excel using "$chartbookdir/CombinedCOVID19HFA_Chartbook_draft.xlsx", sheet("Latest indicator estimate data") sheetreplace firstrow(variables) nolabel keepcellfmt
+export excel using "$chartbookdir/CombinedCOVID19HFA_Chartbook_draft_Qversion_2022July26.xlsx", sheet("Latest indicator estimate data") sheetreplace firstrow(variables) nolabel keepcellfmt
 
 /* To check against R results
 export delimited using "~/Dropbox/0 iSquared/iSquared_WHO/ACTA/3.AnalysisPlan/summary_CombinedCOVID19HFA_`country'_R`round'_Stata.csv", replace 
@@ -1854,15 +1927,15 @@ use "~/Dropbox/0 iSquared/iSquared_WHO/ACTA/5.Dashboard/1 Database/combined_new_
 
 	order module country round year month group grouplabel obs*
 				
-	export excel using "$chartbookdir/CombinedCOVID19HFA_Chartbook_draft.xlsx", sheet("Past indicator estimate data") sheetreplace firstrow(variables) nolabel keepcellfmt
+	export excel using "$chartbookdir/CombinedCOVID19HFA_Chartbook_draft_Qversion_2022July26.xlsx", sheet("Past indicator estimate data") sheetreplace firstrow(variables) nolabel keepcellfmt
 
 */
 
-import excel "$chartbookdir/CombinedCOVID19HFA_Chartbook_draft.xlsx", sheet("Past indicator estimate data") firstrow clear
+import excel "$chartbookdir/CombinedCOVID19HFA_Chartbook_draft_Qversion_2022July26.xlsx", sheet("Past indicator estimate data") firstrow clear
 	
 	save temp.dta, replace
 	
-import excel "$chartbookdir/CombinedCOVID19HFA_Chartbook_draft.xlsx", sheet("Latest indicator estimate data") firstrow clear
+import excel "$chartbookdir/CombinedCOVID19HFA_Chartbook_draft_Qversion_2022July26.xlsx", sheet("Latest indicator estimate data") firstrow clear
 		
 		d, short
 		*local indicatorlist = "`r(varlist)'"
@@ -1872,7 +1945,7 @@ import excel "$chartbookdir/CombinedCOVID19HFA_Chartbook_draft.xlsx", sheet("Lat
 		
 		d, short
 				
-export excel using "$chartbookdir/CombinedCOVID19HFA_Chartbook_draft.xlsx", sheet("All round data") sheetreplace firstrow(variables) nolabel keepcellfmt		
+export excel using "$chartbookdir/CombinedCOVID19HFA_Chartbook_draft_Qversion_2022July26.xlsx", sheet("All round data") sheetreplace firstrow(variables) nolabel keepcellfmt		
 
 erase temp.dta
 	
