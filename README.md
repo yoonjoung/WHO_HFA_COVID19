@@ -11,7 +11,8 @@ This repository has data cleaning/management/analysis programs. There are three 
 -- Analysis code in Stata: WHO_CombinedCOVID19HFA_DataManagement_Qversion_2022July26.do __(updated on 9/23/2022)__  
 -- Analysis code in R: forthcoming      
 -- Mock data: LimeSurvey_CombinedHFA_EXAMPLE_R3_Qversion_2022July26.csv   
-(Questionnaire version that the analsis code is based on: __Rapid survey_26July2022_Clean.pdf__)    
+(Questionnaire version that the analsis code is based on: __Rapid survey_26July2022_Clean.pdf__)      
+NOTE: JULY 26 version is for only a few countries that used the July 26 version. 
 
 ### Version1 (initial publication: March 28, 2021) - in the main directory
 
