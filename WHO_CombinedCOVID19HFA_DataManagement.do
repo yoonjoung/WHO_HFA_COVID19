@@ -101,7 +101,7 @@ global date=subinstr("`c_today'", " ", "",.)
 **************************************************************
 
 *****B.1. Import raw data from LimeSurvey 
-import delimited using "https://extranet.who.int/dataformv3/index.php/plugins/direct?plugin=CountryOverview&docType=1&sid=`surveyid'&language=en&function=createExport", case(preserve) clear
+*import delimited using "https://extranet.who.int/dataformv3/index.php/plugins/direct?plugin=CountryOverview&docType=1&sid=`surveyid'&language=en&function=createExport", case(preserve) clear
 
 	/*
 	
