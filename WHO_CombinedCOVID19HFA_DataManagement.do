@@ -6,7 +6,7 @@ set more off
 numlabel, add
 
 * Date of the combined COVID-19 HFA questionniare version: 14 September, 2022
-* Date of last code update: 19 September, 2022
+* Date of last code update: 23 September, 2022
 
 *This code 
 *1) imports and cleans dataset from Lime Survey, and 
@@ -29,7 +29,7 @@ numlabel, add
 *  NOTE OUT to log file for minimum data quality check  
 *		1. DataCheck_CombinedCOVID19HFA_`country'_R`round'_$date.log
 
-*AT MINIMUM, FOUR parts must be updated per country-specific adaptation. See "MUST BE ADAPTED" below 
+*AT MINIMUM, THREE parts must be updated per country-specific adaptation. See "MUST BE ADAPTED" below 
 
 /* TABLE OF CONTENTS*/
 
@@ -42,24 +42,27 @@ numlabel, add
 * C. Cleaning - variables
 *****C.1. Change var names to lowercase	
 *****C.2. Change var names to make then coding friendly 
-*****C.3. Find non-numeric variables and desting 
+*****C.3. Find non-numeric variables and destring 
 *****C.4. Recode yes/no 
 *****C.5. Label values 
 * D. Field check tables - dropped from the previous analysis code.  
 * E. Create analytical variables 
-*****E.1. Country speciic code local <<<<<<<<<<========== MUST BE ADAPTED: 2. local per survey implementation and section 1 
-*****E.2. Construct analysis variables <<<<<<<<<<========== MUST BE ADAPTED: 3. indicators  
+*****E.1. Country specific code local <<<<<<<<<<========== MUST BE ADAPTED: 2. local per survey implementation and section 1 
+*****E.2. Construct analysis variables 
 *		In addition to creating variables based on the revised questionnaire, it also does the following: 
 *		(1) Rename detailed indicators ending with sub-question numbers with more friendly/intuitive names (Previously E.2.A), and 
 *		(2) Create "global indicators" that were created at the HQ level after country analyses were completed.   
 *			They can be found under "ADDITIONAL FROM "GLOBAL INDICATORS"" at the end of each section. 
-*****E.3. Merge with sampling weight <<<<<<<<<<========== MUST BE ADAPTED: 4. weight depending on sample design 
-*****E.4. Export clean Respondent-level data to chart book 
-* F. Create and export indicator estimate data 
+*****E.3. Merge with sampling weight <<<<<<<<<<========== MUST BE ADAPTED: 3. weight depending on sample design 
+*****E.4. Export clean Respondent-level data to chartbook 
+* F. Create and export indicator estimate data - LATEST/current round data. 
 *****F.1. Calculate estimates 
-*****F.2. Export indicator estimate data to chart book and dashboard
+*****F.2. Export indicator estimate data to chartbook and for dashboard
 * G. MINIMUM data quality check 
-* H. Append with previous "indicator estimate data" 
+* H. Create and export ALL-ROUND indicator estimate data
+*		Import "PAST indicator estimate data" (which will be prepared for each country by HQ)
+*		Append it the latest round's PAST indicator estimate data
+* 		Export the all round data to chartbook
 
 **************************************************************
 * A. SETTING 
