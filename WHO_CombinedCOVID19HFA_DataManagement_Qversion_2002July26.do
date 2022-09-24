@@ -1944,7 +1944,7 @@ import excel "$chartbookdir/CombinedCOVID19HFA_Chartbook_draft_Qversion_2022July
 		*local indicatorlist = "`r(varlist)'"
 		*d `indicatorlist'
 				
-	append using temp.dta
+	append using temp.dta, force
 		
 		d, short
 				
