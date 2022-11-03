@@ -6,14 +6,17 @@ set more off
 numlabel, add
 
 * Date of the combined COVID-19 HFA questionniare version: 14 September, 2022
-* Date of last code update: 23 September, 2022
+* Date of last code update: November 3, 2022
+*	Updates since 23 September, 2022: All focuse on better note and clarification and alignment with R code. 
+*   See Github for history of changes: 
+*	https://github.com/yoonjoung/WHO_HFA_COVID19/blob/main/WHO_CombinedCOVID19HFA_DataManagement.do
 
 *This code 
 *1) imports and cleans dataset from Lime Survey, and 
 *2) creates indicator estimate data for dashboards and chartbook. 
-*		=====> First Purple Tab in Chartbook: "Indicator estimate data"
+*		=====> First Purple Tab in Chartbook: "Latest indicator estimate data"
 *3) creates indicator estimate data for trend analysis. 
-*		=====> Second Purple Tab in Chartbook: "All round data"
+*		=====> Second Purple Tab in Chartbook: "All round data" /*NEW Section H*/
 *4) conducts minimum data quality check /*NEW Section G*/. 
 
 *  DATA IN:	CSV file daily downloaded from Limesurvey 	
@@ -71,17 +74,17 @@ numlabel, add
 *** Directory for this do file 
 *cd "C:\Users\ctaylor\World Health Organization\BANICA, Sorin - HSA unit\2 Global goods & tools\2 HFAs\1 HFAs for COVID-19\4. Implementation support materials\4. Analysis and dashboards\"
 *cd "C:\Users\YoonJoung Choi\World Health Organization\BANICA, Sorin - HSA unit\2 Global goods & tools\2 HFAs\1 HFAs for COVID-19\4. Implementation support materials\4. Analysis and dashboards\"
-cd "~/Dropbox/0 iSquared/iSquared_WHO/ACTA/3.AnalysisPlan/"
+cd "~/Dropbox/0iSquared/iSquared_WHO/ACTA/3.AnalysisPlan/"
 
 *** Directory for downloaded CSV data, if different from the main directory
 *global downloadcsvdir "C:\Users\ctaylor\World Health Organization\BANICA, Sorin - HSA unit\2 Global goods & tools\2 HFAs\1 HFAs for COVID-19\4. Implementation support materials\4. Analysis and dashboards\DownloadedCSV\"
 *global downloadcsvdir "C:\Users\YoonJoung Choi\World Health Organization\BANICA, Sorin - HSA unit\2 Global goods & tools\2 HFAs\1 HFAs for COVID-19\4. Implementation support materials\4. Analysis and dashboards\DownloadedCSV\"
-global downloadcsvdir "~/Dropbox/0 iSquared/iSquared_WHO/ACTA/3.AnalysisPlan/ExportedCSV_FromLimeSurvey/"
+global downloadcsvdir "~/Dropbox/0iSquared/iSquared_WHO/ACTA/3.AnalysisPlan/ExportedCSV_FromLimeSurvey/"
 
 *** Define a directory for the chartbook, if different from the main directory 
 *global chartbookdir "C:\Users\ctaylor\World Health Organization\BANICA, Sorin - HSA unit\2 Global goods & tools\2 HFAs\1 HFAs for COVID-19\4. Implementation support materials\4. Analysis and dashboards\"
 *global chartbookdir "C:\Users\YoonJoung Choi\World Health Organization\BANICA, Sorin - HSA unit\2 Global goods & tools\2 HFAs\1 HFAs for COVID-19\4. Implementation support materials\4. Analysis and dashboards\"
-global chartbookdir "~/Dropbox/0 iSquared/iSquared_WHO/ACTA/3.AnalysisPlan/"
+global chartbookdir "~/Dropbox/0iSquared/iSquared_WHO/ACTA/3.AnalysisPlan/"
 
 *** Define local macro for the survey 
 local country	 		 COUNTRYNAME /*country name*/	
@@ -102,18 +105,18 @@ global date=subinstr("`c_today'", " ", "",.)
 
 *****B.1. Import raw data from LimeSurvey 
 *import delimited using "https://extranet.who.int/dataformv3/index.php/plugins/direct?plugin=CountryOverview&docType=1&sid=`surveyid'&language=en&function=createExport", case(preserve) clear
-
 	/*
 	
 	NOTE
+
+	Replace part of the link before plugins with the part in the country-specific link. So, for example,
+
+	If the link is:
+	https://who.my-survey.host/index.php/plugins/direct?plugin=CountryOverview&docType=1&sid=259237&language=en&function=createExport
+
+	Code should be:
+	import delimited using "https://who.my-survey.host/index.php/plugins/direct?plugin=CountryOverview&docType=1&sid=`surveyid'&language=en&function=createExport", case(preserve) clear
 	
-	For the URL, we need to use part of the country overview page for the data server. For example, suppose the overview page link looks like this for a country named YYY:
-	https://extranet.who.int/dataformv3/index.php/plugins/direct?plugin=CountryOverview&country=YYY&password=XXXXXXXXX.
-
-	Replace part of the link before plugins with the part in the country-specific link. So, the code should be: 
-
-	import delimited using "https://extranet.who.int/dataformv3/index.php/plugins/direct?plugin=CountryOverview&docType=1&sid=`surveyid'&language=en&function=createExport", case(preserve) clear
-
 	*/
 
 import delimited "$downloadcsvdir/LimeSurvey_CombinedHFA_EXAMPLE_R3.csv", case(preserve) clear /*THIS LINE ONLY FOR PRACTICE*/
@@ -361,6 +364,7 @@ export excel using "$chartbookdir/CombinedCOVID19HFA_Chartbook_draft.xlsx", shee
 	
 	foreach var of varlist q1001 q1004 {		
 		replace `var' = usubinstr(`var', "A", "", 1) 
+		replace `var' = "88" if `var'=="-oth-"
 		destring `var', replace 
 		}			
 	
@@ -1068,12 +1072,10 @@ export excel using "$chartbookdir/CombinedCOVID19HFA_Chartbook_draft.xlsx", shee
 			}
 		foreach item in $itemlist{	
 			gen xbacklogmonth__`item' = q505_`item'_b==1 
-			replace xbacklogmonth__`item' = . if q505_`item'_b==3
 			}			
-		
-		global itemlist	"001 002 003 004" 
+
 		foreach item in $itemlist {
-			replace xbacklogmonth__`item'=. if xbacklogever__`item'==0
+			replace xbacklogmonth__`item'=. if xbacklogever__`item'!=1
 			}
 			
 		global itemlist "xbacklogever xbacklogmonth"	
@@ -1493,8 +1495,7 @@ export excel using "$chartbookdir/CombinedCOVID19HFA_Chartbook_draft.xlsx", shee
 		gen xcovax_avfun_fridge 		= q907==1  /*NEW*/
 		gen xcovax_avfun_fridgetemp 	= q907==1 & q908==1 /*NEW*/		
 		
-		*global itemlist "001 002 003 004 005 006 007"
-		global itemlist "001 002 003 004 005"
+		global itemlist "001 002 003 004 005 006 007"
 		foreach item in $itemlist{	
 			gen xcovax_offer__`item' = q909_`item'==1 | q909_`item'==2 
 			gen xcovax_offerav__`item' = q909_`item'==1 
@@ -1523,12 +1524,11 @@ export excel using "$chartbookdir/CombinedCOVID19HFA_Chartbook_draft.xlsx", shee
 			rename	 xcovax_offerav__004	xcovax_offerav__jj
 			rename	 xcovax_offer__005	xcovax_offer__covishiled
 			rename	 xcovax_offerav__005	xcovax_offerav__covishiled
-			/*
+			
 			rename	 xcovax_offer__006	xcovax_offer__sinopharm
 			rename	 xcovax_offerav__006	xcovax_offerav__sinopharm	
 			rename	 xcovax_offer__007	xcovax_offer__sinovac
 			rename	 xcovax_offerav__007	xcovax_offerav__sinovac
-			*/
 			
 			rename	 xcovax_train__001	xcovax_train__storage
 			rename	 xcovax_train__002	xcovax_train__admin
@@ -1563,6 +1563,14 @@ export excel using "$chartbookdir/CombinedCOVID19HFA_Chartbook_draft.xlsx", shee
 			replace `var'=. if xcovax!=1 /*missing if no COVID-19 vaccine services*/
 			}			
 
+	*****************************
+	* Section 10: Interview results
+	*****************************
+
+		gen xresult=q1004==1
+	
+	***** 			
+			
 	sort facilitycode
 	save CombinedCOVID19HFA_`country'_R`round'.dta, replace 		
 	
@@ -1637,7 +1645,7 @@ use CombinedCOVID19HFA_`country'_R`round'.dta, clear
 	gen obs_covax=1 		if xcovax==1	
 	
 	/*
-	gen xresult=q1004==1
+	
 	tab xresult, m
 	keep if xresult==1
 	drop xresult	
@@ -1756,8 +1764,8 @@ use summary_CombinedCOVID19HFA_`country'_R`round'.dta, clear
 
 export excel using "$chartbookdir/CombinedCOVID19HFA_Chartbook_draft.xlsx", sheet("Latest indicator estimate data") sheetreplace firstrow(variables) nolabel keepcellfmt
 
-/* To check against R results
-export delimited using "~/Dropbox/0 iSquared/iSquared_WHO/ACTA/3.AnalysisPlan/summary_CombinedCOVID19HFA_`country'_R`round'_Stata.csv", replace 
+/* To check against R results - only for YJ to test
+export delimited using "~/Dropbox/0iSquared/iSquared_WHO/ACTA/3.AnalysisPlan/summary_CombinedCOVID19HFA_`country'_R`round'_Stata.csv", replace 
 */
 
 **************************************************************
@@ -1850,7 +1858,7 @@ log close
 * "HSA unit/4 Databases, analyses & dashboards/2 HFAs for COVID-19/1. Database/"
 	
 * WHO/HQ TO UPDATE THE FOLLOWING DIRECTORY AS NEEDED 
-use "~/Dropbox/0 iSquared/iSquared_WHO/ACTA/5.Dashboard/1 Database/combined_new_elements.dta", clear
+use "~/Dropbox/0iSquared/iSquared_WHO/ACTA/5.Dashboard/1 Database/combined_new_elements.dta", clear
 
 	keep if country=="Ghana" /*using Ghana as an example*/
 	replace country = "`country'"

@@ -1,0 +1,2304 @@
+---
+output:
+  html_document:
+    toc: true
+    toc_depth: 5
+    toc_float: true
+---
+
+```{r intro, echo=FALSE, results="hide"}
+knitr::opts_chunk$set(echo=TRUE, 
+                      message=FALSE, 
+                      warning=FALSE, 
+                      comment = "", 
+                      results="hide") 
+
+date<-as.Date(Sys.time(	), format='%d%b%Y')
+time<-Sys.time()
+
+suppressWarnings(suppressMessages(library(dplyr)))
+suppressWarnings(suppressMessages(library(reshape2)))
+suppressWarnings(suppressMessages(library(tidyverse)))
+suppressWarnings(suppressMessages(library(readxl)))
+#suppressWarnings(suppressMessages(library(xlsx)))
+suppressWarnings(suppressMessages(library(openxlsx)))
+suppressWarnings(suppressMessages(library(stringr)))
+suppressWarnings(suppressMessages(library(stringi)))
+suppressWarnings(suppressMessages(library(lubridate)))
+suppressWarnings(suppressMessages(library(zoo)))
+suppressWarnings(suppressMessages(library(knitr)))
+suppressWarnings(suppressMessages(library(data.table)))
+```
+
+### Data cleaning, management, and analysis of the "Combined" COVID-19 HFA 
+
+This provides steps and code for data cleaning, management, and analysis of __Combined COVID-19 health facility assessment__. [See here for the questionnare](link). 
+
+* Date of the combined COVID-19 HFA questionnaire version: <span style="color: red;">14 September, 2022</span>     
+* Date and time of last code update: `r time`
+
+This code:    
+1. imports and cleans dataset from Lime Survey  
+2. creates indicator estimate data for dashboards and chartbook. <span style="color: purple;">==> First Purple Tab in Chartbook: "**Latest indicator estimate data**"</span>    
+3. creates indicator estimate data for trend analysis. <span style="color: purple;">==> Second Purple Tab in Chartbook: "**All round data**"</span> (**NEW Section H**)     
+4. conducts minimum data quality check (**NEW Section G**) 
+
+AT MINIMUM, THREE parts **MUST BE UPDATED** per country-specific adaptation:   
+1. **A SETTING: directories and local**  
+2. **E.1 Country specific code local**: local per survey implementation *and* section 1    
+3. **E.3 Merge with sampling weight**: weight depending on sample design   
+
+#### A. SETTING   
+```{r setting}
+#Set working directory for this markdown
+setwd("~/Dropbox/0iSquared/iSquared_WHO/ACTA/3.AnalysisPlan/")
+
+#Directory for downloaded CSV data, if different from the main directory
+chartbookdir<-("~/Dropbox/0iSquared/iSquared_WHO/ACTA/3.AnalysisPlan/")
+
+#Define directory for the chartbook, if different from the main directory 
+limesurveydir<-("~/Dropbox/0iSquared/iSquared_WHO/ACTA/3.AnalysisPlan/ExportedCSV_FromLimeSurvey/")
+
+# Define local macro for the survey 
+country<-"COUNTRYNAME" #country name 
+round<-3               #round		
+year<-2022             #year of the mid point in data collection	
+month<-9               #month of the mid point in data collection				
+surveyid<-259237       #LimeSurvey survey ID Example 	
+
+# local macro for analysis: no change needed  
+date<-as.Date(Sys.time(	), format='%d%b%Y')
+```
+
+---
+
+#### B. Import and drop duplicate cases
+
+##### B.1. Import raw data from LimeSurvey 
+```{r importraw, eval=FALSE}
+#Import directly from LimeSurvey - using the correct link, according to the country overview page 
+
+dtaraw<-read.csv(paste0("https://extranet.who.int/dataformv3/index.php/plugins/direct?plugin=CountryOverview&docType=1&sid=",surveyid,"&language=en&function=createExport"))
+```
+
+NOTE
+ 
+Replace part of the link before `plugins` with the part in the country-specific link. So, for example, 
+ 
+If the link is:    
+**https://who.my-survey.host/index.php/**plugins/direct?plugin=CountryOverview&docType=1&sid=259237&language=en&function=createExport
+ 
+Code should be:    
+dtaraw<-read.csv(paste0(**"https://who.my-survey.host/index.php**/plugins/direct?plugin=CountryOverview&docType=1&sid=",surveyid,"&language=en&function=createExport"))
+
+```{r importraw_mock}
+#But use mock data for practice 
+dtaraw<-read.csv(paste0(limesurveydir,"LimeSurvey_CombinedHFA_EXAMPLE_R3.csv"))
+```
+
+---
+
+##### B.2. Export/save the data daily in CSV form with date
+As of `r time`, the downloaded raw data has `r nrow(dtaraw)` observations and `r ncol(dtaraw)` variables. Download and save the raw data daily, marked with a data. 
+```{r rawdatacsv}
+write.csv(dtaraw, paste0(limesurveydir,"LimeSurvey_CombinedCOVID19HFA_", country, "_R", round, "_", date, ".csv"))
+```
+
+---
+
+##### B.3. Export the data to chartbook 
+Then, export the raw data into the chartbook (green tab: "Facility-level raw data") - as is.
+
+<div class="alert alert-warning">
+Currently, we have not fixed a bug to export dataset to replace a specific sheet in the chartbook, without corrupting the entire file. [See here]() for temporary ways to deal with the problem.   
+</div>
+
+```{r chartbookexport1, eval=FALSE}
+#Code suppressed until bug fixed
+
+dtaraw<-dtaraw%>%mutate(test=Sys.time())
+
+wb <- loadWorkbook(paste0(chartbookdir, "CombinedCOVID19HFA_Chartbook_draft.xlsx"))
+writeData(wb, sheet = "Facility-level raw data", dtaraw)
+saveWorkbook(wb,paste0(chartbookdir, "CombinedCOVID19HFA_Chartbook_draft.xlsx"),overwrite = TRUE)
+
+# OR
+
+dtaraw<-dtaraw%>%mutate(test=Sys.time())
+
+wb <- loadWorkbook(paste0(chartbookdir, "CombinedCOVID19HFA_Chartbook_draft.xlsx"))
+
+removeWorksheet(wb, "Facility-level raw data")
+addWorksheet(wb, "Facility-level raw data")
+writeData(wb, "Facility-level raw data", dtaraw)
+saveWorkbook(wb, 
+             paste0(chartbookdir, "CombinedCOVID19HFA_Chartbook_draft.xlsx"), 
+             overwrite = TRUE)
+
+# OR
+
+#https://danganothererror.wordpress.com/2012/02/12/write-data-frame-to-excel-file/
+#This one doesn't work when the worksheet already exists. Ugh.... 
+dtaraw<-dtaraw%>%mutate(test=Sys.time())
+
+write.xlsx(dtaraw, 
+           paste0(chartbookdir, "CombinedCOVID19HFA_Chartbook_draft.xlsx"), 
+           sheet = "Facility-level raw data", 
+           append = TRUE)
+
+```
+
+---
+
+##### B.4. Drop duplicate cases 
+Assess duplicate rows based on facility code: Q101. Among the duplicate rows, keep the latest row, based on the submission date/time. 
+
+__Data managers must check the `submitdate` string values. Then modify format when you convert the string value to numeric, using `as.POSIXct`. See an example below.__
+```{r duplicates}
+# CHECK submitdate 
+str(dtaraw$submitdate)
+
+# Identify duplicates 
+dta<-dtaraw %>% 
+    mutate(
+        submitdate_string=as.character(submitdate),
+        
+        # Revise the format as needed
+        # Resource: https://www.rdocumentation.org/packages/base/versions/3.6.2/topics/as.POSIX*
+        ##### use this line if submitedate hos seconds 
+        submitdate=as.POSIXct(as.character(submitdate),
+                              format= "%Y-%m-%d %H:%M:%S")
+        )%>%
+    group_by(Q101)%>% 
+    mutate(
+        dupe = n()>1, 
+        latest = submitdate ==max(submitdate, na.rm = TRUE))%>%
+    ungroup()
+
+# Assess duplicates 
+    table(dta$dupe, dta$latest) #cross tab
+    dtaduplicate<-dta%>%filter(dupe==1)
+
+#keep only unique/latest rows per facility     
+dta<-dta%>%
+    filter(latest==1)%>%
+    select(-dupe, -latest)
+
+#keep only if ID is NOT missing 
+dta<-dta%>%
+    filter(is.na(Q101)==FALSE)
+
+dim(dta)
+```
+A total of `r dtaduplicate%>%nrow()` duplicate rows from `r length(unique(dtaduplicate$Q101))` unique facilities were identified based on Q101.   
+
+Now keeping only one unique row per each of the `r nrow(dta)` facilities, the dataset has `r length(unique(dta$Q101))` observations.    
+
+---
+
+#### C. Destring and recoding 
+##### C.1. Change variable names to lowercase	
+```{r vartolow}
+names(dta)<-tolower(names(dta))
+```
+
+---
+##### C.1.a Assess time stamp data	
+```{r timestamp_revised}
+#*interviewtime is available in dataset only when directly downloaded from the server, not via export plug-in used in this code.   
+#So, just do not deal with interview time for now.   
+dta<-dta%>%
+    select(-ends_with("time"))%>%
+    select(-starts_with("grouptime"))
+```
+
+---
+##### C.2. Change variable names to drop odd elements "y" "sq" - because of Lime survey's naming convention 
+```{r varnames}
+#Assess odd names 
+dim(dta)
+colnames(dta)
+
+#Change odd names 
+dta<-dta%>%
+    rename_at(.vars = vars(contains("sq")), .funs = funs(sub("sq", "_", .)))%>%
+    rename_at(.vars = vars(contains("_a1")), .funs = funs(sub("_a1", "_a", .)))%>%
+    rename_at(.vars = vars(contains("_a2")), .funs = funs(sub("_a2", "_b", .)))%>%
+    rename_at(.vars = vars(starts_with("q503")), .funs = funs(sub("q503", "q503_0", .)))
+
+    #subset and keep cleaning column names for q501
+    dta501<-dta %>% select(starts_with("q501"))
+    colnames(dta501) <- sub('1$', '_a', colnames(dta501))
+    colnames(dta501) <- sub('2$', '_b', colnames(dta501))
+    colnames(dta501)
+    
+    #subset and keep cleaning column names for q505
+    dta505<-dta %>% select(starts_with("q505"))
+    colnames(dta505) <- sub('1$', '_a', colnames(dta505))
+    colnames(dta505) <- sub('2$', '_b', colnames(dta505))
+    colnames(dta505)
+    
+#put q501 and q505 back to the data
+dta2<-dta %>% select(-starts_with(c("q501", "q505"))) 
+dta<-cbind(dta2, dta501, dta505)
+dim(dta)
+```
+
+---
+
+##### C.3. Find non-numeric variables and desting 
+Check variables section by scion, drop prefix "A" in categorical/character variables, and convert to numeric. 
+```{r varformat}
+#change all factor to numeric
+dta<-dta%>%
+    mutate_if(is.factor, as.character) 
+
+#Section by section, assess column type and change to numeric
+
+#####* Section 1 ----
+    #Find non-numeric columns 
+    varlist<-dta%>%select(q106, q107, q108, q110)%>%colnames()
+    str(dta[varlist])
+    
+    #Change non-numeric columns 
+    dta<-dta%>%
+        mutate_at(vars(varlist), list(~ sub("^A", "\\1", .)))%>%
+        mutate_at(vars(varlist), list(~ sub("-oth-", "88", .)))%>%
+        mutate_at(vars(varlist), funs(as.numeric))
+    
+    #Check 
+    str(dta[varlist]) 
+
+#####* Section 2 ----
+    #Find non-numeric columns 
+    varlist<-dta%>%select(starts_with("q2"))%>%colnames()
+    str(dta[varlist]) 
+    
+    varlist<-dta%>%select(starts_with(c("q208", "q210")))%>%colnames()    
+    
+    #Change non-numeric columns
+    dta<-dta%>%
+        mutate_at(vars(varlist), list(~ sub("^A", "\\1", .)))%>%
+        mutate_at(vars(varlist), funs(as.numeric))        
+    
+    #Check 
+    str(dta[varlist]) 
+    
+#####* Section 3 ----
+    #Find non-numeric columns 
+    varlist<-dta%>%select(starts_with("q3"))%>%colnames()
+    str(dta[varlist])
+    
+    varlist<-dta%>%select(starts_with(c("q302", "q304", "q305", "q307")))%>%colnames()    
+    
+    #Change non-numeric columns
+    dta<-dta%>%
+        mutate_at(vars(varlist), list(~ sub("^A", "\\1", .)))%>%
+        mutate_at(vars(varlist), funs(as.numeric))        
+    
+    #Check 
+    str(dta[varlist]) 
+
+#####* Section 4 ----
+    #Find non-numeric columns 
+    varlist<-dta%>%select(starts_with("q4"))%>%colnames()
+    str(dta[varlist])
+    
+    varlist<-dta%>%select(starts_with(c("q402", "q415", "q417", "q307")))%>%colnames()    
+   
+    #Change non-numeric columns
+    dta<-dta%>%
+        mutate_at(vars(varlist), list(~ sub("^A", "\\1", .)))%>%
+        mutate_at(vars(varlist), funs(as.numeric))
+    
+    #Check
+    str(dta[varlist]) 
+
+#####* Section 5 ----
+    #Find non-numeric columns 
+    varlist<-dta%>%select(starts_with("q5"))%>%colnames()
+    str(dta[varlist])
+    
+    varlist<-dta%>%select(starts_with(c("q501", "q502", "q505", "q507")))%>%colnames() 
+    
+    #Change non-numeric columns
+    dta<-dta%>%
+        mutate_at(vars(varlist), list(~ sub("^A", "\\1", .)))%>%
+        mutate_at(vars(varlist), funs(as.numeric))
+    
+    #Check
+    str(dta[varlist]) 
+
+#####* Section 6 ----
+    #Find non-numeric columns 
+    varlist<-dta%>%select(starts_with("q6"))%>%colnames()
+    str(dta[varlist])
+    
+    varlist<-dta%>%select(starts_with(c("q601", "q602", "q603", "q604")))%>%colnames() 
+    
+    #Change non-numeric columns
+    dta<-dta%>%
+        mutate_at(vars(varlist), list(~ sub("^A", "\\1", .)))%>%
+        mutate_at(vars(varlist), funs(as.numeric))
+    
+    #Check
+    str(dta[varlist]) 
+
+#####* Section 7 ----
+    #Find non-numeric columns 
+    varlist<-dta%>%select(starts_with("q7"))%>%colnames()
+    str(dta[varlist])
+    
+    varlist<-dta%>%select(starts_with(c("q701", "q702")))%>%colnames() 
+    
+    #Change non-numeric columns
+    dta<-dta%>%
+        mutate_at(vars(varlist), list(~ sub("^A", "\\1", .)))%>%
+        mutate_at(vars(varlist), funs(as.numeric))
+    
+    #Check
+    str(dta[varlist]) 
+
+#####* Section 8 ----
+    #Find non-numeric columns 
+    varlist<-dta%>%select(starts_with("q8"))%>%colnames()
+    str(dta[varlist])
+    
+    varlist<-dta%>%select(starts_with(c("q804", "q807", "q808", "q604")))%>%colnames() 
+    
+    #Change non-numeric columns
+    dta<-dta%>%
+        mutate_at(vars(varlist), list(~ sub("^A", "\\1", .)))%>%
+        mutate_at(vars(varlist), funs(as.numeric))
+    
+    #Check
+    str(dta[varlist]) 
+    
+#####* Section 9 ----
+    #Find non-numeric columns 
+    varlist<-dta%>%select(starts_with("q9"))%>%colnames()
+    str(dta[varlist])
+    
+    varlist<-dta%>%select(starts_with(c("q904", "q907", "q908", "q909", "q911")))%>%colnames() 
+    
+    #Change non-numeric columns
+    dta<-dta%>%
+        mutate_at(vars(varlist), list(~ sub("^A", "\\1", .)))%>%
+        mutate_at(vars(varlist), funs(as.numeric))
+    
+    #Check
+    str(dta[varlist])     
+
+#####* Section 10 ----
+    #Find non-numeric columns 
+    varlist<-dta%>%select(starts_with("q100"))%>%colnames()
+    str(dta[varlist])
+    
+    varlist<-dta%>%select(q1001, q1004)%>%colnames() 
+    
+    #Change non-numeric columns
+    dta<-dta%>%
+        mutate_at(vars(varlist), list(~ sub("^A", "\\1", .)))%>%
+        mutate_at(vars(varlist), list(~ sub("-oth-", "88", .)))%>%
+        mutate_at(vars(varlist), funs(as.numeric))
+    
+    #Check
+    str(dta[varlist]) 
+```
+
+```{r, echo = FALSE, eval=FALSE}
+dta%>% select(matches("^q505.*_b"))%>%colnames()
+dta%>% select(contains("other"))%>%colnames()
+dta%>% select(contains("other"))%>%summary()
+```
+
+---
+
+##### C.4. Recode yes/no & yes/no/NA
+```{r varcode}
+varlistyesno<-dta%>%
+    select(
+            q109, q110,
+    		q207, starts_with("q208"), q209, starts_with("q210"), q211, 
+    		q301, starts_with("q302"), q303, q306, starts_with("q307"),
+    		q401, q403, q404, q405, q406, q411, q412, q414, q416, starts_with("q417"),
+    		matches("^q501.*_a"), matches("^q501.*_b"), starts_with("q503"), starts_with("q504"), matches("^q505.*_b"), q506, 
+    		starts_with("q601"), starts_with("q604"),
+    		starts_with("q702"), q703, q704,
+    		q801, q802, q803, q804, q805, q806, 
+    		q901, q905, q906, q910, starts_with("q911"), q912, q913, q914,
+    		q1001
+           )%>%
+    colnames()
+
+dta[varlistyesno][dta[varlistyesno] == 2 ] <- 0 #no
+
+```
+
+---
+
+##### C.5. Label values 
+The following is value labels. 
+```
+	#delimit;	
+	
+	lab define urbanrural
+		1"1.Urban" 
+		2"2.Rural";  
+	lab values q106 urbanrural; 
+	
+	lab define sector 
+		1"1.Government"
+		2"2.Private for profit"
+		3"3.Private not for profit"
+		4"4.Other"; 
+	lab values q108 sector; 
+	
+	lab define ipc
+		1"1.Currently available for all health workers"
+		2"2.Currently available only for some health workers"
+		3"3.Currently unavailable for any health workers"
+		4"4.Not applicable – never provided" ;
+	foreach var of varlist q304* q305* {;
+	lab values `var' ipc;	
+	};	
+	
+	lab define mgmt_optcovid
+		1"1.Yes to almost all patients"
+		2"2.Yes but only to some patients"
+		3"3.None of the patients";
+	foreach var of varlist q402* {;
+	lab values `var' mgmt_optcovid;	
+	};	
+	
+	lab define mgmt_iptcovidsevere
+		1"1.Yes almost always"
+		2"2.Yes but only at certain times of days"
+		3"3.No, never able to provide the care"
+		4"4.N/A";
+	foreach var of varlist q415* {;
+	lab values `var' mgmt_iptcovidsevere;	
+	};	
+	
+	lab define optchange
+		1"1.Much lower"
+		2"2.Lower"
+		3"3.Similar"
+		4"4.Higher"
+		5"5.Much higher";
+	foreach var of varlist q502 {;
+	lab values `var' optchange;	
+	};	
+	
+	lab define outreachchange
+		1"1.Yes changed, decreased"
+		2"2.Yes changed, suspended"
+		3"3.No change in frequency"
+		4"4.Yes changed, increased"
+		5"N/A";
+	foreach var of varlist q507* {;
+	lab values `var' outreachchange;	
+	};			
+	
+	lab define availfunc 
+		1"1.Yes, functional"
+		2"2.Yes, but not functional"
+		3"3.Unavailable";
+	foreach var of varlist 
+		q701* q807* q808* 
+		q902 q903 q907 q908 {;
+	lab values `var' availfunc ;	
+	};	
+	
+	lab define pcrprocess
+		1"1.Process specimens in the facility"
+		2"2.Send specimens outside";
+	foreach var of varlist q804 {;
+	lab values `var' pcrprocess ;	
+	};		
+
+	lab define yesno 
+		1"1.Yes" 
+		0"0.No"; 	
+	foreach var of varlist $varlistyesno {;		
+	lab values `var' yesno; 
+	};
+	
+	lab define yesnona 
+		1"1.Yes" 
+		2"2.No" 
+		3"N/A"; 
+	foreach var of varlist 
+		q505_*_a
+		q602* q603*
+		{;		
+	lab values `var' yesnona; 
+	};
+	
+	lab define yesyesbutno 
+		1"1.Yes, provided and available" 
+		2"2.Yes, provided but unavailable" 
+		3"3.Not provided"; 
+	foreach var of varlist 
+		q904* q909*
+		{;		
+	lab values `var' yesyesbutno; 
+	};	
+	
+	/*
+	*when "other" is selected, LimeSurvey treats Q1004 as string... :( 
+	lab define results
+		1"1.COMPLETED"
+		2"2.POSTPONED"
+		3"3.PARTLY COMPLETED AND POSTPONED" 
+		4"4.PARTLY COMPLETED"
+		5"5.REFUSED"
+		6"6.OTHER"; 
+	lab values q1004 results; 
+	*/
+	
+	#delimit cr
+```
+
+---
+
+
+---
+
+#### D. Create field check tables
+For the combined module, we deleted code for field check tables. [See **Section D** here](https://rpubs.com/YJ_Choi/WHO_COVID19HFA_CEHS) if you want to create field check tables.  
+
+---
+
+#### E. Create analytical variables 
+##### E.1. Country speciic code local 
+Update code here based on the questionnaire in the country. 
+```{r surveylocal}
+urbanmin<-1 #/*lowest response code for urban in Q106*/
+urbanmax<-1 #/*highest response code for urban in Q106*/
+
+minlow  <-1 #/*lowest code for lower-level facilities in Q107*/
+maxlow  <-1 #/*highest code for lower-level facilities in Q107*/
+minhigh <-2 #/*lowest code for hospital/high-level facilities in Q107*/
+maxhigh	<-4 #/*highest code for hospital/high-level facilities in Q107*/
+
+pubmin<-1 #/*lowest response code for public sector in Q108*/
+pubmax<-1 #/*highest response code for public sector in Q108*/
+```
+
+---
+
+##### E.2. Construct analysis variables 
+Created analysis variables section by section.   
+* give prefix __z__ for background characteristics, which can be used as analysis strata     
+* give prefix __x__ for binary variables, which will be used to calculate percentage   
+* give prefix __y__ for integer/continuous variables, which will be used to calculate total number      
+* give prefix __staff__ for a number of staff integer variables, which will be used to calculate total   
+```{r section1}
+#####* Section 1 
+dta<-dta%>%
+	mutate(
+    	facilitycode = q101, 
+    	#/*this will be used to merge with sampling weight, if relevant*/
+    	
+	    country = country, 
+    	round = round,      
+    	month = month, 
+    	year = year, 
+    	
+    	zurban	= q106>=urbanmin & q106<=urbanmax,  
+
+    	zlevel_hospital		=q107>=minhigh & q107<=maxhigh,
+    	zlevel_low			=q107>=minlow  & q107<=maxlow, 
+    	
+    	zpub	=q108>=pubmin & q108<=pubmax, 
+    	
+    	zc19cm = q110==1 ##NEW##
+    	
+	)%>%
+    mutate_if(is.logical, as.numeric)%>%
+    mutate_at(vars(starts_with("z")), 
+              ~replace(., is.na(.)==TRUE, 0))
+
+    #lab define zurban 0"Rural" 1"Urban"
+	#lab define zlevel_hospital 0"Non-hospital" 1"Hospital"
+	#lab define zpub 0"Non-public" 1"Public"
+	#lab define zc19cm 0"NOT eligible for C19CM questions" 1"eligible for C19CM questions"	
+
+	#lab values zurban zurban
+	#lab values zlevel_hospital zlevel_hospital
+	#lab values zpub zpub
+	#lab values zc19cm zc19cm
+
+#dtapreserve<-dta
+#dta<-dtapreserve
+
+```
+
+```{r section2}
+#####* Section 2: Staffing: new infections, vaccination, and training
+
+#staff: total number and total number infected by occupation groups ----
+dta<-dta%>%
+    mutate(
+        staff_num_total_md = q201_001_a , 
+    	staff_num_covidwk_md = q201_001_b , 
+    	
+    	staff_num_total_nr = q201_002_a , 
+    	staff_num_covidwk_nr = q201_002_b , 
+
+        staff_num_total_othclinical = rowSums(dta[ c("q201_003_a", "q201_004_a", "q201_005_a", "q201_006_a", "q201_007_a", "q201_008_a")], na.rm = TRUE), 
+        staff_num_covidwk_othclinical = rowSums(dta[ c("q201_003_b", "q201_004_b", "q201_005_b", "q201_006_b", "q201_007_b", "q201_008_b")], na.rm = TRUE), 
+        
+        staff_num_total_nonclinical = rowSums(dta[ c("q201_009_a", "q201_010_a")], na.rm = TRUE) , 
+    	staff_num_covidwk_nonclinical = rowSums(dta[ c("q201_009_b", "q201_010_b")], na.rm = TRUE) , 
+        )
+
+dta<-dta%>%
+    mutate(
+        staff_num_total_clinical = rowSums(dta[ c("staff_num_total_md", "staff_num_total_nr", "staff_num_total_othclinical")], na.rm = TRUE) , 
+    	staff_num_covidwk_clinical = rowSums(dta[ c("staff_num_covidwk_md", "staff_num_covidwk_nr", "staff_num_covidwk_othclinical")], na.rm = TRUE)   
+        )
+
+dta<-dta%>%
+    mutate(
+    	staff_num_total_all = rowSums(dta[ c("staff_num_total_clinical", "staff_num_total_nonclinical")], na.rm = TRUE),  
+    	staff_num_covidwk_all = rowSums(dta[ c("staff_num_covidwk_clinical", "staff_num_covidwk_nonclinical")], na.rm = TRUE) 
+    )
+
+#staff: covax ----   	        
+dta<-dta%>%
+    mutate(
+	    staff_num_covaxany  = q202, 
+	    staff_num_covaxfull = q203, 
+		staff_num_covaxbooster  = q204 ##NEW##
+    )
+		
+#staff: absence ---- 
+dta<-dta%>%
+    mutate(
+        staff_num_absensce = q205, ##NEW##	
+		staff_num_absensce_covid = q206, ##NEW##	
+		xabsence        = q205>=1 & is.na(q205)==FALSE,  
+		xabsence_covid  = q206>=1 & is.na(q206)==FALSE, ##NEW## 
+		#/*once adjusted for the reference period, it is SIMILAR to previous "xabsence_medical"*/
+    )
+    			
+#staff: training, supportive supervision, and mental health support ----
+dta<-dta%>%
+    mutate(	
+	    xtraining=q207==1 | q209==1 
+        )%>%
+    rename_at(.vars = vars(starts_with("q208_")), 
+              .funs = funs(sub("q208_", "xtraining__", .)))%>%
+    rename_at(.vars = vars(starts_with("q210_")), 
+              .funs = funs(sub("q210_", "xsupport__", .)))%>%    
+    mutate(xtraining__mental = q211==1) %>%
+    mutate_at(vars(starts_with(c("xabsence", "xtraining", "xsupport"))), 
+              ~replace(., is.na(.)==TRUE, 0))%>%
+    mutate_if(is.logical, as.numeric)
+
+        varlist<-dta%>%select(starts_with(c("xtraining__")))%>%
+            select(-ends_with("mental") )%>%colnames()
+    
+dta<-dta%>%    
+    mutate(
+    		max = ncol(dta[ , varlist]),
+    		temp = rowSums(dta[ , varlist], na.rm=TRUE), 
+    	xtraining_score	=100*(temp/max) , 
+    	xtraining_100 	=xtraining_score>=100,
+    	xtraining_50 	=xtraining_score>=50
+    )
+
+        varlist<-dta%>%select(starts_with(c("xtraining__", "xsupport__")))%>%colnames()
+		
+dta<-dta%>%    
+    mutate(
+    		max = ncol(dta[ , varlist]),
+    		temp = rowSums(dta[ , varlist], na.rm=TRUE), 
+    	xtrainingsupport_score	=100*(temp/max) , 
+    	xtrainingsupport_100	=xtrainingsupport_score>=100,
+    	xtrainingsupport_50 	=xtrainingsupport_score>=50
+    )%>%
+    mutate_if(is.logical, as.numeric)
+
+# Name subitems ----
+dta<-dta%>%
+    rename(
+        xtraining__ppe	 =	xtraining__001	, 
+        xtraining__ipccleaning 	 =	xtraining__002	, ##NEW## 
+        xtraining__ipcscreening	 =	xtraining__003	, 
+        xtraining__ipchand  	 =	xtraining__004	, ##NEW## 
+        xtraining__triage	 =	xtraining__005	, 
+        xtraining__emerg	 =	xtraining__006	, 
+        xtraining__remote	 =	xtraining__007	, 
+        			
+        xtraining__ss_ipc	 =	xsupport__001	, 
+        xtraining__ss_c19cm	 =	xsupport__002	        
+    )
+```
+
+```{r section3}
+#####* Section 3: Infection prevention and control
+
+#IPC measures implemented ----
+dta<-dta%>%
+	mutate(xsafe= q301==1) %>%
+    rename_at(.vars = vars(starts_with("q302_")), 
+              .funs = funs(sub("q302_", "xsafe__", .)))%>%
+    mutate_at(vars(starts_with("xsafe")), 
+              ~replace(., is.na(.)==TRUE, 0))%>%
+    mutate_if(is.logical, as.numeric)
+
+        varlist<-dta%>%select(starts_with("xsafe__"))%>%colnames()
+    
+dta<-dta%>%    
+    mutate(
+    		max = ncol(dta[ , varlist]),
+    		temp = rowSums(dta[ , varlist], na.rm=TRUE), 
+    	xsafe_score	=100*(temp/max) , 
+    	xsafe_100	=xsafe_score>=100,
+    	xsafe_50 	=xsafe_score>=50
+    )
+
+#PPE and IPC items ----
+dta<-dta%>%
+    rename_at(.vars = vars(starts_with("q304_")), 
+              .funs = funs(sub("q304_", "xppe_all__", .)))%>%
+    mutate_at(vars(starts_with("xppe_all")), 
+              ~replace(., is.na(.)==TRUE | .>=2, 0))%>%
+    mutate_if(is.logical, as.numeric)%>%
+    
+    mutate_if(is.logical, as.numeric)
+
+        varlist<-dta%>%select(starts_with("xppe_all__"))%>%colnames()
+    
+dta<-dta%>%    
+    mutate(
+    		max = ncol(dta[ , varlist]),
+    		temp = rowSums(dta[ , varlist], na.rm=TRUE), 
+    	xppe_all_score	=100*(temp/max) , 
+    	xppe_all_100	=xppe_all_score>=100,
+    	xppe_all_50 	=xppe_all_score>=50
+    )
+
+dta<-dta%>%    
+    rename_at(.vars = vars(starts_with("q305_")), 
+          .funs = funs(sub("q305_", "xipcitem__", .)))%>%
+    mutate_at(vars(starts_with("xipcitem__")), 
+              ~replace(., is.na(.)==TRUE | .>=2, 0))%>%
+    mutate_if(is.logical, as.numeric)
+
+        varlist<-dta%>%select(starts_with("xipcitem__"))%>%colnames()
+    
+dta<-dta%>%    
+    mutate(
+    		max = ncol(dta[ , varlist]),
+    		temp = rowSums(dta[ , varlist], na.rm=TRUE), 
+        xipcitem_score	=100*(temp/max) , 
+        xipcitem_100	=xipcitem_score>=100,
+        xipcitem_50 	=xipcitem_score>=50
+    )
+
+#IPC guidelines ----
+dta<-dta%>%
+	mutate(xguideline= q306==1) %>%
+    rename_at(.vars = vars(starts_with("q307_")), 
+              .funs = funs(sub("q307_", "xguideline__", .)))%>%
+    mutate_if(is.logical, as.numeric)
+
+        varlist<-dta%>%select(starts_with("xguideline__"))%>%colnames()
+    
+dta<-dta%>%    
+    mutate(
+    		max = ncol(dta[ , varlist]),
+    		temp = rowSums(dta[ , varlist], na.rm=TRUE), 
+    	xguideline_score	=100*(temp/max) , 
+    	xguideline_100	=xguideline_score>=100,
+    	xguideline_50 	=xguideline_score>=50
+    )%>%
+    mutate_if(is.logical, as.numeric)
+
+# Name subitems ----
+dta<-dta%>%
+    rename(
+        xsafe__staff_entrance	 =	xsafe__001	, 	
+        xsafe__entrance_screening	 =	xsafe__002	, 	
+        xsafe__screening_c19	 =	xsafe__003	, 	##NEW##
+        
+        xsafe__distancing	 =	xsafe__004	, 	
+        xsafe__hygiene_instructions	 =	xsafe__005	, 	
+        xsafe__hygiene_stations	 =	xsafe__006	, 	
+        xsafe__cleaning	 =	xsafe__007	, 	
+        
+        xppe_all__mask	 =	xppe_all__001	, 	
+        xppe_all__respirator	 =	xppe_all__002	, 	
+        xppe_all__gloves	 =	xppe_all__003	, 	
+        xppe_all__gown	 =	xppe_all__004	, 	
+        xppe_all__goggles	 =	xppe_all__005	, 	
+       
+        xipcitem__soap	 =	xipcitem__001	, 	
+        xipcitem__sanitizer	 =	xipcitem__002	, 	
+        xipcitem__biobag	 =	xipcitem__003	, 	
+        xipcitem__boxes	 =	xipcitem__004	, 	
+     
+        xguideline__screening	 =	xguideline__001	, 	
+        xguideline__c19	 =	xguideline__002	, 	##NEW##
+        xguideline__ppe	 =	xguideline__003	, 	
+        xguideline__masking	 =	xguideline__004	, 	##NEW##
+        xguideline__c19_surveillance	 =	xguideline__005	, 	
+        xguideline__envcleaning	 =	xguideline__006	, 	##NEW##
+        xguideline__waste	 =	xguideline__007	, 	        
+    )
+
+# ADDITIONAL FROM "GLOBAL INDICATORS" ----
+dta<-dta%>%
+    mutate(
+        #*recalculate PPE with only masks, gloves, and respirators
+        xxppe_total	= rowSums(dta[ c("xppe_all__mask", "xppe_all__gloves",  "xppe_all__respirator")], 
+                              na.rm = TRUE), 
+        
+		xppe_essential_all_100	= xxppe_total==3,
+		xppe_essential_all_score= xxppe_total/3,
+		
+		#*recalculate PPE with only masks and gloves
+        xxppe_total	= rowSums(dta[ c("xppe_all__mask", "xppe_all__gloves")],
+                              na.rm = TRUE),
+		xppe_mask_glove_all_100 	= xxppe_total==2,
+		xppe_mask_glove_all_score	= xxppe_total/2, 
+				
+		#*recalculate IPC items without body bags
+		xxipcitem_total	= rowSums(dta[ c("xipcitem__soap", "xipcitem__sanitizer", "xipcitem__boxes", "xipcitem__biobag")],
+		                          na.rm = TRUE),
+		xipcitem_nobodybag_100	= xxipcitem_total==4 , #/*same with xipcitem_100 in the combined version*/
+		xipcitem_nobodybag_score= xxipcitem_total/4	  #/*same with xipcitem_score in the combined version*/
+    )%>%
+    select(-xxppe_total, -xxipcitem_total)
+    
+```
+
+```{r section4}
+#####* Section 4: Availability of services for COVID-19 case management
+# PT with suspected/confirmed C19: ALL facilities - Primary or Hospitals ##NEW## ----
+		
+dta<-dta%>%
+    mutate(
+        xopt_covid = q401==1,  #*suspected and confirmed*/ 
+        
+        xopt_covid__001 	= xopt_covid==1 & q402_001==1, # ALWAYS
+        xopt_covid__002 	= xopt_covid==1 & q402_002==1, # ALWAYS
+        xopt_covid__003 	= xopt_covid==1 & q402_003==1, # ALWAYS
+        xopt_covid__004 	= xopt_covid==1 & q402_004==1, # ALWAYS
+        xopt_covid__005 	= xopt_covid==1 & q402_005==1, # ALWAYS
+        
+        xopt_covidehs__006 	= xopt_covid==1 & q402_006==1, # ALWAYS
+        xopt_covidehs__007 	= xopt_covid==1 & q402_007==1 # ALWAYS
+    )%>%
+    mutate_at(vars(starts_with(c("xopt_covid__", "xopt_covidehs__"))), 
+              ~replace(., is.na(.)==TRUE, 0))%>%
+    mutate_if(is.logical, as.numeric)
+
+        varlist<-dta%>%select(starts_with("xopt_covid__"))%>%colnames()
+    
+dta<-dta%>%    
+    mutate(
+    		max = ncol(dta[ , varlist]),
+    		temp = rowSums(dta[ , varlist], na.rm=TRUE), 
+    	xopt_covid_score	=100*(temp/max) , 
+    	xopt_covid_100	=xopt_covid_score>=100,
+    	xopt_covid_50 	=xopt_covid_score>=50
+    )
+
+        varlist<-dta%>%select(starts_with(c("xopt_covid__", "xopt_covidehs__")))%>%colnames()
+    
+dta<-dta%>%    
+    mutate(
+        	#revise summary metrics - for PHC	
+            max = ncol(dta[ , varlist]),
+    		temp = rowSums(dta[ , varlist], na.rm=TRUE), 
+    	xopt_covid_score	=ifelse(zc19cm==0, 100*(temp/max) , xopt_covid_score),
+    	xopt_covid_100	=ifelse(zc19cm==0, xopt_covid_score>=100, xopt_covid_100),
+    	xopt_covid_50 	=ifelse(zc19cm==0, xopt_covid_score>=50, xopt_covid_50)
+    )%>%
+    
+    mutate_at(vars(starts_with(c("xopt_covid__", "xopt_covidehs__", "xopt_covid_score", "xopt_covid_100", "xopt_covid_50"))), 
+              funs(ifelse(xopt_covid==0, NA, .) ) ) %>% 
+              #missing if no C19 OPT
+    
+    mutate_at(vars(starts_with(c("xopt_covidehs__"))), 
+              funs(ifelse(xopt_covid==0 | zc19cm==1, NA, .) ) )%>% 
+              #missing if no C19 OPT OR if NOT C19CM facilities
+
+    rename(
+        xopt_covid__triage	 = 	xopt_covid__001	,
+        xopt_covid__o2_measure	 = 	xopt_covid__002	,
+        xopt_covid__progmarker	 = 	xopt_covid__003	,
+        xopt_covid__covax	 = 	xopt_covid__004	,
+        xopt_covid__antiviral	 = 	xopt_covid__005	,
+        xopt_covidehs__home_isolate	 = 	xopt_covidehs__006	,
+        xopt_covidehs__refer	 = 	xopt_covidehs__007	        
+    )
+
+# ER ----
+dta<-dta%>%
+    mutate(
+        xer = q403==1 & q404==1, 
+        #NOTE: can be stricter than previous xer, since two questions are used*/
+        
+        xer_triage = q405==1, ##NEW##
+		xer_triage = ifelse(xer==0, NA, xer_triage) # /*missing if no ER*/
+    )
+
+# IPT: general & COVID19 ----		
+dta<-dta%>%
+    mutate(
+        xipt= q406==1,
+        #lab var xipt "facilities providing IPT services"
+        
+        ybed 			= q407,
+        ybed_icu 	 	= q408,
+          
+        ybed_night   = q409,
+        ybed_icu_night   = q410, ##NEW##
+        
+        xipt_surveillance = q411, ##NEW##
+          
+        xipt_covid= q412==1, ##NEW##
+        #lab var xipt_covid "facilities providing IPT services for C19 patients"
+        
+        ybed_covid_night   = q413
+    )%>%
+    
+    mutate_at(vars(starts_with(c("xipt", "ybed"))), 
+              funs(ifelse(zc19cm==0, NA, .) ) )%>% 
+              #missing if NOT C19CM facilities*
+
+    mutate_at(vars(starts_with(c("ybed"))), 
+              funs(ifelse(xipt==0, NA, .) ) )%>% 
+              #missing if no IPT
+    
+    mutate_at(vars(starts_with(c("ybed_covid_night"))), 
+              funs(ifelse(xipt_covid==0, NA, .) ) ) 
+              #missing if no IPT for C19 patients
+
+# IPT: severe/critical C19 cases ----		
+dta<-dta%>%
+    mutate(
+        xcvd_ptsevere = q414==1,  ##NEW##
+      
+        xcvd_ptsevere__001 	= xcvd_ptsevere==1 & q415_001==1,  #/* ALWAYS*/ ##NEW##
+        xcvd_ptsevere__002 	= xcvd_ptsevere==1 & q415_002==1,  #/* ALWAYS*/ ##NEW##
+        xcvd_ptsevere__003 	= xcvd_ptsevere==1 & q415_003==1,  #/* ALWAYS*/ ##NEW##
+        xcvd_ptsevere__004 	= xcvd_ptsevere==1 & q415_004==1,  #/* ALWAYS*/ ##NEW##
+        xcvd_ptsevere__005 	= xcvd_ptsevere==1 & q415_005==1  #/* ALWAYS*/ ##NEW##
+    )%>%     
+    mutate_if(is.logical, as.numeric)%>%
+    mutate_at(vars(starts_with(c("xcvd_ptsevere__"))), 
+              ~replace(., is.na(.)==TRUE, 0))
+
+        varlist<-dta%>%select(starts_with(c("xcvd_ptsevere__")))%>%colnames()
+    
+dta<-dta%>%    
+    mutate(
+            max = ncol(dta[ , varlist]),
+    		temp = rowSums(dta[ , varlist], na.rm=TRUE), 
+        xcvd_ptsevere_score	=100*(temp/max) , 
+    	xcvd_ptsevere_100	=xcvd_ptsevere_score>=100,
+    	xcvd_ptsevere_50 	=xcvd_ptsevere_score>=50
+    )%>%
+
+    mutate(
+        xcvd_ptsevere_notable = q416==1, 
+          
+        xcvd_ptsevere_repurpose	= q417_001==1, 
+        xcvd_ptsevere_refer		= q417_002==1        
+    )%>%
+    mutate_if(is.logical, as.numeric)%>%
+    mutate_at(vars(starts_with(c("xcvd_ptsevere"))), 
+              ~replace(., is.na(.)==TRUE, 0))%>%
+ 
+    mutate_at(vars(starts_with(c("xcvd_ptsevere"))), 
+              funs(ifelse(zc19cm==0, NA, .) ) )%>% 
+              #missing if NOT C19CM facilities*    
+
+    mutate_at(vars(starts_with(c("xcvd_ptsevere_"))), 
+              funs(ifelse(xcvd_ptsevere==0, NA, .) ) )
+              #missing if no patients with severe/critical C19
+				
+# Name subitems ----
+dta<-dta%>%
+    rename(
+        xcvd_ptsevere__oxygen   	 = 	xcvd_ptsevere__001	, ##NEW##
+        xcvd_ptsevere__intubation	 = 	xcvd_ptsevere__002	, ##NEW##
+        xcvd_ptsevere__ventilation	 = 	xcvd_ptsevere__003	, ##NEW##
+        xcvd_ptsevere__iv       	 = 	xcvd_ptsevere__004	, ##NEW##
+        xcvd_ptsevere__glucosetest	 = 	xcvd_ptsevere__005	  ##NEW##
+    )
+
+```
+
+```{r section5}
+#####* Section 5: Delivery and utilization of essential health services
+# strategy change  /*NEW - ALL in Q502*/ ----
+dta<-dta%>%
+    mutate(
+        xstever_reduce_reduce	= q501_001_a==1 | q501_002_a==1 | q501_003_a==1,
+        xstever_reduce_redirect	= q501_004_a==1,
+        xstever_reduce_priority	= q501_005_a==1,
+        xstever_reduce_combine	= q501_006_a==1,
+        
+        xstever_self			= q501_007_a==1,
+        xstever_home			= q501_008_a==1,
+        xstever_remote			= q501_009_a==1,
+        xstever_prescription	= q501_010_a==1 | q501_011_a==1 | q501_012_a==1,
+        
+        xstmonth_reduce_reduce	= q501_001_b==1 | q501_002_b==1 | q501_003_b==1,
+        xstmonth_reduce_redirect= q501_004_b==1,
+        xstmonth_reduce_priority= q501_005_b==1,
+        xstmonth_reduce_combine	= q501_006_b==1,
+        
+        xstmonth_self			= q501_007_b==1,
+        xstmonth_home			= q501_008_b==1,
+        xstmonth_remote			= q501_009_b==1,
+        xstmonth_prescription	= q501_010_b==1 | q501_011_b==1 | q501_012_b==1       
+    )%>%
+    mutate_if(is.logical, as.numeric)%>%
+    
+    mutate(
+        xstmonth_reduce_reduce	 = ifelse(xstever_reduce_reduce ==0, NA, 	xstmonth_reduce_reduce	),
+        xstmonth_reduce_redirect = ifelse(xstever_reduce_redirect ==0, NA, 	xstmonth_reduce_redirect	),
+        xstmonth_reduce_priority = ifelse(xstever_reduce_priority ==0, NA, 	xstmonth_reduce_priority	),
+        xstmonth_reduce_combine	 = ifelse(xstever_reduce_combine ==0, NA, 	xstever_reduce_combine	),
+        
+        xstmonth_self	 = ifelse(xstever_self ==0, NA, 	xstmonth_self	),
+        xstmonth_home	 = ifelse(xstever_home ==0, NA, 	xstmonth_home	),
+        xstmonth_remote	 = ifelse(xstever_remote ==0, NA, 	xstmonth_remote	),
+        xstmonth_prescription	 = ifelse(xstever_prescription ==0, NA, 	xstmonth_prescription	),
+    )
+
+# OPT change ----
+dta<-dta%>%
+    mutate(
+        xopt_lower 	= q502==1 | q502==2, ##NEW##
+        xopt_similar= q502==3,  ##NEW##
+        xopt_higher	= q502==4 | q502==5, ##NEW##        
+    )%>%
+
+    rename_at(.vars = vars(starts_with("q503_")), 
+              .funs = funs(sub("q503_", "xopt_lower_reason__", .)))%>%
+    mutate_at(vars(starts_with("xopt_lower_reason__")), 
+              ~replace(., is.na(.)==TRUE, 0))%>%
+
+    rename_at(.vars = vars(starts_with("q504_")), 
+              .funs = funs(sub("q504_", "xopt_higher_reason__", .)))%>%
+    mutate_at(vars(starts_with("xopt_higher_reason__")), 
+              ~replace(., is.na(.)==TRUE, 0))%>%
+    
+    mutate(
+        xopt_lower_reason_epi	 	= xopt_lower==1 & (xopt_lower_reason__011==1 | xopt_lower_reason__012==1 ), ##NEW##
+        xopt_lower_reason_comdemand = xopt_lower==1 & (xopt_lower_reason__021==1 | xopt_lower_reason__022==1  | xopt_lower_reason__026==1  ), 
+        xopt_lower_reason_enviro 	= xopt_lower==1 & (xopt_lower_reason__023==1 | xopt_lower_reason__024==1 ),
+        xopt_lower_reason_cost	 	= xopt_lower==1 & (xopt_lower_reason__025==1 | xopt_lower_reason__038==1 ), ##NEW##
+        xopt_lower_reason_intention	= xopt_lower==1 & (xopt_lower_reason__031==1 | xopt_lower_reason__032==1 | xopt_lower_reason__033==1 | xopt_lower_reason__034==1 ),
+        xopt_lower_reason_disruption = xopt_lower==1 & (xopt_lower_reason__035==1 | xopt_lower_reason__036==1 | xopt_lower_reason__037==1 ), #/*REVISED CODE: 37 added*/			        
+        
+        xopt_higher_reason_covidnow = xopt_higher==1 & (xopt_higher_reason__001==1 | xopt_higher_reason__004==1  ), 
+        xopt_higher_reason_seasonal	= xopt_higher==1 & (xopt_higher_reason__002==1 ),  ##NEW##
+        xopt_higher_reason_gbv	    = xopt_higher==1 & (xopt_higher_reason__003==1 ),  
+        xopt_higher_reason_covidafter = xopt_higher==1 & (xopt_higher_reason__005==1 | xopt_higher_reason__006==1 | xopt_higher_reason__007==1 ),  #/*NOTE: this is kept since comp data available, but prefer below two NEW indicators*/
+        xopt_higher_reason_catchup  = xopt_higher==1 & (xopt_higher_reason__005==1 | xopt_higher_reason__006==1 ),  ##NEW##
+        xopt_higher_reason_genpromo    = xopt_higher==1 & (xopt_higher_reason__007==1 ) ##NEW##
+        
+    )%>%        
+
+    mutate_at(vars(starts_with(c("xopt_lower_reason"))), 
+              funs(ifelse(xopt_lower==0, NA, .) ) )%>% 
+              #missing if no opt decrease
+        
+    mutate_at(vars(starts_with(c("xopt_higher_reason"))), 
+              funs(ifelse(xopt_higher==0, NA, .) ) )%>% 
+              #missing if no opt increase 
+    rename(
+        xopt_lower_reason__less_ari	 = 	xopt_lower_reason__011	,	
+        xopt_lower_reason__seasonal	 = 	xopt_lower_reason__012	,	
+        	 
+        xopt_lower_reason__changerecs	 = 	xopt_lower_reason__021	,	
+        xopt_lower_reason__fear	 = 	xopt_lower_reason__022	,	
+        xopt_lower_reason__lockdown	 = 	xopt_lower_reason__023	,	
+        xopt_lower_reason__transport	 = 	xopt_lower_reason__024	,	
+        xopt_lower_reason__costtrans	 = 	xopt_lower_reason__025	,	##NEW##
+        xopt_lower_reason__othercom	 = 	xopt_lower_reason__026	,	
+        	 
+        xopt_lower_reason__servreduc	 = 	xopt_lower_reason__031	,	
+        xopt_lower_reason__disrupt	 = 	xopt_lower_reason__032	,	
+        xopt_lower_reason__hours	 = 	xopt_lower_reason__033	,	
+        xopt_lower_reason__closure	 = 	xopt_lower_reason__034	,	
+        xopt_lower_reason__drugs	 = 	xopt_lower_reason__035	,	
+        xopt_lower_reason__staff	 = 	xopt_lower_reason__036	,	
+        xopt_lower_reason__longwait	 = 	xopt_lower_reason__037	,	##NEW##
+        xopt_lower_reason__costserv	 = 	xopt_lower_reason__038	,	##NEW##
+        xopt_lower_reason__otherfac	 = 	xopt_lower_reason__039	,	
+        	 
+        xopt_higher_reason__more_ari	 = 	xopt_higher_reason__001	,	
+        xopt_higher_reason__seasonal	 = 	xopt_higher_reason__002	,	##NEW##
+        xopt_higher_reason__gbv	 = 	xopt_higher_reason__003	,	
+        xopt_higher_reason__redirect	 = 	xopt_higher_reason__004	,	
+        xopt_higher_reason__backlog	 = 	xopt_higher_reason__005	,	
+        xopt_higher_reason__react	 = 	xopt_higher_reason__006	,	
+        xopt_higher_reason__comms	 = 	xopt_higher_reason__007	,	
+        xopt_higher_reason__other	 = 	xopt_higher_reason__008		        
+    )
+
+# backlog /*ALL NEW*/ ----
+dta<-dta%>%
+    mutate(
+        xbacklogever__001 = q505_001_a==1,  
+        xbacklogever__002 = q505_002_a==1,  
+        xbacklogever__003 = q505_003_a==1,  
+        xbacklogever__004 = q505_004_a==1,  
+		
+        xbacklogever__001 = ifelse(q505_001_a==3, NA, xbacklogever__001), 
+        xbacklogever__002 = ifelse(q505_002_a==3, NA, xbacklogever__002), 
+        xbacklogever__003 = ifelse(q505_003_a==3, NA, xbacklogever__003), 
+        xbacklogever__004 = ifelse(q505_004_a==3, NA, xbacklogever__004), 
+        
+        xbacklogmonth__001 = q505_001_b==1,  
+        xbacklogmonth__002 = q505_002_b==1,  
+        xbacklogmonth__003 = q505_003_b==1,  
+        xbacklogmonth__004 = q505_004_b==1,  
+        
+        xbacklogmonth__001 = ifelse(xbacklogever__001!=1, NA, xbacklogmonth__001), 
+        xbacklogmonth__002 = ifelse(xbacklogever__002!=1, NA, xbacklogmonth__002), 
+        xbacklogmonth__003 = ifelse(xbacklogever__003!=1, NA, xbacklogmonth__003), 
+        xbacklogmonth__004 = ifelse(xbacklogever__004!=1, NA, xbacklogmonth__004), 
+    )%>%
+    mutate_if(is.logical, as.numeric)
+    
+    temp<-dta%>%select(starts_with("xback"))
+    summary(temp)
+    
+        varlist<-dta%>%select(starts_with("xbacklogever__"))%>%colnames()
+    
+dta<-dta%>%    
+    mutate(
+    		temp = rowSums(dta[ , dta%>%select(starts_with("xbacklogever__"))%>%colnames()], 
+    		               na.rm=TRUE),
+    	xbacklogever_any= temp>=1,
+        
+            temp = rowSums(dta[ , dta%>%select(starts_with("xbacklogmonth__"))%>%colnames()], 
+                           na.rm=TRUE),
+        xbacklogmonth_any= temp>=1,
+    )%>% 
+    
+    mutate(
+        xbacklogever_any    = ifelse(is.na(xbacklogever__001)==TRUE &
+                                         is.na(xbacklogever__002)==TRUE &
+                                         is.na(xbacklogever__003)==TRUE &
+                                         is.na(xbacklogever__004)==TRUE,
+                                     NA, xbacklogever_any), 
+        xbacklogmonth_any   = ifelse(is.na(xbacklogmonth__001)==TRUE &
+                                         is.na(xbacklogmonth__002)==TRUE &
+                                         is.na(xbacklogmonth__003)==TRUE &
+                                         is.na(xbacklogmonth__004)==TRUE,
+                                     NA, xbacklogmonth_any), 
+        #missing if N/A for all four services*/
+    )%>%
+    
+    rename(
+        xbacklogever__routine	 = 	xbacklogever__001	,
+        xbacklogever__ncd   	 = 	xbacklogever__002	,
+        xbacklogever__infectiou	 = 	xbacklogever__003	,
+        xbacklogever__elecsurg	 = 	xbacklogever__004	,
+        	 
+        xbacklogmonth__routine	 = 	xbacklogmonth__001	,
+        xbacklogmonth__ncd  	 = 	xbacklogmonth__002	,
+        xbacklogmonth__infectiou = 	xbacklogmonth__003	,
+        xbacklogmonth__elecsurg	 = 	xbacklogmonth__004	        
+    )
+
+# community outreach ----
+dta<-dta%>%
+    mutate(
+        xout = q506==1, 
+        
+        xout_decrease__001 = q507_001==1 |  q507_001==2, 
+        xout_decrease__002 = q507_002==1 |  q507_002==2, 
+        xout_decrease__003 = q507_003==1 |  q507_003==2, 
+        xout_decrease__004 = q507_004==1 |  q507_004==2, 
+        xout_decrease__005 = q507_005==1 |  q507_005==2
+    )%>% 
+    mutate_if(is.logical, as.numeric)
+
+
+        varlist<-dta%>%select(starts_with("xout_decrease__"))%>%colnames()
+        
+dta<-dta%>%
+    mutate(
+    		max = ncol(dta[ , varlist]),
+    		temp = rowSums(dta[ , varlist], na.rm=TRUE), 
+    		
+        xout_decrease= temp>=1, 	
+    )%>%
+    
+    mutate_at(vars(starts_with(c("xout_"))), 
+              funs(ifelse(xout==0, NA, .) ) )%>% 
+              #missing if no outreach 
+    rename(
+        xout_decrease__immun	 = 	xout_decrease__001	,
+        xout_decrease__malaria	 = 	xout_decrease__002	,
+        xout_decrease__ntd	 = 	xout_decrease__003	,
+        xout_decrease__cbc	 = 	xout_decrease__004	,
+        xout_decrease__home	 = 	xout_decrease__005	        
+    )
+
+
+```
+
+```{r}
+temp<-dta%>%
+    select(starts_with("xst"))
+
+summary(temp)
+```
+    
+
+
+```{r section6}
+#####* Section 6: Medicines and supplies
+dta<-dta%>%
+    rename_at(.vars = vars(starts_with("q601_")), 
+              .funs = funs(sub("q601_", "xdrugc19__", .)))%>%
+    mutate_at(vars(starts_with("xdrugc19__")), 
+              ~replace(., is.na(.)==TRUE, 0))%>%
+    
+    rename_at(.vars = vars(starts_with("q602_")), 
+              .funs = funs(sub("q602_", "xdrughosp__", .)))%>%
+    mutate_at(vars(starts_with("xdrughosp__")), 
+              ~replace(., is.na(.)==TRUE | .>=2, 0))%>%
+    
+    rename_at(.vars = vars(starts_with("q603_")), 
+              .funs = funs(sub("q603_", "xdrugehs__", .)))%>%
+    mutate_at(vars(starts_with("xdrugehs__")), 
+              ~replace(., is.na(.)==TRUE | .>=2, 0))%>%
+    
+    rename_at(.vars = vars(starts_with("q604_")), 
+              .funs = funs(sub("q604_", "xsupphosp__", .)))%>%
+    mutate_at(vars(starts_with("xsupphosp__")), 
+              ~replace(., is.na(.)==TRUE, 0))%>%
+    mutate_if(is.logical, as.numeric)
+
+        varlist<-dta%>%select(starts_with("xdrugc19__"))%>%colnames()
+    
+dta<-dta%>%    
+    mutate(
+    		max = ncol(dta[ , varlist]),
+    		temp = rowSums(dta[ , varlist], na.rm=TRUE), 
+    	xdrugc19_score	=100*(temp/max) , 
+    	xdrugc19_100	=xdrugc19_score>=100,
+    	xdrugc19_50 	=xdrugc19_score>=50
+    )
+
+        varlist<-dta%>%select(starts_with("xdrughosp__"))%>%colnames()
+    
+dta<-dta%>%    
+    mutate(
+    		max = ncol(dta[ , varlist]),
+    		temp = rowSums(dta[ , varlist], na.rm=TRUE), 
+    	xdrughosp_score	=100*(temp/max) , 
+    	xdrughosp_100	=xdrughosp_score>=100,
+    	xdrughosp_50 	=xdrughosp_score>=50
+    )
+    
+        varlist<-dta%>%select(starts_with("xdrugehs__"))%>%colnames()
+    
+dta<-dta%>%    
+    mutate(
+    		max = ncol(dta[ , varlist]),
+    		temp = rowSums(dta[ , varlist], na.rm=TRUE),  
+    	xdrugehs_score	=100*(temp/max) , 
+    	xdrugehs_100	=xdrugehs_score>=100,
+    	xdrugehs_50 	=xdrugehs_score>=50
+    )
+
+        varlist<-dta%>%select(starts_with("xsupphosp__"))%>%colnames()
+    
+dta<-dta%>%    
+    mutate(
+    		max = ncol(dta[ , varlist]),
+    		temp = rowSums(dta[ , varlist], na.rm=TRUE), 
+    	xsupphosp_score	=100*(temp/max) , 
+    	xsupphosp_100	=xsupphosp_score>=100,
+    	xsupphosp_50 	=xsupphosp_score>=50
+    )%>%    
+    
+    mutate_if(is.logical, as.numeric)%>%
+    mutate_at(vars(starts_with(c("xdrugc19", "xdrughosp", "xsupphosp"))), 
+              funs(ifelse(zc19cm==0, NA, .) ) ) #/*missing if NOT C19CM facilities*/
+
+# Name subitems ----
+dta<- dta%>%
+    rename(
+        xdrugc19__dexamethasone	 = 	xdrugc19__001	,	
+        xdrugc19__molnupiravir	 = 	xdrugc19__002	,	##NEW##
+        xdrugc19__baracitanib	 = 	xdrugc19__003	,	##NEW##
+        xdrugc19__casirivimab	 = 	xdrugc19__004	,	##NEW##
+        xdrugc19__tocilizumab	 = 	xdrugc19__005	,	##NEW##
+        xdrugc19__heparin	 = 	xdrugc19__006	,	
+        ##*NOT new - more specific than "Heparin" but not really different (DH 7/12/2022)*/
+        	 
+        xdrughosp__alcohol	 = 	xdrughosp__001	,	
+        xdrughosp__chlorine	 = 	xdrughosp__002	,	
+        xdrughosp__paracetamol	 = 	xdrughosp__003	,	
+        xdrughosp__ampicillin	 = 	xdrughosp__004	,	
+        xdrughosp__ceftriaxone	 = 	xdrughosp__005	,	
+        xdrughosp__azithromycin	 = 	xdrughosp__006	,	
+        xdrughosp__rocuronium	 = 	xdrughosp__007	,	
+        ##/*NOT new - fully comparable as both are covered by “ … other neuromuscular blocker (injectable)” (DH 7/12/2022)*/
+        xdrughosp__morphine	 = 	xdrughosp__008	,	
+        xdrughosp__haloperidol	 = 	xdrughosp__009	,	
+        xdrughosp__epinephrine	 = 	xdrughosp__010	,	
+        xdrughosp__oxytocin	 = 	xdrughosp__011	,	
+        xdrughosp__oxygen	 = 	xdrughosp__012	,	
+        	 
+        xdrugehs__salbutamol	 = 	xdrugehs__001	,	
+        xdrugehs__metformin	 = 	xdrugehs__002	,	
+        xdrugehs__hydrochlorothiazide	 = 	xdrugehs__003	,	
+        xdrugehs__carbamazapine	 = 	xdrugehs__004	,	
+        xdrugehs__amoxicillin_tabs	 = 	xdrugehs__005	,	
+        xdrugehs__magnesiumsulphate	 = 	xdrugehs__006	,	
+        xdrugehs__artemether	 = 	xdrugehs__007	,	
+        xdrugehs__efavirenz	 = 	xdrugehs__008	,	
+        xdrugehs__isoniazid	 = 	xdrugehs__009	,	
+        	 
+        xsupphosp__ivsets	 = 	xsupphosp__001	,	
+        xsupphosp__nasalcanulae	 = 	xsupphosp__002	,	
+        xsupphosp__facemasks	 = 	xsupphosp__003		
+    )
+
+# Create/Clone medicines and supply individual indicators that have prefixes same with old indicators ---- 
+
+#Here, in R, we make duplicate dataset with the select columns first,
+#rename the column headings, 
+#and then cbind with the main data
+		
+temp1 <- dta %>% 
+    select(starts_with(c("xdrugc19__", "xdrughosp__", "xdrugehs__", "xsupphosp__"))) 
+
+colnames(temp1)<-gsub("xdrugc19", "xdrug", colnames(temp1))
+colnames(temp1)<-gsub("xdrughosp", "xdrug", colnames(temp1))
+colnames(temp1)<-gsub("xdrugehs", "xdrug", colnames(temp1))
+colnames(temp1)<-gsub("xsupphosp", "xsupply", colnames(temp1))
+
+dta <- cbind(dta, temp1)
+```
+
+```{r section7}
+#####* Section 7 : Equipment for COVID-19 case management
+
+# Equipment ----
+            temp1<-dta%>%select(starts_with("q701_"))%>%
+                rename_all(.funs = funs(sub("q701_", "xequip_anyfunction__", .)))%>%
+                mutate_all(~replace(., . ==1, 1))%>%
+                mutate_all(~replace(., . ==2 | . ==3, 0))		
+        
+dta<-cbind(dta, temp1)
+    
+        varlist<-dta%>%select(starts_with("xequip_anyfunction__"))%>%colnames()
+        
+dta<-dta%>%
+    mutate(
+    		max = ncol(dta[ , varlist]),
+    		temp = rowSums(dta[ , varlist], na.rm=TRUE), 
+        xequip_anyfunction_score	=100*(temp/max),
+        xequip_anyfunction_100		=xequip_anyfunction_score==100,
+        xequip_anyfunction_50		=xequip_anyfunction_score>=50
+    )%>%        
+    rename(
+        xequip_anyfunction__xray	 = 	xequip_anyfunction__001	,
+        xequip_anyfunction__oximeters	 = 	xequip_anyfunction__002	,
+        xequip_anyfunction__vicu	 = 	xequip_anyfunction__003	,
+        xequip_anyfunction__vnoninv	 = 	xequip_anyfunction__004	        
+    )%>%
+    #/*NOTE: depending on sample design, 			
+    #"xequip_anyfunction__xray" may be same with 
+    #"ximage_avfun__xray" AMONG HOSPITALS in old CEHS
+    
+    mutate_if(is.logical, as.numeric)%>%
+    mutate_at(vars(starts_with("xequip")), 
+              funs(ifelse(zc19cm==0, NA, .) ) ) #missing if NOT C19CM facilities
+
+# Oxygen ----
+dta<-dta%>%
+    mutate(
+           xoxygen_concentrator= q702_001==1,
+           xoxygen_bulk 		= q702_002==1, 
+           xoxygen_cylinder	= q702_003==1,
+           xoxygen_plant 		= q702_004==1
+        )%>%
+    mutate_if(is.logical, as.numeric)
+
+        varlist<-dta%>%select(starts_with("xoxygen_"))%>%colnames()
+
+dta<-dta%>%    
+    mutate(
+    		temp = rowSums(dta[ , varlist], na.rm=TRUE), 
+    	xoxygensource	=temp>=1, 
+           
+        xoxygen_dist 		 = q703==1, 
+        xoxygen_portcylinder = q704==1
+    )%>%
+    
+    mutate_if(is.logical, as.numeric)%>%
+    mutate_at(vars(starts_with("xoxygen")), 
+              funs(ifelse(zc19cm==0, NA, .) ) ) #missing if NOT C19CM facilities
+
+# ADDITIONAL FROM "GLOBAL INDICATORS" ----
+dta<-dta%>%
+        mutate(
+            #calculate cross tabs of having ventilator BY TYPE	
+            xequip_novent_anyfunction		= xequip_anyfunction__vicu==0 & xequip_anyfunction__vnoninv==0,
+            xequip_bothvent_anyfunction		= xequip_anyfunction__vicu==1 & xequip_anyfunction__vnoninv==1,
+            xequip_onlyinvvent_anyfunction	= xequip_anyfunction__vicu==1 & xequip_anyfunction__vnoninv==0,
+            xequip_onlyninvvent_anyfunction	= xequip_anyfunction__vicu==0 & xequip_anyfunction__vnoninv==1,
+            xequip_eithervent_anyfunction	= xequip_anyfunction__vicu==1 | xequip_anyfunction__vnoninv==1
+    )
+
+    #create index with EITHER ventilator plus oxygen and oximeters
+    varlist<-c("xoxygensource", "xequip_eithervent_anyfunction", "xequip_anyfunction__oximeters")
+
+dta<-dta%>%    
+    mutate(
+    		max=ncol(select(dta, varlist)),
+    		temp = rowSums(dta[colnames(select(dta, varlist))], na.rm=TRUE ) , 
+        xequip_anyvent_oxy_oximtr_score	=100*(temp/max), 
+        xequip_anyvent_oxy_oximtr_100	=xequip_anyvent_oxy_oximtr_score==100
+    )
+
+    #create index with BOTH ventilator plus oxy and oximeters
+    varlist<-c("xoxygensource", "xequip_bothvent_anyfunction", "xequip_anyfunction__oximeters")
+
+dta<-dta%>%    
+    mutate(
+    		max=ncol(select(dta, varlist)),
+    		temp = rowSums(dta[colnames(select(dta, varlist))], na.rm=TRUE ) , 
+        xequip_bothvent_oxy_oximtr_score=100*(temp/max),
+        xequip_bothvent_oxy_oximtr_100	=xequip_bothvent_oxy_oximtr_score==100
+    )%>%
+
+    mutate_at(vars(starts_with(c("xequip", "xoxygen"))), 
+              funs(ifelse(zc19cm==0, NA, .) ) ) #missing if NOT C19CM facilities
+
+```
+
+```{r section8}
+#####* Section 8 : Diagnostics
+
+# COVID diagnostics ----
+dta<-dta%>%
+    mutate(
+        xspcm	= q801==1 , 
+        xrdt 	= q802==1 , 	
+        xpcr 	= q803==1 & q804==1, 
+        #*OR IS IT NEW? SHOULD WE GIVE A DIFFERENT NAME? - TBD*/ 
+        
+        xonsite	= xpcr==1 | xrdt==1, 
+
+        xpcr_equip	= q805==1,
+        xpcr_supply	= q806==1 ##NEW## 
+    )%>%
+    mutate_if(is.logical, as.numeric)%>%
+    mutate_at(vars(starts_with(c("xpcr_"))), 
+              funs(ifelse(xpcr==0, NA, .) ) ) #/*missing if NOT C19CM facilities*/    
+dta<-dta%>%    
+    #/*NOTE: 
+    #Ah, we used different names for very similar indicators between CEHS and C19CM.
+    #Clone those vars to facilitate trend analysis, in case. 
+    mutate(
+        xcvd_test_pcr = xrdt,  
+        xcvd_test_rdt = xpcr 
+    )
+
+# EHS diagnostics ---- 	
+
+            temp1<-dta%>%select(starts_with("q807_"))%>%
+                rename_all(.funs = funs(sub("q807_", "xdiag_av_b", .)))%>%
+                mutate_all(~replace(., . ==1 |.==2, 1))%>%
+                mutate_all(~replace(., . ==3, 0))
+            temp2<-dta%>%select(starts_with("q807_"))%>%
+                rename_all(.funs = funs(sub("q807_", "xdiag_avfun_b", .)))%>%
+                mutate_all(~replace(., . ==1, 1))%>%
+                mutate_all(~replace(., . ==2 |.==3, 0))
+    
+            temp3<-dta%>%select(starts_with("q808_"))%>%
+                rename_all(.funs = funs(sub("q808_", "xdiag_av_h", .)))%>%
+                mutate_all(~replace(., . ==1 |.==2, 1))%>%
+                mutate_all(~replace(., . ==3, 0))
+            temp4<-dta%>%select(starts_with("q808_"))%>%
+                rename_all(.funs = funs(sub("q808_", "xdiag_avfun_h", .)))%>%
+                mutate_all(~replace(., . ==1, 1))%>%
+                mutate_all(~replace(., . ==2 |.==3, 0))      
+
+dta<-cbind(dta, temp1, temp2, temp3, temp4)
+
+dta<-dta%>%
+    mutate_at(vars(starts_with("xdiag")), 
+              ~replace(., is.na(.)==TRUE, 0))%>% 
+
+    mutate(
+    		max=ncol(select(dta, starts_with("xdiag_avfun_b"))),
+    		temp = rowSums(dta[colnames(select(dta, starts_with("xdiag_avfun_b")))], 
+    		               na.rm=TRUE ) , 
+    		
+    	xdiagbasic_score	=100*(temp/max) , 
+    	xdiagbasic_100	=xdiagbasic_score>=100,
+    	xdiagbasic_50 	=xdiagbasic_score>=50
+    )%>%  
+    
+    mutate(
+    		maxnonhospital=ncol(select(dta, starts_with("xdiag_avfun_b"))),
+    		tempnonhospital = rowSums(dta[colnames(select(dta, starts_with("xdiag_avfun_b")))], 
+    		                          na.rm=TRUE ) , 
+    		
+    		maxhospital=ncol(select(dta, starts_with(c("xdiag_avfun_b", "xdiag_avfun_h")))),
+    		temphospital = rowSums(dta[colnames(select(dta, 
+    		                                           starts_with(c("xdiag_avfun_b", "xdiag_avfun_h"))))],
+    		                       na.rm=TRUE ) , 
+    		
+    		max = NA, 
+			max = ifelse(zlevel_hospital!=1, maxnonhospital, #non-hospital
+			             ifelse(zlevel_hospital==1, maxhospital, #hospital
+			                 max)),  
+			temp = NA, 
+			temp = ifelse(zlevel_hospital!=1, tempnonhospital, #non-hospital
+			             ifelse(zlevel_hospital==1, temphospital, #hospital
+			                 temp)),  
+    		
+    	xdiag_score	=100*(temp/max) , 
+    	xdiag_100	=xdiag_score>=100,
+    	xdiag_50 	=xdiag_score>=50
+    )%>%   
+
+    mutate_if(is.logical, as.numeric)%>%
+    mutate_at(vars(starts_with(c("xdiag_av_h", "xdiag_avfun_h"))),
+              funs(ifelse(zlevel_hospital==0, NA, .) ) ) #missing if NOT hospital
+
+# Name subitems ----
+dta<-dta%>%
+    rename(
+        xdiag_av__bloodglucose	 = 	xdiag_av_b001	,
+        xdiag_av__urineglucose	 = 	xdiag_av_b002	,
+        xdiag_av__urineprotein	 = 	xdiag_av_b003	,
+        xdiag_av__pregnancy 	 = 	xdiag_av_b004	,
+        xdiag_av__hbg   	 = 	xdiag_av_b005	,
+        xdiag_av__malaria	 = 	xdiag_av_b006	,
+        
+        xdiag_av__h_hiv	 = 	xdiag_av_h001	,
+        xidag_av__h_tb	 = 	xdiag_av_h002	,
+        xdiag_av__h_bloodtype   	 = 	xdiag_av_h003	,
+        xdiag_av__h_bloodcreatine	 = 	xdiag_av_h004	,
+        
+        xdiag_avfun__bloodglucose	 = 	xdiag_avfun_b001	,
+        xdiag_avfun__urineglucose	 = 	xdiag_avfun_b002	,
+        xdiag_avfun__urineprotein	 = 	xdiag_avfun_b003	,
+        xdiag_avfun__pregnancy	 = 	xdiag_avfun_b004	,
+        xdiag_avfun__hbg    	 = 	xdiag_avfun_b005	,
+        xdiag_avfun__malaria	 = 	xdiag_avfun_b006	,
+        
+        xdiag_avfun__h_hiv	 = 	xdiag_avfun_h001	,
+        xidag_avfun__h_tb	 = 	xdiag_avfun_h002	,
+        xdiag_avfun__h_bloodtype	 = 	xdiag_avfun_h003	,
+        xdiag_avfun__h_bloodcreatine = 	xdiag_avfun_h004	
+    )
+
+# ADDITIONAL FROM "GLOBAL INDICATORS" ----
+dta<-dta%>%
+    mutate(
+        #*create cross-tabs of doing PCR, RDT, both, neither
+        xcovid_diag_none		= xpcr==0 & xrdt==0,
+        xcovid_diag_pcr_only	= xpcr==1 & xrdt==0,
+        xcovid_diag_rdt_only	= xpcr==0 & xrdt==1,
+        xcovid_diag_pcr_and_rdt	= xpcr==1 & xrdt==1
+    )%>%
+    mutate_if(is.logical, as.numeric)%>%
+    mutate_at(vars(starts_with(c("xcovid_diag_"))),
+              funs(ifelse(xspcm==0, NA, .) ) )%>% #missing if NOT hospital
+
+    mutate(xcovid_diag_pcr_or_rdt	=xcovid_diag_none==0) #*this is same with above "xonsite" 
+
+```
+
+```{r section9}
+#####* Section 9: Vaccination
+
+# Childhood immunization ----
+dta<-dta%>%
+	mutate(
+        xvaccine_child=q901==1, 
+        xvac= q901==1, 
+        #/*NOTE:
+        #Technically not same with previous "xvac", which included child AND adult vaccination. 
+        #But, practically, it will be close to identical - 
+        #since child vaccination is almost universally available - in low resource settings, at least. 
+        		
+        xvac_av_fridge 			= q902==1 | q902==2, 
+        xvac_avfun_fridge 		= q902==1, 
+        xvac_avfun_fridgetemp 	= q902==1 & q903==1
+	)%>%
+    
+    rename_at(.vars = vars(starts_with("q904_")), 
+              .funs = funs(sub("q904_", "xvaccine__", .)))%>%
+    mutate_at(vars(starts_with("xvaccine__")), 
+              ~replace(., is.na(.)==TRUE | .>=2, 0))%>%
+    mutate_if(is.logical, as.numeric)
+
+            varlist<-dta%>%select(starts_with("xvaccine__"))%>%colnames()
+    	
+dta<-dta%>%
+    mutate(
+    		max = ncol(dta[ , varlist]),
+    		temp = rowSums(dta[ , varlist], na.rm=TRUE), 
+    	xvac_score	=100*(temp/max) , 
+    	xvac_100	=xvac_score>=100,
+    	xvac_50 	=xvac_score>=50
+    )%>%    
+    
+    mutate(
+        xvac_syrstockout = q905==1
+    )%>%
+
+    mutate_if(is.logical, as.numeric)%>%
+    mutate_at(vars(starts_with(c("xvac_", "xvaccine__"))), 
+              funs(ifelse(xvaccine_child!=1, NA, .) ) ) #missing if no child vaccine services*/
+    
+# COVAX ----    
+dta<-dta%>%
+    mutate(
+	    xcovax=q906==1, 
+	    
+	    xcovax_av_fridge 			= q907==1 | q907==2 , ##NEW##
+        xcovax_avfun_fridge 		= q907==1  , ##NEW##
+        xcovax_avfun_fridgetemp 	= q907==1 & q908==1  ##NEW##
+    )
+
+            temp1<-dta%>%select(starts_with("q909_"))%>%
+                rename_all(.funs = funs(sub("q909_", "xcovax_offer__", .)))%>%
+                mutate_all(~replace(., . ==1 |.==2, 1))%>%
+                mutate_all(~replace(., . ==3, 0))  
+            
+            temp2<-dta%>%select(starts_with("q909_"))%>%
+                rename_all(.funs = funs(sub("q909_", "xcovax_offerav__", .)))%>%
+                mutate_all(~replace(., . ==1, 1))%>%
+                mutate_all(~replace(., . ==2 |.==3, 0))  
+
+dta<-cbind(dta, temp1, temp2)%>%    
+    
+    mutate_if(is.logical, as.numeric)%>%
+    mutate_at(vars(starts_with("xcovax_offer")), 
+              ~replace(., is.na(.)==TRUE, 0))%>%
+    
+    rename_at(.vars = vars(starts_with("q911_")), 
+              .funs = funs(sub("q911_", "xcovax_train__", .)))%>%
+    mutate_at(vars(starts_with("xcovax_train__")), 
+              ~replace(., is.na(.)==TRUE, 0))%>%
+    
+    mutate(
+        xcovax_report = q910==1, 
+        xcovax_syrstockout	=q912==1 ##NEW## 
+    )%>%
+    
+    mutate_if(is.logical, as.numeric)%>%
+    mutate_at(vars(starts_with(c("xcovax_"))), 
+              funs(ifelse(xcovax!=1, NA, .) ) ) #missing if no COVID-19 vaccine services
+
+#AEFI ----
+dta<-dta%>%
+    mutate(
+    	xaefikit 		= q913==1, ##NEW - but this will be very similar to "xvac_aefikit"*/
+    	xaefireport 	= q914==1 ##NEW - but this will be very similar to "xvac_aefireport"*/		        
+    )%>%
+    
+    mutate_if(is.logical, as.numeric)%>%
+    mutate_at(vars(starts_with("xaefi")), 
+              funs(ifelse(xvaccine_child==0 & xcovax==0 , NA, .) ) ) #missing if no vaccine services
+
+# Name subitems ----
+dta<-dta%>%
+    rename(
+        xvaccine__mcv	 = 	xvaccine__001	,	
+        xvaccine__dtp	 = 	xvaccine__002	,	
+        xvaccine__polio_oral	 = 	xvaccine__003	,	##NEW##
+        xvaccine__polio_inj	    = 	xvaccine__004	,	##NEW##
+        xvaccine__bcg	 = 	xvaccine__005	,	
+        xvaccine__pneumo	 = 	xvaccine__006	,	
+        xvaccine__hpv	 = 	xvaccine__007	,	##NEW##
+           
+        xcovax_offer__pfizer	 = 	xcovax_offer__001	,	
+        xcovax_offerav__pfizer	 = 	xcovax_offerav__001	,	
+        xcovax_offer__moderna	 = 	xcovax_offer__002	,	
+        xcovax_offerav__moderna	 = 	xcovax_offerav__002	,	
+        xcovax_offer__astra	 = 	xcovax_offer__003	,	
+        xcovax_offerav__astra	 = 	xcovax_offerav__003	,	
+        xcovax_offer__jj	 = 	xcovax_offer__004	,	
+        xcovax_offerav__jj	 = 	xcovax_offerav__004	,	
+        xcovax_offer__covishiled	 = 	xcovax_offer__005	,	
+        xcovax_offerav__covishiled	 = 	xcovax_offerav__005	,	
+           
+        xcovax_offer__sinopharm	 = 	xcovax_offer__006	,	
+        xcovax_offerav__sinopharm	 = 	xcovax_offerav__006	,	
+        xcovax_offer__sinovac	 = 	xcovax_offer__007	,	
+        xcovax_offerav__sinovac	 = 	xcovax_offerav__007	,	
+              
+        xcovax_train__storage	 = 	xcovax_train__001	,	
+        xcovax_train__admin	 = 	xcovax_train__002	,	
+        xcovax_train__manage_adverse	 = 	xcovax_train__003	,	
+        xcovax_train__report_adverse	 = 	xcovax_train__004		
+    )
+
+# ADDITIONAL FROM "GLOBAL INDICATORS" ----
+dta<-dta%>%
+    mutate(
+        #Get information on COVAX
+        numb_offer	 = rowSums(dta[colnames(select(dta, starts_with("xcovax_offer__")))], 
+                              na.rm=TRUE ),  
+        xcovax_offer = numb_offer>=1,
+        
+        numb_avail	 = rowSums(dta[colnames(select(dta, starts_with("xcovax_offerav__")))], 
+                              na.rm=TRUE ), 
+        xcovax_avail = numb_avail>=1,
+        
+        xcovax_offer_avail=1, 
+        xcovax_offer_avail= ifelse(xcovax_offer==1 & xcovax_avail==0, 0, 
+                                    ifelse(xcovax_offer==0, NA,
+                                           xcovax_offer_avail))
+    )%>%
+    
+    mutate_if(is.logical, as.numeric)%>%
+    mutate_at(vars(starts_with(c("xcovax_avail", "xcovax_offer", "xcovax_offer_avail"))), 
+              funs(ifelse(xcovax!=1 , NA, .) ) ) #missing if no COVID-19 vaccine services
+```
+
+```{r section10}
+#####* Section 10: Interview results 
+dta<-dta%>%
+    mutate(xresult=q1004==1) #interview completed 
+```
+
+```{r}
+temp<-dta%>%select(starts_with("xsafe"))
+summary(temp)
+str(temp)
+#View(temp)
+
+
+```
+
+---
+
+##### E.3. Merge with sampling weight 
+Select Option A (if there are sampling weights) or Option B (if there is no sampling weight).    
+__Option A__  
+```{r weightmerge_OptionA}
+# read sampling weight in the chartbook provided by the country. Make sure there are no duplicates 
+dtaweight<-read_excel(paste0(chartbookdir, "CombinedCOVID19HFA_Chartbook_draft.xlsx"), 
+                      sheet = "Weight")
+
+    names(dtaweight)<-tolower(names(dtaweight))
+
+    dtaweight<-dtaweight%>%
+        rename_all(.funs = funs(sub(" ", "", .)))%>%
+        select(facilitycode, weight)%>%
+        distinct(facilitycode, .keep_all=TRUE)
+    
+    #normalize weight 
+    dtaweight<-dtaweight%>%
+	    mutate(weight = weight / mean(dtaweight$weight))    
+
+# check datasets     
+dim(dta)
+dim(dtaweight)
+str(dta$facilitycode)
+str(dtaweight$facilitycode)
+
+# check datasets 
+dta<-left_join(dta, dtaweight, by = c("facilitycode"))
+
+# confirm dimension 
+dim(dta)
+```
+
+__Option B__  
+```{r weightmerge_OptionB, eval=FALSE}
+# Give "sampling weights" 1 to all observations 
+dta<-dta%>%
+    mutate(weight=1)
+```
+
+---
+
+##### E.4. Export clean Respondent-level data to chart book 
+```{r cleandatacsv}
+write.csv(dta, paste0("CombinedCOVID19HFA_", country, "_R", round, ".csv"))
+```
+
+```{r chartbookexport2, eval=FALSE}
+#Code suppressed until bug fixed
+
+dta<-dta%>%mutate(test=Sys.time())
+
+write.xlsx(dta, 
+           paste0(chartbookdir, "CombinedCOVID19HFA_Chartbook_draft.xlsx"), 
+           sheet = "Facility-level cleaned data", 
+           append = TRUE)
+```
+
+---
+
+#### F. Create and export indicator estimate data 
+##### F.1. Calculate estimates 
+```{r dtatemp_prep}
+#***** To get the total number of observations per relevant part 
+dtatemp<-dta%>%
+    mutate(
+        obs=1, 	
+        
+        obs_c19cm= NA, 		
+        obs_opt_covid	 = NA, #facilities that provide OPT services for patients with suspected/confirmed C19*/		
+        obs_er	 = NA, #facilities that provide 24-hour staffed ER services*/		
+        obs_ipt	 = NA, #facilities that provide IPT services*/		
+        obs_ipt_covid	 = NA, #facilities that provide IPT services for patients with C19*/		
+        obs_ipt_cvdptsev = NA, #facilities that provide services for patients with severe or critical C19*/		
+        obs_pcr	 = NA, #facilities that conduct PCR on site*/		
+        obs_vac	 = NA, 		
+        obs_covax= NA, 		
+        
+        obs_c19cm = ifelse( zc19cm==1, 1, obs_c19cm),
+        obs_opt_covid = ifelse( xopt_covid==1, 1, obs_opt_covid), 
+        obs_er = ifelse( xer==1, 1, obs_er), 
+        obs_ipt = ifelse( xipt==1, 1, obs_ipt), 
+        obs_ipt_covid = ifelse( xipt_covid==1, 1, obs_ipt_covid), 
+        obs_ipt_cvdptsev = ifelse( xcvd_ptsevere==1, 1, obs_ipt_cvdptsev),
+        obs_pcr = ifelse( xpcr==1, 1, obs_pcr),
+        obs_vac = ifelse( xvac==1, 1, obs_vac), 
+        obs_covax = ifelse( xcovax==1, 1, obs_covax)	
+    )%>%
+    mutate_if(is.logical, as.numeric)
+
+dtatempx<-dtatemp%>%
+    select(country, round, month, year, weight, 
+           starts_with(c("z", "x")))
+    
+dtatempy<-dtatemp%>%
+    select(country, round, month, year, weight, 
+           starts_with(c("z", "obs", "ybed", "staff_num_")))
+
+```
+
+
+```{r calculation}
+# Among all facilities ----
+dtasummaryx<-dtatempx%>%
+    group_by(country, round, month, year)%>%
+    summarize_at(vars(starts_with("x")),
+                 funs(weighted.mean(., weight, na.rm = TRUE)))%>%
+    ungroup()
+
+dtasummaryy<-dtatempy%>%
+    group_by(country, round, month, year)%>%
+    summarize_at(vars(starts_with(c("obs", "ybed", "staff"))),
+                 funs(sum(.*weight, na.rm = TRUE)))%>%
+    ungroup()
+
+dtasummaryall<-left_join(dtasummaryx, dtasummaryy, 
+                      by = c("country", "round", "month", "year"))%>%
+    mutate(group="All", grouplabel="")
+
+# By residential area ----
+dtasummaryx<-dtatempx%>%
+    group_by(country, round, month, year, zurban)%>%
+    summarize_at(vars(starts_with("x")),
+                 funs(weighted.mean(., weight, na.rm = TRUE)))%>%
+    ungroup()
+
+dtasummaryy<-dtatempy%>%
+    group_by(country, round, month, year, zurban)%>%
+    summarize_at(vars(starts_with(c("obs", "ybed", "staff"))),
+                 funs(sum(.*weight, na.rm = TRUE)))%>%
+    ungroup()
+
+dtasummarylocation<-left_join(dtasummaryx, dtasummaryy, 
+                      by = c("country", "round", "month", "year", "zurban"))%>%
+    mutate(
+        group="Location", 
+		grouplabel="",
+		grouplabel= ifelse(zurban==0, "Rural" , grouplabel),
+		grouplabel= ifelse(zurban==1, "Urban" , grouplabel) )
+
+# By facility type ----
+dtasummaryx<-dtatempx%>%
+    group_by(country, round, month, year, zlevel_hospital)%>%
+    summarize_at(vars(starts_with("x")),
+                 funs(weighted.mean(., weight, na.rm = TRUE)))%>%
+    ungroup()
+
+dtasummaryy<-dtatempy%>%
+    group_by(country, round, month, year, zlevel_hospital)%>%
+    summarize_at(vars(starts_with(c("obs", "ybed", "staff"))),
+                 funs(sum(.*weight, na.rm = TRUE)))%>%
+    ungroup()
+
+dtasummarylevel<-left_join(dtasummaryx, dtasummaryy, 
+                      by = c("country", "round", "month", "year", "zlevel_hospital"))%>%
+    mutate(
+        group="Level", 
+		grouplabel="",
+		grouplabel= ifelse(zlevel_hospital==0, "Non-hospitals" , grouplabel),
+		grouplabel= ifelse(zlevel_hospital==1, "Hospitals" , grouplabel) )
+
+# By facility managing authority ----
+dtasummaryx<-dtatempx%>%
+    group_by(country, round, month, year, zpub)%>%
+    summarize_at(vars(starts_with("x")),
+                 funs(weighted.mean(., weight, na.rm = TRUE)))%>%
+    ungroup()
+
+dtasummaryy<-dtatempy%>%
+    group_by(country, round, month, year, zpub)%>%
+    summarize_at(vars(starts_with(c("obs", "ybed", "staff"))),
+                 funs(sum(.*weight, na.rm = TRUE)))%>%
+    ungroup()
+
+dtasummarysector<-left_join(dtasummaryx, dtasummaryy, 
+                      by = c("country", "round", "month", "year", "zpub"))%>%
+    mutate(
+        group="Sector", 
+		grouplabel="",
+		grouplabel= ifelse(zpub==0, "Non-public" , grouplabel),
+		grouplabel= ifelse(zpub==1, "Public" , grouplabel) )
+
+# By C19CM status ----
+# Note: 
+# This is relevant only if zlevel_hospital is meaningfully different from zc19cm. 
+# In many countries this will be identical with or very close to analysis by zlevel_hospital
+
+dtasummaryx<-dtatempx%>%
+    group_by(country, round, month, year, zc19cm)%>%
+    summarize_at(vars(starts_with("x")),
+                 funs(weighted.mean(., weight, na.rm = TRUE)))%>%
+    ungroup()
+
+dtasummaryy<-dtatempy%>%
+    group_by(country, round, month, year, zc19cm)%>%
+    summarize_at(vars(starts_with(c("obs", "ybed", "staff"))),
+                 funs(sum(.*weight, na.rm = TRUE)))%>%
+    ungroup()
+
+dtasummaryc19cm<-left_join(dtasummaryx, dtasummaryy, 
+                      by = c("country", "round", "month", "year", "zc19cm"))%>%
+    mutate(
+        group="Sector", 
+		grouplabel="",
+		grouplabel= ifelse(zc19cm==0, "non-C19CM facilities" , grouplabel),
+		grouplabel= ifelse(zc19cm==1, "C19CM facilities" , grouplabel) )
+
+
+# Append all ----
+dtasummaryall	<-	dtasummaryall %>% select(-starts_with("z"))
+dtasummarylocation	<-	dtasummarylocation %>% select(-starts_with("z"))
+dtasummarylevel	<-	dtasummarylevel %>% select(-starts_with("z"))
+dtasummarysector	<-	dtasummarysector %>% select(-starts_with("z"))
+dtasummaryc19cm	<-	dtasummaryc19cm %>% select(-starts_with("z"))
+
+dim(dtasummaryall)
+dim(dtasummarylocation)
+dim(dtasummarylevel)
+dim(dtasummarysector)
+dim(dtasummaryc19cm)
+
+setcolorder(dtasummaryall, 
+            c("country", "round", "month", "year", "group", "grouplabel", "obs"))
+setcolorder(dtasummarylocation, 
+            c("country", "round", "month", "year", "group", "grouplabel", "obs"))
+setcolorder(dtasummarylevel, 
+            c("country", "round", "month", "year", "group", "grouplabel", "obs"))
+setcolorder(dtasummarysector, 
+            c("country", "round", "month", "year", "group", "grouplabel", "obs"))
+setcolorder(dtasummaryc19cm, 
+            c("country", "round", "month", "year", "group", "grouplabel", "obs"))
+
+dtasummary<-rbind(dtasummaryall, dtasummarylocation, dtasummarylevel, dtasummarysector, dtasummaryc19cm)
+
+dim(dtasummary)
+```
+
+```{r calculation_further}
+# Give module name 
+dtasummary<-dtasummary%>%
+    mutate(
+        module="Combined") #/*module tag for appending all summary data later*/
+
+# convert proportion to % ----		
+# But, also convert back variables that were incorrectly converted (e.g., score)	
+dtasummary<-dtasummary%>%
+    mutate_at(vars(starts_with("x")), 
+              funs(round((.*100), 0)))%>%
+    mutate_at(vars(ends_with("_score")), 
+              funs(round((./100), 0)))%>%
+
+# generate staff infection rates using the pooled data ---	        
+    mutate(
+        staff_pct_covidwk_md = round(100* (staff_num_covidwk_md / staff_num_total_md ), 1),
+        staff_pct_covidwk_nr = round(100* (staff_num_covidwk_nr / staff_num_total_nr ), 1),
+        staff_pct_covidwk_othclinical = round(100* (staff_num_covidwk_othclinical / staff_num_total_othclinical ), 1),
+        staff_pct_covidwk_clinical = round(100* (staff_num_covidwk_clinical / staff_num_total_clinical ), 1),
+        staff_pct_covidwk_nonclinical = round(100* (staff_num_covidwk_nonclinical / staff_num_total_nonclinical ), 1),
+        staff_pct_covidwk_all = round(100* (staff_num_covidwk_all / staff_num_total_all ), 1)
+    )%>%
+    
+#generate COVID-19 vaccine among staff using the pooled data ----	
+    mutate(
+        staff_pct_covaxany  = round(100* (staff_num_covaxany  / staff_num_total_all), 0),
+		staff_pct_covaxfull = round(100* (staff_num_covaxfull / staff_num_total_all), 0)
+    )%>%
+
+#round number of observations and staff, in case sampling weight was used ----
+    mutate_at(vars(starts_with(c("obs", "staff_num"))), 
+              funs(round((.), 0)) )
+
+#move up identification variables ----
+obsvar <- dtasummary%>%select(starts_with("obs"))%>%colnames
+
+setcolorder(dtasummary, 
+            c("module", "country", "round", "year", "month", "group", "grouplabel", obsvar))
+
+colnames(dtasummary[ , 1:10])
+
+dtasummary<-dtasummary%>%
+    arrange(module, country, round, year, month, group, grouplabel)
+
+# Finally, JUST FOR R, deal with NaN ----
+dtasummary[sapply(dtasummary, is.nan)] <- NA
+```
+
+---
+
+##### F.2. Export indicator estimate data to chart book 
+<span style="color: purple;">First Purple Tab in Chartbook: "**Latest indicator estimate data**"</span>    
+```{r summarydatacsv}
+write.csv(dtasummary, 
+          paste0("summary_CombinedCOVID19HFA_", country, "_R", round, ".csv"))
+```
+
+```{r chartbookexport3, eval=FALSE}
+#Code suppressed until bug fixed
+
+dtasummary<-dtasummary%>%
+    mutate(
+        updatedate = as.Date(Sys.time(	), format='%d%b%Y'), 
+        updatetime = Sys.time()
+	)
+
+write.xlsx(dtasummary, 
+           paste0("CombinedCOVID19HFA_Chartbook_draft.xlsx"), 
+           sheet = "Latest indicator estimate data", 
+           append = TRUE)
+```
+
+```{r crosscheck, echo=FALSE}
+# for cross check the latest data against Stata results
+# only for YJ
+write.csv(dtasummary, 
+          paste0("summary_CombinedCOVID19HFA_", country, "_R", round, "_R.csv"), 
+          na="")
+
+#write.xlsx(dta, 
+#           paste0("CombinedCOVID19HFA_Chartbook_draft.xlsx"), 
+#           sheet = "Indicator estimate Data", 
+#           append = TRUE)
+```
+
+---
+
+#### G. MINIMUM data quality check 
+<div class="alert alert-info">
+Minimum red-flag indicators will be listed in the pink boxes in the markdown output. So, the shorter log, the better.      
+
+Note, this check only strictly focuses on catching analysis code errors.    
+</div>
+
+##### G.1. Estimates exceeding boundaries 
+Estimates for percent or score (0-100) that exceed boundaries.  
+
+For example, *xdrug_heparin* MUST BE BETWEEN 0 and 100.
+```{r minimumcheck1, results='asis'}
+temp<-dtasummary%>%
+    select(group, grouplabel, starts_with(c("x", "staff_pct")), ends_with("_score"))
+
+templong<-reshape(temp, 
+                    direction='long', 
+                    varying=colnames(temp[3:ncol(temp)]), 
+                    timevar="indicator",
+                    times=colnames(temp[3:ncol(temp)]),
+                    v.names=c("estimate"),
+                    idvar=colnames(temp[1:2])  
+                  )
+
+dtaerror1<-templong%>%filter(estimate<0)
+#kable(dtaerror1, caption = "Estimates below 0%")
+
+dtaerror2<-templong%>%filter(estimate>100)
+#kable(dtaerror2, caption = "Estimates above 100%")
+```
+<div class="alert alert-danger">
+There are `r nrow(dtaerror1) + nrow(dtaerror2)` percentage estimates that are outside the plausible range.   
+</div>
+---
+
+##### G.2. Comparing more vs. less restrictive indicators: all vs. half of the tracer items 
+Pairs where more restrictive indicator is higher than less restrictive indicator. 
+
+For example, *xdrug_100* MUST BE ALWAYS EQUAL TO OR LOWER THAN *xdrug_50*.
+```{r minimumcheck2, results='asis'}
+temp<-dtasummary%>%
+    select(group, grouplabel, ends_with(c("_50", "_100")))
+
+templong<-reshape(temp, 
+                    direction='long', 
+                    varying=colnames(temp[3:ncol(temp)]), 
+                    timevar="indicator",
+                    times=colnames(temp[3:ncol(temp)]),
+                    v.names=c("estimate"),
+                    idvar=c("group", "grouplabel")
+                  )%>%
+    mutate(
+        indicatorgroup = indicator, 
+        indicatorgroup = as.character(gsub("_100","",indicatorgroup)), 
+        indicatorgroup = as.character(gsub("_50","",indicatorgroup)), 
+        indicatorsubgroup = as.numeric(gsub(".*\\_","",indicator))
+    )%>% 
+    arrange(group, grouplabel, indicatorgroup, indicatorsubgroup)%>%
+    select(-indicator)
+
+tempwide<-templong %>% 
+    group_by(group, grouplabel, indicatorgroup) %>% 
+    gather("estimate", key = variable, value = number) %>% 
+    unite(combi, variable, indicatorsubgroup) %>% 
+    spread(combi, number)
+
+dtaerror2<-tempwide%>%        
+    filter(estimate_100>estimate_50)
+
+#kable(dtaerror, caption = "Estimates where *_100 is higher than *_50")    
+```
+<div class="alert alert-danger">
+There are `r nrow(dtaerror2)` cases where *_100* is higher than *_50*. 
+</div>
+
+---
+
+##### G.3. Comparing more vs. less restrictive indicators: more 
+Pairs where more restrictive indicator is higher than less restrictive indicator. 
+
+For example, *xcovax_offerav__jj* MUST BE ALWAYS EQUAL TO OR LOWER THAN *xcovax_offer__jj*.  
+```{r minimumcheck3, results='asis'}
+temp<-dtasummary%>%
+    select(group, grouplabel, contains(c("_offer")))
+
+templong<-reshape(temp, 
+                    direction='long', 
+                    varying=colnames(temp[3:ncol(temp)]), 
+                    timevar="indicator",
+                    times=colnames(temp[3:ncol(temp)]),
+                    v.names=c("estimate"),
+                    idvar=c("group", "grouplabel")
+                  )%>%
+    mutate(
+        indicatorgroup = gsub(".*__","",indicator), 
+        indicatorsubgroup = gsub("__*.","",indicator)
+    )%>% 
+    arrange(group, grouplabel, indicatorgroup, indicatorsubgroup)%>%
+    select(-indicator)
+
+tempwide<-templong %>% 
+    group_by(group, grouplabel, indicatorgroup) %>% 
+    gather("estimate", key = variable, value = number) %>% 
+    unite(combi, variable, indicatorsubgroup) %>% 
+    spread(combi, number)
+
+dtaerror3<-temp%>%        
+    mutate(
+        error=0, 
+        error=ifelse(xcovax_offerav__pfizer > xcovax_offer__pfizer, 1, 
+                ifelse(xcovax_offerav__moderna > xcovax_offer__moderna, 1, 
+                ifelse(xcovax_offerav__astra > xcovax_offer__astra, 1, 
+                ifelse(xcovax_offerav__jj > xcovax_offer__jj, 1, 
+                ifelse(xcovax_offerav__covishiled > xcovax_offer__covishiled, 1, 
+                       error)))))
+    )%>%
+    filter(error==1)
+
+#kable(dtaerror, caption = "Estimates where *_offerav__* is higher than *_offerav__*")    
+```
+<div class="alert alert-danger">
+There are `r nrow(dtaerror3)` cases where *_offerav__* is higher than *_offerav__*. 
+</div>
+---
+
+#### H. Append with previous "indicator estimate data" 
+
+<div class="alert alert-info">
+This section is to facilitate trend analysis for select key indicators. 
+
+WHO/HQ WILL CREATE the "lavender" tab (i.e., "Past indicator estimate data") for each country's chartbook. This lavender tab includes key indicator estimates from all previous rounds. Further,   
+1. For indicators that are common in both C19CM and CEHS tools, HQ calculated the indicators using pulled facility-level data.    
+2. For indicators that have a revised name, indicator names in the past data have been renamed. 
+
+* The do file is: "Code to combine previous modules to all for trending with new rounds.do", saved in the sharepoint folder: `"HSA unit/4 Databases, analyses & dashboards/2 HFAs for COVID-19/2. Analysis files/STATA code/code to create global database/"`    
+	
+* The "global" dataset is: "combined_new_elements.dta", saved in the sharepoint folder: `"HSA unit/4 Databases, analyses & dashboards/2 HFAs for COVID-19/1. Database/"`   
+</div>
+
+<span style="color: violet;">IMPORT Lavender tab: "**Past indicator estimate data**"</span>    
+```{r, results='hide', echo=FALSE, eval=FALSE}
+# WHO/HQ TO UPDATE THE FOLLOWING DIRECTORY AS NEEDED 
+# This code only for HQ
+# But we do this in Stata. Also still excel export problem...  
+library(haven)
+dtasummarypast<-data.frame(read_dta("~/Dropbox/0iSquared/iSquared_WHO/ACTA/5.Dashboard/1 Database/combined_new_elements.dta"))%>%
+    
+    filter(country=="Ghana") %>% #using Ghana as an example
+    mutate(country = country) 
+
+obsvar <- dtasummarypast%>%select(starts_with("obs"))%>%colnames
+
+setcolorder(dtasummarypast, 
+            c("module", "country", "round", "month", "year", "group", "grouplabel", obsvar))
+
+```
+
+```{r importpastdata}
+dtasummarypast<-read_excel(paste0(chartbookdir, "CombinedCOVID19HFA_Chartbook_draft.xlsx"), 
+                      sheet = "Past indicator estimate data")
+```
+
+<span style="color: purple;">CREATE Second Purple Tab in Chartbook: "**All round data**"</span>    
+```{r appenlatestandpast}
+dim(dtasummarypast) # Past data included in the chartbook
+dim(dtasummary)	#latest data created today 
+
+# Append 
+dtasummaryallround <- bind_rows(dtasummary, dtasummarypast)	
+dim(dtasummaryallround)
+```
+
+```{r chartbookexport4, eval=FALSE}	   
+#Code suppressed until bug fixed
+
+write.xlsx(dtasummaryallround, 
+           paste0("CombinedCOVID19HFA_Chartbook_draft.xlsx"), 
+           sheet = "All round data", 
+           append = TRUE)
+```
+
+---
+
+END OF MARKDOWN FILE 
