@@ -6,7 +6,7 @@ This repository has data cleaning/management/analysis programs. There are three 
 -- Mock data: LimeSurvey_CombinedHFA_EXAMPLE_R3.csv   
 (Questionnaire version that the analsis code is based on: __Rapid survey_14September2022_Clean.pdf__)   
 -- Analysis code in Stata: WHO_CombinedCOVID19HFA_DataManagement.do __(updated on 11/3/2022)__  
--- Analysis code in R: WHO_CombinedCOVID19HFA_DataManagement.Rmd __(updated on 11/3/2022)__
+-- Analysis code in R: WHO_CombinedCOVID19HFA_DataManagement.Rmd (https://rpubs.com/YJ_Choi/WHO_Surveillance_Combined) __(updated on 11/3/2022)__
  
 -- Mock data: LimeSurvey_CombinedHFA_EXAMPLE_R3_Qversion_2022July26.csv   
 (Questionnaire version that the analsis code is based on: __Rapid survey_26July2022_Clean.pdf__)      
