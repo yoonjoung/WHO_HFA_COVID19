@@ -71,17 +71,20 @@ numlabel, add
 *** Directory for this do file 
 *cd "C:\Users\ctaylor\World Health Organization\BANICA, Sorin - HSA unit\2 Global goods & tools\2 HFAs\1 HFAs for COVID-19\4. Implementation support materials\4. Analysis and dashboards\"
 *cd "C:\Users\YoonJoung Choi\World Health Organization\BANICA, Sorin - HSA unit\2 Global goods & tools\2 HFAs\1 HFAs for COVID-19\4. Implementation support materials\4. Analysis and dashboards\"
-cd "G:\My Drive\Dropbox\Office\Data Management\ODK\Projects\WHO\Round 3\Analysis\Readiness"
+*cd "G:\My Drive\Dropbox\Office\Data Management\ODK\Projects\WHO\Round 3\Analysis\Readiness"
+cd "~/Dropbox/0iSquared/iSquared_WHO/ACTA/0.Countries/0 Ghana/GH_Q20230329/"
 
 *** Directory for downloaded CSV data, if different from the main directory
 *global downloadcsvdir "C:\Users\ctaylor\World Health Organization\BANICA, Sorin - HSA unit\2 Global goods & tools\2 HFAs\1 HFAs for COVID-19\4. Implementation support materials\4. Analysis and dashboards\DownloadedCSV\"
 *global downloadcsvdir "C:\Users\YoonJoung Choi\World Health Organization\BANICA, Sorin - HSA unit\2 Global goods & tools\2 HFAs\1 HFAs for COVID-19\4. Implementation support materials\4. Analysis and dashboards\DownloadedCSV\"
-global downloadcsvdir "G:\My Drive\Dropbox\Office\Data Management\ODK\Projects\WHO\Round 3\Analysis\Readiness"
+*global downloadcsvdir "G:\My Drive\Dropbox\Office\Data Management\ODK\Projects\WHO\Round 3\Analysis\Readiness"
+global downloadcsvdir "~/Dropbox/0iSquared/iSquared_WHO/ACTA/0.Countries/0 Ghana/GH_Q20230329/"
 
 *** Define a directory for the chartbook, if different from the main directory 
 *global chartbookdir "C:\Users\ctaylor\World Health Organization\BANICA, Sorin - HSA unit\2 Global goods & tools\2 HFAs\1 HFAs for COVID-19\4. Implementation support materials\4. Analysis and dashboards\"
 *global chartbookdir "C:\Users\YoonJoung Choi\World Health Organization\BANICA, Sorin - HSA unit\2 Global goods & tools\2 HFAs\1 HFAs for COVID-19\4. Implementation support materials\4. Analysis and dashboards\"
-global chartbookdir "G:\My Drive\Dropbox\Office\Data Management\ODK\Projects\WHO\Round 3\Analysis\Readiness"
+*global chartbookdir "G:\My Drive\Dropbox\Office\Data Management\ODK\Projects\WHO\Round 3\Analysis\Readiness"
+global chartbookdir "~/Dropbox/0iSquared/iSquared_WHO/ACTA/0.Countries/0 Ghana/GH_Q20230329/"
 
 *** Define local macro for the survey 
 local country	 		 GHANA /*country name*/	
@@ -1932,14 +1935,19 @@ log close
 * "HSA unit/4 Databases, analyses & dashboards/2 HFAs for COVID-19/1. Database/"
 	
 * WHO/HQ TO UPDATE THE FOLLOWING DIRECTORY AS NEEDED 
-use "~/Dropbox/0 iSquared/iSquared_WHO/ACTA/5.Dashboard/1 Database/combined_new_elements.dta", clear
+use "~/Dropbox/0iSquared/iSquared_WHO/ACTA/5.Dashboard/1 Database/combined_new_elements.dta", clear
 
-	keep if country=="Ghana" /*using Ghana as an example*/
+	keep if country=="Ghana"
 	replace country = "`country'"
 
+	keep if module=="Combined"
+	
 	order module country round year month group grouplabel obs*
 				
-	export excel using "$chartbookdir/CombinedCOVID19HFA_Chartbook_draft.xlsx", sheet("Past indicator estimate data") sheetreplace firstrow(variables) nolabel keepcellfmt
+	*export excel using "$chartbookdir/CombinedCOVID19HFA_Chartbook_draft.xlsx", ///
+	*	sheet("Past indicator estimate data") sheetreplace firstrow(variables) nolabel keepcellfmt
+	export excel using "$chartbookdir/GH_CombinedCOVID19HFA_Chartbook.xlsx", ///
+		sheet("Past indicator estimate data") sheetreplace firstrow(variables) nolabel keepcellfmt
 
 */
 
@@ -1956,9 +1964,92 @@ import excel "$chartbookdir/GH_CombinedCOVID19HFA_Chartbook.xlsx", sheet("Latest
 	append using temp.dta, force
 		
 		d, short
-				
+		
 export excel using "$chartbookdir/GH_CombinedCOVID19HFA_Chartbook.xlsx", sheet("All round data") sheetreplace firstrow(variables) nolabel keepcellfmt		
 
 erase temp.dta
 	
-END OF DATA CLEANING AND MANAGEMENT 
+*END OF DATA CLEANING AND MANAGEMENT 
+
+**************************************************************
+* I. Quick scan of trends 3/29/2023
+**************************************************************
+
+	***Keep variables that wre in multiple rounds
+	
+		foreach var of varlist obs* x* y* staff* {
+			quietly sum `var'
+ 
+			/* Indicators in roudns 2 and 3 */
+			*if r(N)<14{ 
+			/* Indicators in all three rounds */
+			if r(N)!= _N{			
+				drop `var'
+			}					
+		}		
+	
+		d, short	
+
+	***Keep observations/analysis domain (aka "grouplabel") that are in all three rounds
+
+		tab grouplabel round, m
+			replace grouplabel = "Government" if grouplabel=="Public"
+			replace grouplabel = "Non-Government" if grouplabel=="Non-Public"
+		tab grouplabel round, m
+		
+		bysort grouplabel: gen temp = _N	
+		drop if temp<3
+	
+	***Quick scan of trends	
+	capture putdocx clear 
+	putdocx begin
+	
+		foreach var of varlist xppe* xipc* xcovid_diag_pcr_or_rdt xcovax_offer*{
+			
+			#delimit; 
+			graph bar `var', over(round)  
+				by(grouplabel, 
+					title(" '`var'' over the three rounds", size(medium)) note("") row(1)) 
+				blabel(bar)
+				ytitle("Percentage of sentinel facilities", size(small)) 
+			; 
+			#delimit cr
+			
+			graph save Graph "Figures/Trend_`var'.gph", replace
+			
+			graph export graph.png, replace	
+		
+		putdocx paragraph
+		putdocx text ("`var'"), linebreak	
+		putdocx image graph.png			
+			
+		}	
+				
+			#delimit; 
+			graph bar 
+				xcovid_diag_pcr_and_rdt
+				xcovid_diag_pcr_only 
+				xcovid_diag_rdt_only 
+				xcovid_diag_none , over(round)  
+				by(grouplabel, 
+					title(" 'xcovid_diag' over the three rounds", size(medium)) note("") row(1)) 
+				stack	
+				bar(1, color(ebblue*2)) bar(2, color(ebblue*1))  bar(3, color(ebblue*0.5))  bar(4, color(gray*0.5))
+				legend(rows(1) label(1 "PCR & RDT") label(2 "PCR") label(3 "RDT") label(4 "None"))
+				ytitle("Percentage of sentinel facilities", size(small)) 
+			; 
+			#delimit cr
+			
+			graph save Graph "Figures/Diag_Trend_stackbar.gph", replace
+			
+			graph export graph.png, replace	
+		
+		putdocx paragraph
+		putdocx text ("`var'"), linebreak	
+		putdocx image graph.png					
+		
+		erase graph.png
+		
+	putdocx save Quick_Scan_Trends_$date.docx, replace			
+	
+END OF DATA CLEANING AND MANAGEMENT - CONGRATULATIONS! 	
